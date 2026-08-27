@@ -15,6 +15,10 @@ steps; rendering receives the remaining fraction as interpolation alpha. A die r
 settled physical quaternion and the shared logical face normals. Randomness affects only the initial
 position, orientation, and impulses.
 
+Rolls containing more than four dice distribute their initial positions over the tray in a stable
+grid with small random jitter. This avoids overlapping convex bodies while leaving orientation and
+impulses random; the integration suite verifies that `20d6` settles before the hard timeout.
+
 Every promise terminates through completion, cancellation, timeout, or failure. `AbortSignal` can
 cancel an individual queued or active call. `clear()` cancels all work and removes dice. `destroy()`
 also releases renderer and physics resources and is idempotent.

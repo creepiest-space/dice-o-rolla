@@ -1,3 +1,4 @@
+import { getDieGeometry, getRegisteredDieTypes } from '@creepiest-space/dice-geometry';
 import type {
   DiceRenderer,
   RenderDieState,
@@ -87,8 +88,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertInitialized();
     if (this.#entries.has(state.id))
       throw new Error(`A render die with id "${state.id}" already exists`);
-    if (state.geometryId !== 'd6') throw new Error(`Unsupported geometry: ${state.geometryId}`);
-    const resource = this.#meshFactory.createD6(this.#theme);
+    const resource = this.#createResource(state.geometryId);
     const ownedState = copyState(state);
     applyInterpolatedTransform(resource.mesh, ownedState, 1);
     this.#scene?.value.add(resource.mesh);
@@ -139,7 +139,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertAlive();
     this.#theme = { ...theme };
     for (const entry of this.#entries.values()) {
-      const replacement = this.#meshFactory.createD6(this.#theme);
+      const replacement = this.#createResource(entry.state.geometryId);
       applyInterpolatedTransform(replacement.mesh, entry.state, 1);
       this.#scene?.value.remove(entry.resource.mesh);
       entry.resource.dispose();
@@ -177,6 +177,12 @@ export class ThreeDiceRenderer implements DiceRenderer {
       height: bounds.height,
       pixelRatio: Math.min(globalThis.devicePixelRatio || 1, 2),
     });
+  }
+
+  #createResource(geometryId: string): ThreeDiceMesh {
+    const type = getRegisteredDieTypes().find((registered) => registered === geometryId);
+    if (type === undefined) throw new Error(`Unsupported geometry: ${geometryId}`);
+    return this.#meshFactory.create(getDieGeometry(type), this.#theme);
   }
 
   #assertAlive(): void {

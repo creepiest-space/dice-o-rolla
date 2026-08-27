@@ -45,7 +45,7 @@ describe('DiceEngine', () => {
 
     expect(physics.configureTrayCalls).toBe(1);
     expect(renderer.initializeCalls).toBe(1);
-    expect(String(await rejectionOf(engine.roll('1d20')))).toContain('d20 is not supported');
+    expect(String(await rejectionOf(engine.roll('1d100')))).toContain('d100 is not supported');
     expect(String(await rejectionOf(engine.roll('1d6', { mode: 'parallel' })))).toContain(
       'Only queue',
     );

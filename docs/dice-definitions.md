@@ -36,14 +36,28 @@ Render triangulation, chamfer faces, UVs, materials, and collider objects are de
 not allowed to determine a die result.
 
 For ordinary dice, a result direction is the outward normal of the numbered face. A traditional d4
-is different: the result is associated with the vertex opposite the resting face. Its future logical
-result directions will therefore be the negated resting-face normals while its render polygon normals
-remain outward.
+is different: the result is associated with the vertex opposite the resting face. Its logical result
+directions are therefore the negated resting-face normals while its render polygon normals remain
+outward. Each rendered d4 face carries the three values belonging to its vertices.
 
-## d6 vertical slice
+## Registered polyhedra
 
-The d6 is the first and currently only registered definition. Its ideal cube vertices use coordinates
-`±1/sqrt(3)`, giving every vertex unit distance from the origin.
+| Type | Vertices | Polygon faces | Values | Topology                 |
+| ---- | -------: | ------------: | -----: | ------------------------ |
+| d4   |        4 |             4 |    1–4 | tetrahedron              |
+| d6   |        8 |             6 |    1–6 | cube                     |
+| d8   |        6 |             8 |    1–8 | octahedron               |
+| d10  |       12 |            10 |   1–10 | pentagonal trapezohedron |
+| d12  |       20 |            12 |   1–12 | dodecahedron             |
+| d20  |       12 |            20 |   1–20 | icosahedron              |
+
+All reference vertices are rotated from source Z-up coordinates and individually normalized. The
+d10 reference half-height was rounded to `0.105`; the target uses `0.10616611026445441` so its
+normalized kite faces are exactly planar while preserving topology and numbering.
+The ordinary d10's logical value ten is rendered with the conventional `0` label.
+
+The d6 ideal cube vertices use coordinates `±1/sqrt(3)`, giving every vertex unit distance from the
+origin.
 
 | Value | Local result normal | Opposite value |
 | ----: | ------------------- | -------------: |
@@ -62,5 +76,7 @@ For each logical face, the resolver normalizes the rigid-body quaternion, rotate
 normal into world space, and calculates its dot product with `(0, 1, 0)`. The value with the greatest
 alignment is returned.
 
-The d6 tests cover all six axis-aligned outcomes, non-unit quaternion normalization, invalid
-quaternions, face/value alignment, outward polygon winding, and normalized vertex scale.
+Tests cover every result direction of every registered die, non-unit quaternion normalization,
+invalid quaternions, face/value alignment, polygon planarity, outward winding, complete value sets,
+and normalized vertex scale. Rapier integration tests physically settle every standard shape and
+verify that the renderer snapshot resolves to the returned value.

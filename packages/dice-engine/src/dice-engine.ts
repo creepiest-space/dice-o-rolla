@@ -316,6 +316,10 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   #createDice(task: RollTask): ActiveDie[] {
     const dice: ActiveDie[] = [];
     let index = 0;
+    const totalDice = task.parsed.expressions.reduce(
+      (total, expression) => total + (expression.kind === 'dice' ? expression.count : 0),
+      0,
+    );
     try {
       for (const expression of task.parsed.expressions) {
         if (expression.kind !== 'dice') continue;
@@ -325,6 +329,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
         for (let count = 0; count < expression.count; count += 1) {
           const id = `${task.session.id}:die-${index++}`;
           const generated = this.#throwGenerator.generate();
+          const position = this.#placeDie(generated.position, index - 1, totalDice);
           const body = this.#physics.createDie({
             id,
             type,
@@ -335,7 +340,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
             scale: 1,
             mass: 1,
             material: this.#diceMaterial,
-            position: generated.position,
+            position,
             quaternion: generated.quaternion,
           });
           const state = body.getState();
@@ -360,6 +365,25 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       }
       throw error;
     }
+  }
+
+  #placeDie(
+    generated: { readonly x: number; readonly y: number; readonly z: number },
+    index: number,
+    total: number,
+  ): { readonly x: number; readonly y: number; readonly z: number } {
+    if (total <= 4) return generated;
+    const columns = Math.ceil(Math.sqrt((total * this.#tray.width) / this.#tray.depth));
+    const rows = Math.ceil(total / columns);
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const cellWidth = (this.#tray.width - 1) / columns;
+    const cellDepth = (this.#tray.depth - 1) / rows;
+    return {
+      x: (column - (columns - 1) / 2) * cellWidth + generated.x * 0.03,
+      y: generated.y,
+      z: (row - (rows - 1) / 2) * cellDepth + generated.z * 0.03,
+    };
   }
 
   #scheduleFrame(): void {

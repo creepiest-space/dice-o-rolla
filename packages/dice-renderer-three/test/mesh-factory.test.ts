@@ -1,10 +1,33 @@
 import { describe, expect, test } from 'bun:test';
 
-import { D6_DEFINITION } from '@creepiest-space/dice-geometry';
+import {
+  D6_DEFINITION,
+  getDieGeometry,
+  getRegisteredDieTypes,
+} from '@creepiest-space/dice-geometry';
 
-import { createPolyhedronGeometry } from '../src/index.js';
+import { createPolyhedronGeometry, getFaceLabel } from '../src/index.js';
 
 describe('createPolyhedronGeometry', () => {
+  test.each([...getRegisteredDieTypes()])(
+    '%s triangulates every polygon into its material group',
+    (type) => {
+      const definition = getDieGeometry(type);
+      const geometry = createPolyhedronGeometry(definition);
+      const expectedVertices = definition.faces.reduce(
+        (total, face) => total + (face.indices.length - 2) * 3,
+        0,
+      );
+
+      expect(geometry.getAttribute('position').count).toBe(expectedVertices);
+      expect(geometry.groups).toHaveLength(definition.faces.length);
+      expect(geometry.groups.map((group) => group.materialIndex)).toEqual(
+        definition.faces.map((_, index) => index),
+      );
+      geometry.dispose();
+    },
+  );
+
   test('creates one material group per logical d6 face', () => {
     const geometry = createPolyhedronGeometry(D6_DEFINITION, 2);
     const position = geometry.getAttribute('position');
@@ -39,5 +62,20 @@ describe('createPolyhedronGeometry', () => {
         faces: [{ value: 1, indices: [0, 1, 100] }],
       }),
     ).toThrow('invalid vertex');
+  });
+
+  test('maps d4 vertex labels and the conventional d10 zero label', () => {
+    const d4 = getDieGeometry('d4');
+    expect(d4.faces.map((face) => getFaceLabel(d4, face))).toEqual([
+      [3, 4, 2],
+      [4, 3, 1],
+      [4, 1, 2],
+      [3, 2, 1],
+    ]);
+    const d10 = getDieGeometry('d10');
+    const zeroFace = d10.faces.find((face) => face.value === 10);
+    expect(zeroFace).toBeDefined();
+    if (zeroFace === undefined) throw new Error('Missing d10 value ten face');
+    expect(getFaceLabel(d10, zeroFace)).toBe(0);
   });
 });

@@ -17,12 +17,12 @@ function dot(
 }
 
 describe('d6 geometry definition', () => {
-  test('is the only registered vertical-slice geometry', () => {
-    expect(getRegisteredDieTypes()).toEqual(['d6']);
+  test('is registered with the standard polyhedra', () => {
+    expect(getRegisteredDieTypes()).toEqual(['d4', 'd6', 'd8', 'd10', 'd12', 'd20']);
     expect(hasDieGeometry('d6')).toBe(true);
-    expect(hasDieGeometry('d20')).toBe(false);
+    expect(hasDieGeometry('d20')).toBe(true);
     expect(getDieGeometry('d6')).toBe(D6_DEFINITION);
-    expect(() => getDieGeometry('d20')).toThrow(RangeError);
+    expect(getDieGeometry('d20').id).toBe('d20');
   });
 
   test('satisfies registry invariants', () => {

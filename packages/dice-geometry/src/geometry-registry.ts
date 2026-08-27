@@ -1,10 +1,19 @@
 import type { DieType } from '@creepiest-space/dice-core';
 
+import { D4_DEFINITION } from './definitions/d4.js';
 import { D6_DEFINITION } from './definitions/d6.js';
+import { D8_DEFINITION } from './definitions/d8.js';
+import { D10_DEFINITION } from './definitions/d10.js';
+import { D12_DEFINITION } from './definitions/d12.js';
+import { D20_DEFINITION } from './definitions/d20.js';
 import type { PolyhedronDefinition } from './types.js';
 import { assertValidPolyhedronDefinition } from './validation.js';
 
-const definitions = new Map<DieType, PolyhedronDefinition>([[D6_DEFINITION.id, D6_DEFINITION]]);
+const definitions = new Map<DieType, PolyhedronDefinition>(
+  [D4_DEFINITION, D6_DEFINITION, D8_DEFINITION, D10_DEFINITION, D12_DEFINITION, D20_DEFINITION].map(
+    (definition) => [definition.id, definition],
+  ),
+);
 
 for (const definition of definitions.values()) assertValidPolyhedronDefinition(definition);
 

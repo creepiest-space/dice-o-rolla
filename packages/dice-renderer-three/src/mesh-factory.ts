@@ -1,5 +1,5 @@
 import { D6_DEFINITION } from '@creepiest-space/dice-geometry';
-import type { PolyhedronDefinition } from '@creepiest-space/dice-geometry';
+import type { PolygonDefinition, PolyhedronDefinition } from '@creepiest-space/dice-geometry';
 import type { RendererTheme } from '@creepiest-space/dice-renderer';
 import { BufferGeometry, Float32BufferAttribute, Mesh, type MeshStandardMaterial } from 'three';
 
@@ -66,10 +66,14 @@ export class ThreeDiceMeshFactory {
     this.#materials = materials;
   }
 
-  createD6(theme: RendererTheme = DEFAULT_THREE_THEME, scale = 1): ThreeDiceMesh {
-    const geometry = createPolyhedronGeometry(D6_DEFINITION, scale);
-    const materials = D6_DEFINITION.faces.map((face) =>
-      this.#materials.createFace(face.value, theme),
+  create(
+    definition: PolyhedronDefinition,
+    theme: RendererTheme = DEFAULT_THREE_THEME,
+    scale = 1,
+  ): ThreeDiceMesh {
+    const geometry = createPolyhedronGeometry(definition, scale);
+    const materials = definition.faces.map((face) =>
+      this.#materials.createFace(getFaceLabel(definition, face), theme),
     );
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;
@@ -86,4 +90,27 @@ export class ThreeDiceMeshFactory {
       },
     };
   }
+
+  createD6(theme: RendererTheme = DEFAULT_THREE_THEME, scale = 1): ThreeDiceMesh {
+    return this.create(D6_DEFINITION, theme, scale);
+  }
+}
+
+export function getFaceLabel(
+  definition: PolyhedronDefinition,
+  face: PolygonDefinition,
+): number | readonly number[] {
+  if (definition.id === 'd4') {
+    return face.indices.map((vertexIndex) => {
+      const oppositeFace = definition.faces.find(
+        (candidate) => !candidate.indices.includes(vertexIndex),
+      );
+      if (oppositeFace === undefined) {
+        throw new RangeError(`No d4 result is associated with vertex ${vertexIndex}`);
+      }
+      return oppositeFace.value;
+    });
+  }
+  if (definition.id === 'd10' && face.value === 10) return 0;
+  return face.value;
 }

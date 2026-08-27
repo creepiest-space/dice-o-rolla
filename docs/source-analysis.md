@@ -213,9 +213,9 @@ For d4, a `FaceDefinition.normal` is a logical result direction rather than nece
 normal of the rendered triangle. Defining it as the negated resting-face normal preserves the generic
 `max(dot(rotatedNormal, worldUp))` resolver.
 
-The d10 ones die will expose values 0–9 physically and convert `0` to ten only where ordinary d10
-domain semantics require it. A percentile tens die exposes `00,10,...,90`; the pair `00 + 0` is 100.
-This avoids the source's label/material offset arithmetic.
+The source d10 polygon ids `0–9` are converted explicitly to ordinary values `1–10`. A later
+percentile adapter can display value ten as digit `0` and tens value `00`; the pair `00 + 0` is 100.
+This avoids carrying the source's label/material offset arithmetic into geometry.
 
 ## Coordinate convention
 
