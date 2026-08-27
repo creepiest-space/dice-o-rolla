@@ -1,2 +1,1 @@
-// Public renderer contracts are introduced in M4.
-void 0;
+export type { DiceRenderer, RenderDieState, RendererViewport, RenderTransform } from './types.js';

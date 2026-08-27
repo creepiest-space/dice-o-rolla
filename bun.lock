@@ -42,6 +42,9 @@
     "packages/dice-physics": {
       "name": "@creepiest-space/dice-physics",
       "version": "0.0.0",
+      "dependencies": {
+        "@creepiest-space/dice-core": "workspace:*",
+      },
     },
     "packages/dice-physics-rapier": {
       "name": "@creepiest-space/dice-physics-rapier",
@@ -50,6 +53,9 @@
     "packages/dice-renderer": {
       "name": "@creepiest-space/dice-renderer",
       "version": "0.0.0",
+      "dependencies": {
+        "@creepiest-space/dice-core": "workspace:*",
+      },
     },
     "packages/dice-renderer-three": {
       "name": "@creepiest-space/dice-renderer-three",
