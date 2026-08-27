@@ -87,7 +87,8 @@ apps/dice-demo
 
 For every package, configure:
 
-- scoped package name and `workspace:*` internal dependencies;
+- scoped package name; add each `workspace:*` dependency in the iteration that introduces its first
+  real import so Knip remains useful and no placeholder imports are needed;
 - ESM, `exports`, and type exports;
 - package-local TypeScript configuration extending `tsconfig.base.json`;
 - Turbo-compatible `build`, `typecheck`, and `test` scripts;

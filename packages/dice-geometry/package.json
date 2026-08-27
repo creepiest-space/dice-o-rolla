@@ -1,0 +1,23 @@
+{
+  "name": "@creepiest-space/dice-geometry",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target browser --format esm --packages external && tsc -p tsconfig.build.json",
+    "test": "bun test --pass-with-no-tests",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}
