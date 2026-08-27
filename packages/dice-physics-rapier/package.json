@@ -19,5 +19,13 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@creepiest-space/dice-core": "workspace:*",
+    "@creepiest-space/dice-physics": "workspace:*",
+    "@dimforge/rapier3d-compat": "^0.20.0"
+  },
+  "devDependencies": {
+    "@creepiest-space/dice-geometry": "workspace:*"
   }
 }
