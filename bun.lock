@@ -35,6 +35,9 @@
     "packages/dice-geometry": {
       "name": "@creepiest-space/dice-geometry",
       "version": "0.0.0",
+      "dependencies": {
+        "@creepiest-space/dice-core": "workspace:*",
+      },
     },
     "packages/dice-physics": {
       "name": "@creepiest-space/dice-physics",
