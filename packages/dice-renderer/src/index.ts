@@ -1,1 +1,7 @@
-export type { DiceRenderer, RenderDieState, RendererViewport, RenderTransform } from './types.js';
+export type {
+  DiceRenderer,
+  RenderDieState,
+  RendererTheme,
+  RendererViewport,
+  RenderTransform,
+} from './types.js';

@@ -31,6 +31,14 @@
     "packages/dice-engine": {
       "name": "@creepiest-space/dice-engine",
       "version": "0.0.0",
+      "dependencies": {
+        "@creepiest-space/dice-core": "workspace:*",
+        "@creepiest-space/dice-geometry": "workspace:*",
+        "@creepiest-space/dice-physics": "workspace:*",
+        "@creepiest-space/dice-physics-rapier": "workspace:*",
+        "@creepiest-space/dice-renderer": "workspace:*",
+        "@creepiest-space/dice-renderer-three": "workspace:*",
+      },
     },
     "packages/dice-geometry": {
       "name": "@creepiest-space/dice-geometry",

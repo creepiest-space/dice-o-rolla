@@ -1,22 +1,22 @@
 import type {
   DiceRenderer,
   RenderDieState,
+  RendererTheme,
   RendererViewport,
 } from '@creepiest-space/dice-renderer';
 import { PCFSoftShadowMap, WebGLRenderer } from 'three';
 
-import { ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
+import { DEFAULT_THREE_THEME, ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
 import { ThreeCamera, ThreeScene } from './scene.js';
 import { applyInterpolatedTransform } from './transform.js';
 
-export interface ThreeDiceRendererOptions {
-  readonly material?: 'plastic' | 'matte';
+export interface ThreeDiceRendererOptions extends Partial<RendererTheme> {
   readonly antialias?: boolean;
   readonly observeResize?: boolean;
 }
 
 interface RenderEntry {
-  readonly resource: ThreeDiceMesh;
+  resource: ThreeDiceMesh;
   state: RenderDieState;
 }
 
@@ -40,6 +40,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
   readonly #options: ThreeDiceRendererOptions;
   readonly #meshFactory = new ThreeDiceMeshFactory();
   readonly #entries = new Map<string, RenderEntry>();
+  #theme: RendererTheme;
   #scene: ThreeScene | undefined;
   #camera: ThreeCamera | undefined;
   #renderer: WebGLRenderer | undefined;
@@ -49,6 +50,13 @@ export class ThreeDiceRenderer implements DiceRenderer {
   constructor(container: HTMLElement, options: ThreeDiceRendererOptions = {}) {
     this.#container = container;
     this.#options = options;
+    this.#theme = {
+      material: options.material ?? DEFAULT_THREE_THEME.material,
+      bodyColor: options.bodyColor ?? DEFAULT_THREE_THEME.bodyColor,
+      labelColor: options.labelColor ?? DEFAULT_THREE_THEME.labelColor,
+      roughness: options.roughness ?? DEFAULT_THREE_THEME.roughness,
+      metalness: options.metalness ?? DEFAULT_THREE_THEME.metalness,
+    };
   }
 
   initialize(): void {
@@ -80,7 +88,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     if (this.#entries.has(state.id))
       throw new Error(`A render die with id "${state.id}" already exists`);
     if (state.geometryId !== 'd6') throw new Error(`Unsupported geometry: ${state.geometryId}`);
-    const resource = this.#meshFactory.createD6(this.#options.material ?? 'plastic');
+    const resource = this.#meshFactory.createD6(this.#theme);
     const ownedState = copyState(state);
     applyInterpolatedTransform(resource.mesh, ownedState, 1);
     this.#scene?.value.add(resource.mesh);
@@ -125,6 +133,19 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#camera?.resize(viewport.width, viewport.height);
     this.#renderer?.setPixelRatio(viewport.pixelRatio);
     this.#renderer?.setSize(viewport.width, viewport.height, false);
+  }
+
+  setTheme(theme: RendererTheme): void {
+    this.#assertAlive();
+    this.#theme = { ...theme };
+    for (const entry of this.#entries.values()) {
+      const replacement = this.#meshFactory.createD6(this.#theme);
+      applyInterpolatedTransform(replacement.mesh, entry.state, 1);
+      this.#scene?.value.remove(entry.resource.mesh);
+      entry.resource.dispose();
+      entry.resource = replacement;
+      this.#scene?.value.add(replacement.mesh);
+    }
   }
 
   clear(): void {

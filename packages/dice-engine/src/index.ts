@@ -1,2 +1,12 @@
-// Public engine exports are introduced in M7.
-void 0;
+export { DiceEngine } from './dice-engine.js';
+export { DiceEngineDestroyedError, RollCancelledError, RollTimeoutError } from './errors.js';
+export type {
+  DiceEngineEvents,
+  DiceEngineFacade,
+  DiceEngineOptions,
+  DiceMaterialType,
+  DiceTheme,
+  FrameScheduler,
+  FrameToken,
+  RollOptions,
+} from './types.js';

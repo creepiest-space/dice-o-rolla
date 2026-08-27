@@ -1,8 +1,17 @@
 import { D6_DEFINITION } from '@creepiest-space/dice-geometry';
 import type { PolyhedronDefinition } from '@creepiest-space/dice-geometry';
+import type { RendererTheme } from '@creepiest-space/dice-renderer';
 import { BufferGeometry, Float32BufferAttribute, Mesh, type MeshStandardMaterial } from 'three';
 
-import { ThreeMaterialFactory, type DiceMaterialStyle } from './material-factory.js';
+import { ThreeMaterialFactory } from './material-factory.js';
+
+export const DEFAULT_THREE_THEME: RendererTheme = Object.freeze({
+  material: 'plastic',
+  bodyColor: '#f7f3e8',
+  labelColor: '#181818',
+  roughness: 0.28,
+  metalness: 0,
+});
 
 export interface ThreeDiceMesh {
   readonly mesh: Mesh<BufferGeometry, MeshStandardMaterial[]>;
@@ -57,10 +66,10 @@ export class ThreeDiceMeshFactory {
     this.#materials = materials;
   }
 
-  createD6(style: DiceMaterialStyle = 'plastic', scale = 1): ThreeDiceMesh {
+  createD6(theme: RendererTheme = DEFAULT_THREE_THEME, scale = 1): ThreeDiceMesh {
     const geometry = createPolyhedronGeometry(D6_DEFINITION, scale);
     const materials = D6_DEFINITION.faces.map((face) =>
-      this.#materials.createFace(face.value, style),
+      this.#materials.createFace(face.value, theme),
     );
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;

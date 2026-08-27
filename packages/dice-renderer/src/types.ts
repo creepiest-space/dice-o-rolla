@@ -18,6 +18,14 @@ export interface RendererViewport {
   readonly pixelRatio: number;
 }
 
+export interface RendererTheme {
+  readonly material: 'plastic' | 'matte';
+  readonly bodyColor: string;
+  readonly labelColor: string;
+  readonly roughness: number;
+  readonly metalness: number;
+}
+
 export interface DiceRenderer {
   initialize(): Promise<void> | void;
   createDie(state: RenderDieState): void;
@@ -25,6 +33,7 @@ export interface DiceRenderer {
   removeDie(id: string): void;
   render(alpha: number): void;
   resize(viewport: RendererViewport): void;
+  setTheme(theme: RendererTheme): void;
   clear(): void;
   destroy(): void;
 }
