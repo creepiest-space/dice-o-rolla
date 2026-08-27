@@ -19,5 +19,13 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@creepiest-space/dice-geometry": "workspace:*",
+    "@creepiest-space/dice-renderer": "workspace:*",
+    "three": "^0.185.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.0"
   }
 }
