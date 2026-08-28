@@ -84,6 +84,7 @@ jobs:
             tar -tzf "artifacts/$archive.tgz" | grep -Fx package/dist/index.d.ts
             ! tar -tzf "artifacts/$archive.tgz" | grep -F '/src/'
             tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '.license == "Apache-2.0" and .scripts == null and .devDependencies == null'
+            tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '[(.dependencies // {} | keys[]) | startswith("@creepiest-space/")] | any | not'
             ! tar -xOzf "artifacts/$archive.tgz" package/package.json | grep -F 'workspace:'
           done
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/LICENSE
@@ -91,9 +92,10 @@ jobs:
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/browser.d.ts
           test -f artifacts/local-dependencies.json
           test -f artifacts/README.md
+          jq -e '(.dependencies | length) == 7 and ([.dependencies[] | startswith("file:./artifacts/")] | all)' artifacts/local-dependencies.json
           shasum -a 256 -c artifacts/SHA256SUMS
 
-      - name: Verify consumer installation
+      - name: Verify Bun consumer installation
         run: |
           consumer_directory="$(mktemp -d)"
           cp -R artifacts "$consumer_directory/artifacts"
@@ -101,3 +103,12 @@ jobs:
           cd "$consumer_directory"
           bun install --offline
           bun -e "const core = await import('@creepiest-space/dice-engine'); const browser = await import('@creepiest-space/dice-engine/browser'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function') process.exit(1)"
+
+      - name: Verify npm consumer installation
+        run: |
+          consumer_directory="$(mktemp -d)"
+          cp -R artifacts "$consumer_directory/artifacts"
+          cp artifacts/local-dependencies.json "$consumer_directory/package.json"
+          cd "$consumer_directory"
+          npm install --ignore-scripts
+          node --input-type=module -e "const core = await import('@creepiest-space/dice-engine'); const browser = await import('@creepiest-space/dice-engine/browser'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function') process.exit(1)"

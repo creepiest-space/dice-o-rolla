@@ -25,7 +25,7 @@ The command:
 1. removes previous archives and the artifact staging directory;
 2. rebuilds `dice-engine` and its workspace dependencies;
 3. stages the `dist` output and distribution metadata for all seven runtime packages;
-4. replaces `workspace:*` ranges with local `file:./artifacts/*.tgz` references;
+4. removes workspace-only dependency edges from the local-only package manifests;
 5. verifies every package's public entry point, declarations, license files, and absence of source
    imports;
 6. creates the archives, a consumer dependency fragment, instructions, and SHA-256 checksums in
@@ -53,29 +53,32 @@ consumers from importing undocumented subpaths.
 
 ## Consumer installation
 
-Copy the complete `artifacts` directory to the consumer application's root. Merge the `dependencies`
-object from `artifacts/local-dependencies.json` into its `package.json`, then run:
+Copy the complete `artifacts` directory to the consumer application's root. Merge the complete
+`dependencies` object from `artifacts/local-dependencies.json` into its `package.json`, then run one
+of the supported package managers:
 
 ```sh
 shasum -a 256 -c artifacts/SHA256SUMS
 bun install
+# or: npm install
 ```
 
-Only `@creepiest-space/dice-engine` needs to be declared by the application. Its local dependency
-references install the other six archives transitively. Bun obtains the public runtime dependencies
-`@dimforge/rapier3d-compat` and `three` from the application's configured registry.
+All seven `@creepiest-space/*` packages must remain direct `file:` dependencies. Internal dependency
+edges are intentionally omitted only from these local-only manifests because npm and Bun resolve
+relative tarballs differently. The application's complete dependency list makes the packages
+available from its root `node_modules` without registry lookups. The package manager obtains the
+public runtime dependencies `@dimforge/rapier3d-compat` and `three` from the configured registry.
 
 ## Release boundary
 
 The generated bundle is a local integration and CI artifact, not a registry publication. Packages
-remain `private`, use version `0.0.0`, and contain local artifact paths that are unsuitable for npm.
-Before an external release:
+remain `private` and use version `0.0.0`. Before an external release:
 
 - assign one coordinated non-zero version to every publishable workspace package;
 - package and publish the dependency graph before `dice-engine`;
 - remove `private` only from packages intended for publication;
 - add registry and repository metadata;
-- replace local artifact references with coordinated registry version ranges;
+- replace local consumer references with coordinated registry version ranges;
 - install the release candidates in an empty consumer project and test both public entry points;
 - publish only through an explicitly authorized release workflow.
 

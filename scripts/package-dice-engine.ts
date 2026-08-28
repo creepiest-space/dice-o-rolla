@@ -47,15 +47,11 @@ const manifests = await Promise.all(
     ),
   })),
 );
-const workspaceArchives = new Map(
-  manifests.map(
-    ({ manifest, workspacePackage }) => [manifest.name, workspacePackage.archive] as const,
-  ),
-);
+const workspaceNames = new Set(manifests.map(({ manifest }) => manifest.name));
 
 await Promise.all(
   manifests.map(({ workspacePackage, manifest }) =>
-    packageWorkspace(workspacePackage, manifest, workspaceArchives),
+    packageWorkspace(workspacePackage, manifest, workspaceNames),
   ),
 );
 
@@ -67,7 +63,7 @@ console.log(`Created local integration artifacts in ${artifactsDirectory}`);
 async function packageWorkspace(
   workspacePackage: WorkspacePackage,
   sourceManifest: PackageManifest,
-  availableArchives: ReadonlyMap<string, string>,
+  availableWorkspaceNames: ReadonlySet<string>,
 ): Promise<void> {
   const sourceDirectory = resolve(packagesDirectory, workspacePackage.directory);
   const stagingDirectory = resolve(stagingRoot, workspacePackage.directory);
@@ -96,9 +92,9 @@ async function packageWorkspace(
   };
   delete packageManifest.scripts;
   delete packageManifest.devDependencies;
-  packageManifest.dependencies = replaceWorkspaceDependencies(
+  packageManifest.dependencies = omitWorkspaceDependencies(
     sourceManifest.dependencies ?? {},
-    availableArchives,
+    availableWorkspaceNames,
   );
 
   await Bun.write(
@@ -122,13 +118,12 @@ async function writeConsumerFiles(
     readonly manifest: PackageManifest;
   }>,
 ): Promise<void> {
-  const enginePackage = packageManifests.find(
-    ({ workspacePackage }) => workspacePackage.directory === 'dice-engine',
+  const dependencies = Object.fromEntries(
+    packageManifests.map(({ workspacePackage, manifest }) => [
+      manifest.name,
+      `file:./artifacts/${workspacePackage.archive}`,
+    ]),
   );
-  if (enginePackage === undefined) throw new Error('Missing dice-engine package configuration');
-  const dependencies = {
-    [enginePackage.manifest.name]: `file:./artifacts/${enginePackage.workspacePackage.archive}`,
-  };
   await Bun.write(
     resolve(artifactsDirectory, 'local-dependencies.json'),
     `${JSON.stringify({ dependencies }, null, 2)}\n`,
@@ -148,9 +143,9 @@ async function writeConsumerFiles(
     resolve(artifactsDirectory, 'README.md'),
     `# Local dice-engine artifacts
 
-Copy this entire \`artifacts\` directory to the root of the consumer application. Merge the
+Copy this entire \`artifacts\` directory to the root of the consumer application. Merge the complete
 \`dependencies\` object from \`artifacts/local-dependencies.json\` into the application's
-\`package.json\`, then run \`bun install\`.
+\`package.json\`, then run \`npm install\` or \`bun install\`.
 
 Import the browser composition with:
 
@@ -158,9 +153,11 @@ Import the browser composition with:
 import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
 \`\`\`
 
-All internal packages are included as local tarballs. Bun resolves the remaining public runtime
-dependencies, \`@dimforge/rapier3d-compat\` and \`three\`, from the configured registry. Verify the
-copied archives with \`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
+All seven local tarballs must remain direct application dependencies. Their package manifests omit
+workspace-only dependency edges so npm and Bun do not query a registry for unpublished packages. The
+package manager resolves the remaining public runtime dependencies, \`@dimforge/rapier3d-compat\` and
+\`three\`, from the configured registry. Verify the copied archives with
+\`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
 `,
   );
 }
@@ -191,16 +188,17 @@ function readStringRecord(value: unknown, description: string): Record<string, s
   return Object.fromEntries(Object.entries(value).map(([name, entry]) => [name, String(entry)]));
 }
 
-function replaceWorkspaceDependencies(
+function omitWorkspaceDependencies(
   dependencies: Readonly<Record<string, string>>,
-  availableArchives: ReadonlyMap<string, string>,
+  availableWorkspaceNames: ReadonlySet<string>,
 ): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(dependencies).map(([name, range]) => {
-      if (!range.startsWith('workspace:')) return [name, range];
-      const archive = availableArchives.get(name);
-      if (archive === undefined) throw new Error(`Missing workspace archive for ${name}`);
-      return [name, `file:./artifacts/${archive}`];
+    Object.entries(dependencies).filter(([name, range]) => {
+      if (!range.startsWith('workspace:')) return true;
+      if (!availableWorkspaceNames.has(name)) {
+        throw new Error(`Missing local archive for workspace dependency ${name}`);
+      }
+      return false;
     }),
   );
 }
