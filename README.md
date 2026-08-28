@@ -94,6 +94,10 @@ See [architecture](docs/architecture.md), [physics](docs/physics.md), [Rapier ba
 [dice definitions](docs/dice-definitions.md), and [security guidance](docs/security.md) for design and
 deployment details.
 
+Build the library package graph with `bun run build:dice-engine`, or create the verified local archive
+`artifacts/dice-engine.tgz` with `bun run pack:dice-engine`. See [library packaging](docs/packaging.md)
+for its contents and release boundary.
+
 ## Verification
 
 ```sh

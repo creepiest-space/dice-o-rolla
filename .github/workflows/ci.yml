@@ -70,12 +70,20 @@ jobs:
       - name: Install
         run: bun ci
 
-      - name: Build dice-engine library
-        run: bun run build:dice-engine
+      - name: Package dice-engine library
+        run: bun run pack:dice-engine
 
-      - name: Verify package artifacts
+      - name: Verify package archive
         run: |
-          test -f packages/dice-engine/dist/index.js
-          test -f packages/dice-engine/dist/index.d.ts
-          test -f packages/dice-engine/dist/browser.js
-          test -f packages/dice-engine/dist/browser.d.ts
+          test -f artifacts/dice-engine.tgz
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/LICENSE
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/NOTICE
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/THIRD_PARTY_NOTICES.md
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/index.js
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/index.d.ts
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/browser.js
+          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/browser.d.ts
+          ! tar -tzf artifacts/dice-engine.tgz | grep -F '/src/'
+          tar -xOzf artifacts/dice-engine.tgz package/package.json | jq -e '.license == "Apache-2.0" and .scripts == null'
+          ! tar -xOzf artifacts/dice-engine.tgz package/package.json | grep -F 'workspace:'
+          shasum -a 256 artifacts/dice-engine.tgz

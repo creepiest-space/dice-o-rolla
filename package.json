@@ -12,6 +12,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "build:dice-engine": "turbo build --filter=@creepiest-space/dice-engine...",
+    "pack:dice-engine": "bun ./scripts/package-dice-engine.ts",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "lint": "oxlint .",
