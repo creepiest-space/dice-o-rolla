@@ -7,11 +7,31 @@ export interface DieDefinition {
   readonly sides: number;
 }
 
-export interface DieResult {
+interface BaseDieResult {
   readonly id: string;
-  readonly type: DieType;
   readonly value: number;
 }
+
+export type DiceComponentRole = 'tens' | 'units';
+
+export interface DiceComponentResult {
+  readonly groupId: string;
+  readonly groupType: 'd100' | 'd66';
+  readonly role: DiceComponentRole;
+  readonly faceValue: number;
+}
+
+export interface StandardDieResult extends BaseDieResult {
+  readonly type: Exclude<DieType, 'd100'>;
+  readonly component?: never;
+}
+
+export interface ComponentDieResult extends BaseDieResult {
+  readonly type: DieType;
+  readonly component: DiceComponentResult;
+}
+
+export type DieResult = StandardDieResult | ComponentDieResult;
 
 export function isDieType(value: unknown): value is DieType {
   return typeof value === 'string' && STANDARD_DIE_TYPES.some((type) => type === value);

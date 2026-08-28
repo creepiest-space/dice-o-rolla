@@ -1,10 +1,20 @@
-export type { DieDefinition, DieResult, DieType } from './dice/types.js';
+export type {
+  DiceComponentResult,
+  DiceComponentRole,
+  ComponentDieResult,
+  DieDefinition,
+  DieResult,
+  DieType,
+  StandardDieResult,
+} from './dice/types.js';
 export { isDieType, STANDARD_DIE_TYPES } from './dice/types.js';
 export { TypedEventEmitter } from './events/typed-event-emitter.js';
 export type { QuaternionLike, Vector3Like } from './math/types.js';
 export type {
   DiceExpression,
   ModifierExpression,
+  PairedDiceExpression,
+  PairedDiceType,
   RollExpression,
   RollNotation,
 } from './notation/ast.js';

@@ -4,12 +4,20 @@ export interface DiceExpression {
   readonly sides: number;
 }
 
+export type PairedDiceType = 'd100' | 'd66';
+
+export interface PairedDiceExpression {
+  readonly kind: 'paired-dice';
+  readonly count: number;
+  readonly type: PairedDiceType;
+}
+
 export interface ModifierExpression {
   readonly kind: 'modifier';
   readonly value: number;
 }
 
-export type RollExpression = DiceExpression | ModifierExpression;
+export type RollExpression = DiceExpression | PairedDiceExpression | ModifierExpression;
 
 export interface RollNotation {
   readonly kind: 'roll';

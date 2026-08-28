@@ -2,7 +2,7 @@ import type { RendererTheme } from '@creepiest-space/dice-renderer';
 import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace } from 'three';
 
 export type DiceMaterialStyle = RendererTheme['material'];
-export type FaceLabel = number | readonly number[];
+export type FaceLabel = string | number | readonly number[];
 
 export class ThreeMaterialFactory {
   createFace(label: FaceLabel, theme: RendererTheme): MeshStandardMaterial {
@@ -15,10 +15,12 @@ export class ThreeMaterialFactory {
     context.fillStyle = theme.bodyColor;
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = theme.labelColor;
-    context.font = `700 ${typeof label === 'number' && label >= 10 ? 100 : 128}px system-ui, sans-serif`;
+    const scalarLabel = typeof label === 'string' || typeof label === 'number';
+    const fontSize = scalarLabel && String(label).length >= 2 ? 100 : 128;
+    context.font = `700 ${fontSize}px system-ui, sans-serif`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    if (typeof label === 'number') {
+    if (scalarLabel) {
       context.fillText(String(label), canvas.width / 2, canvas.height / 2 + 8);
     } else {
       context.font = '700 58px system-ui, sans-serif';

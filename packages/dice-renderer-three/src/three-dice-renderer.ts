@@ -25,6 +25,7 @@ function copyState(state: RenderDieState): RenderDieState {
   return {
     id: state.id,
     geometryId: state.geometryId,
+    ...(state.faceLabels === undefined ? {} : { faceLabels: { ...state.faceLabels } }),
     previous: {
       position: { ...state.previous.position },
       quaternion: { ...state.previous.quaternion },
@@ -88,7 +89,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertInitialized();
     if (this.#entries.has(state.id))
       throw new Error(`A render die with id "${state.id}" already exists`);
-    const resource = this.#createResource(state.geometryId);
+    const resource = this.#createResource(state.geometryId, state.faceLabels);
     const ownedState = copyState(state);
     applyInterpolatedTransform(resource.mesh, ownedState, 1);
     this.#scene?.value.add(resource.mesh);
@@ -101,6 +102,9 @@ export class ThreeDiceRenderer implements DiceRenderer {
     if (entry === undefined) throw new Error(`Unknown render die: ${state.id}`);
     if (state.geometryId !== entry.state.geometryId) {
       throw new Error('A die geometry cannot be changed after creation');
+    }
+    if (!haveEqualFaceLabels(state.faceLabels, entry.state.faceLabels)) {
+      throw new Error('Die face labels cannot be changed after creation');
     }
     entry.state = copyState(state);
   }
@@ -139,7 +143,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertAlive();
     this.#theme = { ...theme };
     for (const entry of this.#entries.values()) {
-      const replacement = this.#createResource(entry.state.geometryId);
+      const replacement = this.#createResource(entry.state.geometryId, entry.state.faceLabels);
       applyInterpolatedTransform(replacement.mesh, entry.state, 1);
       this.#scene?.value.remove(entry.resource.mesh);
       entry.resource.dispose();
@@ -179,10 +183,13 @@ export class ThreeDiceRenderer implements DiceRenderer {
     });
   }
 
-  #createResource(geometryId: string): ThreeDiceMesh {
+  #createResource(
+    geometryId: string,
+    faceLabels?: Readonly<Record<number, string | number>>,
+  ): ThreeDiceMesh {
     const type = getRegisteredDieTypes().find((registered) => registered === geometryId);
     if (type === undefined) throw new Error(`Unsupported geometry: ${geometryId}`);
-    return this.#meshFactory.create(getDieGeometry(type), this.#theme);
+    return this.#meshFactory.create(getDieGeometry(type), this.#theme, 1, faceLabels);
   }
 
   #assertAlive(): void {
@@ -193,4 +200,18 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertAlive();
     if (this.#renderer === undefined) throw new Error('Renderer has not been initialized');
   }
+}
+
+function haveEqualFaceLabels(
+  left: Readonly<Record<number, string | number>> | undefined,
+  right: Readonly<Record<number, string | number>> | undefined,
+): boolean {
+  if (left === right) return true;
+  if (left === undefined || right === undefined) return false;
+  const leftEntries = Object.entries(left);
+  const rightEntries = Object.entries(right);
+  return (
+    leftEntries.length === rightEntries.length &&
+    leftEntries.every(([face, label]) => right[Number(face)] === label)
+  );
 }

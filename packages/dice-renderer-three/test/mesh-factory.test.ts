@@ -78,4 +78,13 @@ describe('createPolyhedronGeometry', () => {
     if (zeroFace === undefined) throw new Error('Missing d10 value ten face');
     expect(getFaceLabel(d10, zeroFace)).toBe(0);
   });
+
+  test('uses explicit face labels for paired tens dice', () => {
+    const d10 = getDieGeometry('d10');
+    const zeroFace = d10.faces.find((face) => face.value === 10)!;
+    const sevenFace = d10.faces.find((face) => face.value === 7)!;
+
+    expect(getFaceLabel(d10, zeroFace, { 10: '00' })).toBe('00');
+    expect(getFaceLabel(d10, sevenFace, { 7: 70 })).toBe(70);
+  });
 });

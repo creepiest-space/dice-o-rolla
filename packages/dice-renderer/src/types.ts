@@ -8,6 +8,7 @@ export interface RenderTransform {
 export interface RenderDieState {
   readonly id: string;
   readonly geometryId: string;
+  readonly faceLabels?: Readonly<Record<number, string | number>>;
   readonly previous: RenderTransform;
   readonly current: RenderTransform;
 }

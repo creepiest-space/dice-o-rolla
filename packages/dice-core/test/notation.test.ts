@@ -6,6 +6,9 @@ import type { NotationParseErrorCode, RollExpression } from '../src/index.js';
 const validCases = [
   ['d20', [{ kind: 'dice', count: 1, sides: 20 }]],
   ['2d6', [{ kind: 'dice', count: 2, sides: 6 }]],
+  ['d%', [{ kind: 'paired-dice', count: 1, type: 'd100' }]],
+  ['2d100', [{ kind: 'paired-dice', count: 2, type: 'd100' }]],
+  ['d66', [{ kind: 'paired-dice', count: 1, type: 'd66' }]],
   [
     '4d6+5',
     [
@@ -40,7 +43,6 @@ const invalidCases = [
   ['2d6+', 'EXPECTED_TERM'],
   ['2d6 3d4', 'EXPECTED_OPERATOR'],
   ['2dd6', 'INVALID_SIDES'],
-  ['d%', 'INVALID_SIDES'],
   ['wat', 'UNEXPECTED_CHARACTER'],
   ['9007199254740992d6', 'UNSAFE_INTEGER'],
 ] as const satisfies readonly (readonly [string, NotationParseErrorCode])[];

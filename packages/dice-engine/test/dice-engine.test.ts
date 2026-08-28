@@ -45,7 +45,7 @@ describe('DiceEngine', () => {
 
     expect(physics.configureTrayCalls).toBe(1);
     expect(renderer.initializeCalls).toBe(1);
-    expect(String(await rejectionOf(engine.roll('1d100')))).toContain('d100 is not supported');
+    expect(String(await rejectionOf(engine.roll('1d2')))).toContain('d2 is not supported');
     expect(String(await rejectionOf(engine.roll('1d6', { mode: 'parallel' })))).toContain(
       'Only queue',
     );
@@ -88,6 +88,35 @@ describe('DiceEngine', () => {
     expect(renderer.renderAlphas.at(-1)).toBeCloseTo(0.5, 10);
     engine.cancel();
     expect(await outcome).toBeInstanceOf(RollCancelledError);
+  });
+
+  test('derives d100 and d66 groups from both settled physical dice', async () => {
+    const { engine, physics, renderer, scheduler } = createHarness();
+    await engine.initialize();
+
+    const percentile = engine.roll('d%');
+    scheduler.flush();
+    const percentileResult = await percentile;
+    expect(physics.createdIds).toEqual(['roll-1:die-0', 'roll-1:die-1']);
+    expect(percentileResult.dice.map((die) => die.type)).toEqual(['d100', 'd10']);
+    expect(percentileResult.dice.map((die) => die.component?.role)).toEqual(['tens', 'units']);
+    const tens = percentileResult.dice[0]!;
+    const units = percentileResult.dice[1]!;
+    const digits = (tens.component!.faceValue % 10) * 10 + (units.component!.faceValue % 10);
+    expect(percentileResult.total).toBe(digits === 0 ? 100 : digits);
+    expect(tens.value).toBe((tens.component!.faceValue % 10) * 10);
+    expect(units.value).toBe(units.component!.faceValue % 10);
+    expect(renderer.dice.get('roll-1:die-0')?.geometryId).toBe('d10');
+    expect(renderer.dice.get('roll-1:die-0')?.faceLabels?.[10]).toBe('00');
+
+    const d66 = engine.roll('d66');
+    scheduler.flush();
+    const d66Result = await d66;
+    expect(d66Result.dice.map((die) => die.type)).toEqual(['d6', 'd6']);
+    expect(d66Result.total).toBe(
+      d66Result.dice[0]!.component!.faceValue * 10 + d66Result.dice[1]!.component!.faceValue,
+    );
+    expect(renderer.dice.get('roll-2:die-0')?.faceLabels?.[6]).toBe(60);
   });
 
   test('cancels active and queued sessions without orphaning promises', async () => {

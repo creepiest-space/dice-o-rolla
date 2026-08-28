@@ -70,10 +70,11 @@ export class ThreeDiceMeshFactory {
     definition: PolyhedronDefinition,
     theme: RendererTheme = DEFAULT_THREE_THEME,
     scale = 1,
+    faceLabels?: Readonly<Record<number, string | number>>,
   ): ThreeDiceMesh {
     const geometry = createPolyhedronGeometry(definition, scale);
     const materials = definition.faces.map((face) =>
-      this.#materials.createFace(getFaceLabel(definition, face), theme),
+      this.#materials.createFace(getFaceLabel(definition, face, faceLabels), theme),
     );
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;
@@ -99,7 +100,10 @@ export class ThreeDiceMeshFactory {
 export function getFaceLabel(
   definition: PolyhedronDefinition,
   face: PolygonDefinition,
-): number | readonly number[] {
+  faceLabels?: Readonly<Record<number, string | number>>,
+): string | number | readonly number[] {
+  const override = faceLabels?.[face.value];
+  if (override !== undefined) return override;
   if (definition.id === 'd4') {
     return face.indices.map((vertexIndex) => {
       const oppositeFace = definition.faces.find(

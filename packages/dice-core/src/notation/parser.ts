@@ -1,4 +1,10 @@
-import type { DiceExpression, ModifierExpression, RollExpression, RollNotation } from './ast.js';
+import type {
+  DiceExpression,
+  ModifierExpression,
+  PairedDiceExpression,
+  RollExpression,
+  RollNotation,
+} from './ast.js';
 import { NotationParseError } from './errors.js';
 import type { NotationParseErrorCode } from './errors.js';
 
@@ -77,6 +83,19 @@ class NotationParser {
         integerStart === integerEnd ? 1 : this.#readInteger(integerStart, integerEnd, 'count');
       this.#index += 1;
 
+      if (count < 1) {
+        this.#failAt('INVALID_COUNT', 'Dice count must be at least one', integerStart);
+      }
+
+      if (this.#current() === '%') {
+        this.#index += 1;
+        return {
+          kind: 'paired-dice',
+          count,
+          type: 'd100',
+        } satisfies PairedDiceExpression;
+      }
+
       const sidesStart = this.#index;
       this.#consumeDigits();
       if (sidesStart === this.#index) {
@@ -84,11 +103,16 @@ class NotationParser {
       }
 
       const sides = this.#readInteger(sidesStart, this.#index, 'sides');
-      if (count < 1) {
-        this.#failAt('INVALID_COUNT', 'Dice count must be at least one', integerStart);
-      }
       if (sides < 2) {
         this.#failAt('INVALID_SIDES', 'A die must have at least two sides', sidesStart);
+      }
+
+      if (sides === 100 || sides === 66) {
+        return {
+          kind: 'paired-dice',
+          count,
+          type: `d${sides}`,
+        } satisfies PairedDiceExpression;
       }
 
       return {

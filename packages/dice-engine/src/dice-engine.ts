@@ -9,6 +9,8 @@ import {
 import type {
   DieResult,
   DieType,
+  DiceComponentRole,
+  PairedDiceType,
   RollNotation,
   RollResult,
   RollSession,
@@ -52,11 +54,25 @@ interface RollTask {
 interface ActiveDie {
   readonly id: string;
   readonly type: DieType;
+  readonly geometryType: DieType;
+  readonly component?: {
+    readonly groupId: string;
+    readonly groupType: PairedDiceType;
+    readonly role: DiceComponentRole;
+  };
+  readonly faceLabels?: Readonly<Record<number, string | number>>;
   readonly body: PhysicsDieHandle;
   readonly detector: SettlingDetector;
   previous: PhysicsDieState;
   current: PhysicsDieState;
   result?: DieResult;
+}
+
+interface PhysicalDieSpec {
+  readonly type: DieType;
+  readonly geometryType: DieType;
+  readonly component?: ActiveDie['component'];
+  readonly faceLabels?: Readonly<Record<number, string | number>>;
 }
 
 interface ActiveRoll {
@@ -104,6 +120,21 @@ const DEFAULT_DICE_MATERIAL = {
   angularDamping: 0.25,
 } as const;
 
+const D100_TENS_LABELS = Object.freeze({
+  1: 10,
+  2: 20,
+  3: 30,
+  4: 40,
+  5: 50,
+  6: 60,
+  7: 70,
+  8: 80,
+  9: 90,
+  10: '00',
+});
+
+const D66_TENS_LABELS = Object.freeze({ 1: 10, 2: 20, 3: 30, 4: 40, 5: 50, 6: 60 });
+
 function snapshotSession(session: MutableSession): RollSession {
   return Object.freeze({
     id: session.id,
@@ -118,7 +149,8 @@ function snapshotSession(session: MutableSession): RollSession {
 function toRenderState(die: ActiveDie): RenderDieState {
   return {
     id: die.id,
-    geometryId: die.type,
+    geometryId: die.geometryType,
+    ...(die.faceLabels === undefined ? {} : { faceLabels: die.faceLabels }),
     previous: die.previous,
     current: die.current,
   };
@@ -316,46 +348,42 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   #createDice(task: RollTask): ActiveDie[] {
     const dice: ActiveDie[] = [];
     let index = 0;
-    const totalDice = task.parsed.expressions.reduce(
-      (total, expression) => total + (expression.kind === 'dice' ? expression.count : 0),
-      0,
-    );
+    const specs = this.#createPhysicalSpecs(task);
+    const totalDice = specs.length;
     try {
-      for (const expression of task.parsed.expressions) {
-        if (expression.kind !== 'dice') continue;
-        const type = `d${expression.sides}`;
-        if (!isDieType(type)) throw new RangeError(`${type} is not a standard die type`);
-        const geometry = getDieGeometry(type);
-        for (let count = 0; count < expression.count; count += 1) {
-          const id = `${task.session.id}:die-${index++}`;
-          const generated = this.#throwGenerator.generate();
-          const position = this.#placeDie(generated.position, index - 1, totalDice);
-          const body = this.#physics.createDie({
-            id,
-            type,
-            collider: {
-              kind: 'convex-hull',
-              vertices: geometry.vertices.map(([x, y, z]) => ({ x, y, z })),
-            },
-            scale: 1,
-            mass: 1,
-            material: this.#diceMaterial,
-            position,
-            quaternion: generated.quaternion,
-          });
-          const state = body.getState();
-          const die: ActiveDie = {
-            id,
-            type,
-            body,
-            detector: new SettlingDetector(this.#settling),
-            previous: state,
-            current: state,
-          };
-          dice.push(die);
-          this.#renderer.createDie(toRenderState(die));
-          body.applyImpulse(generated.impulse, generated.torqueImpulse);
-        }
+      for (const spec of specs) {
+        const geometry = getDieGeometry(spec.geometryType);
+        const id = `${task.session.id}:die-${index++}`;
+        const generated = this.#throwGenerator.generate();
+        const position = this.#placeDie(generated.position, index - 1, totalDice);
+        const body = this.#physics.createDie({
+          id,
+          type: spec.geometryType,
+          collider: {
+            kind: 'convex-hull',
+            vertices: geometry.vertices.map(([x, y, z]) => ({ x, y, z })),
+          },
+          scale: 1,
+          mass: 1,
+          material: this.#diceMaterial,
+          position,
+          quaternion: generated.quaternion,
+        });
+        const state = body.getState();
+        const die: ActiveDie = {
+          id,
+          type: spec.type,
+          geometryType: spec.geometryType,
+          ...(spec.component === undefined ? {} : { component: spec.component }),
+          ...(spec.faceLabels === undefined ? {} : { faceLabels: spec.faceLabels }),
+          body,
+          detector: new SettlingDetector(this.#settling),
+          previous: state,
+          current: state,
+        };
+        dice.push(die);
+        this.#renderer.createDie(toRenderState(die));
+        body.applyImpulse(generated.impulse, generated.torqueImpulse);
       }
       return dice;
     } catch (error) {
@@ -365,6 +393,52 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       }
       throw error;
     }
+  }
+
+  #createPhysicalSpecs(task: RollTask): PhysicalDieSpec[] {
+    const specs: PhysicalDieSpec[] = [];
+    let groupIndex = 0;
+    for (const expression of task.parsed.expressions) {
+      if (expression.kind === 'modifier') continue;
+      if (expression.kind === 'dice') {
+        const type = `d${expression.sides}`;
+        if (!isDieType(type)) throw new RangeError(`${type} is not a standard die type`);
+        for (let count = 0; count < expression.count; count += 1) {
+          specs.push({ type, geometryType: type });
+        }
+        continue;
+      }
+
+      for (let count = 0; count < expression.count; count += 1) {
+        const groupId = `${task.session.id}:group-${groupIndex++}`;
+        if (expression.type === 'd100') {
+          specs.push({
+            type: 'd100',
+            geometryType: 'd10',
+            component: { groupId, groupType: 'd100', role: 'tens' },
+            faceLabels: D100_TENS_LABELS,
+          });
+          specs.push({
+            type: 'd10',
+            geometryType: 'd10',
+            component: { groupId, groupType: 'd100', role: 'units' },
+          });
+          continue;
+        }
+        specs.push({
+          type: 'd6',
+          geometryType: 'd6',
+          component: { groupId, groupType: 'd66', role: 'tens' },
+          faceLabels: D66_TENS_LABELS,
+        });
+        specs.push({
+          type: 'd6',
+          geometryType: 'd6',
+          component: { groupId, groupType: 'd66', role: 'units' },
+        });
+      }
+    }
+    return specs;
   }
 
   #placeDie(
@@ -415,12 +489,9 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
           const settling = die.detector.update(die.current, this.#fixedStepSeconds * 1_000);
           if (settling === 'timed-out') throw new RollTimeoutError(active.task.session.id);
           if (settling === 'settled') {
-            const geometry = getDieGeometry(die.type);
-            die.result = Object.freeze({
-              id: die.id,
-              type: die.type,
-              value: resolveFace(geometry, die.current.quaternion),
-            });
+            const geometry = getDieGeometry(die.geometryType);
+            const faceValue = resolveFace(geometry, die.current.quaternion);
+            die.result = this.#createDieResult(die, faceValue);
             this.emit('die:settled', { sessionId: active.task.session.id, die: die.result });
           }
         }
@@ -437,6 +508,21 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     } catch (error) {
       this.#failActive(active, error);
     }
+  }
+
+  #createDieResult(die: ActiveDie, faceValue: number): DieResult {
+    if (die.component === undefined) {
+      if (die.type === 'd100') throw new Error('A d100 result requires percentile component data');
+      return Object.freeze({ id: die.id, type: die.type, value: faceValue });
+    }
+    const { groupId, groupType, role } = die.component;
+    const digit = groupType === 'd100' ? faceValue % 10 : faceValue;
+    return Object.freeze({
+      id: die.id,
+      type: die.type,
+      value: role === 'tens' ? digit * 10 : digit,
+      component: Object.freeze({ groupId, groupType, role, faceValue }),
+    });
   }
 
   #completeActive(active: ActiveRoll): void {
