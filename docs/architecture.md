@@ -61,8 +61,8 @@ adapters for its lifetime.
 - `clear()` cancels active and queued work, clears bodies and meshes, and keeps the engine reusable.
 - `destroy()` performs `clear()`, destroys renderer and physics resources, removes listeners, and is
   idempotent.
-- `ThreeDiceRenderer` owns its canvas, resize observer, scene, camera, geometries, materials, label
-  textures, and WebGL context.
+- `ThreeDiceRenderer` and `TopDownDiceRenderer` own their canvas, resize observer, scene, camera,
+  geometries, materials, label textures, and WebGL context.
 - `RapierPhysicsWorld` owns its WASM world, tray body, rigid bodies, and colliders. Removed body
   handles are invalidated.
 

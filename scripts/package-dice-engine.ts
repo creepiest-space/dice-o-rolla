@@ -153,6 +153,9 @@ Import the browser composition with:
 import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
 \`\`\`
 
+For an overhead application surface, import \`TopDownDiceRenderer\` from
+\`@creepiest-space/dice-renderer-three\` and inject it into the backend-neutral engine.
+
 All seven local tarballs must remain direct application dependencies. Their package manifests omit
 workspace-only dependency edges so npm and Bun do not query a registry for unpublished packages. The
 package manager resolves the remaining public runtime dependencies, \`@dimforge/rapier3d-compat\` and
