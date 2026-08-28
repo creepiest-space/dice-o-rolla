@@ -23,6 +23,9 @@
     "apps/dice-demo": {
       "name": "@creepiest-space/dice-demo",
       "version": "0.0.0",
+      "dependencies": {
+        "@creepiest-space/dice-engine": "workspace:*",
+      },
     },
     "packages/dice-core": {
       "name": "@creepiest-space/dice-core",

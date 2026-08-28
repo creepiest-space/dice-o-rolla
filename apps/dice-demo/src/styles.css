@@ -1,0 +1,285 @@
+:root {
+  color: #171713;
+  background: #ded8ca;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(circle at 12% 8%, rgb(255 255 255 / 72%), transparent 34rem), #ded8ca;
+}
+
+button,
+input,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+select {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.eyebrow,
+.result-label,
+label,
+small {
+  color: #635f55;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+}
+
+h1 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.4rem, 6vw, 5.8rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.82;
+}
+
+.status {
+  max-width: 26rem;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid #b9b2a3;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 36%);
+  color: #524f47;
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.status.error {
+  border-color: #9f4439;
+  color: #8b2e24;
+}
+
+.tray-panel {
+  position: relative;
+  overflow: hidden;
+  min-height: 58vh;
+  border: 1px solid #3f423c;
+  border-radius: 28px;
+  background: #59675c;
+  box-shadow: 0 24px 60px rgb(54 48 37 / 18%);
+}
+
+.tray {
+  position: absolute;
+  inset: 0;
+}
+
+.tray canvas {
+  display: block;
+}
+
+.result {
+  position: absolute;
+  z-index: 1;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  min-width: min(280px, calc(100% - 36px));
+  padding: 16px 18px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 17px;
+  background: rgb(20 24 20 / 68%);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 20%);
+  color: #f7f2e7;
+  backdrop-filter: blur(16px);
+}
+
+.result .result-label {
+  color: #c7c9be;
+}
+
+.result strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.result span:last-child {
+  overflow: hidden;
+  margin-top: 5px;
+  color: #d6d7ce;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.6fr) minmax(260px, 1fr) auto;
+  gap: 22px;
+  align-items: end;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #b9b2a3;
+  border-radius: 22px;
+  background: rgb(246 242 232 / 72%);
+}
+
+.roll-form,
+.settings label {
+  display: grid;
+  gap: 8px;
+}
+
+.input-row,
+.shortcuts,
+.settings {
+  display: flex;
+  gap: 8px;
+}
+
+input,
+select,
+button {
+  min-height: 42px;
+  border: 1px solid #aaa496;
+  border-radius: 11px;
+  background: #f8f5ed;
+}
+
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+button {
+  padding: 0 16px;
+  font-weight: 750;
+}
+
+button:hover:not(:disabled),
+select:hover {
+  border-color: #4d4a43;
+}
+
+.primary {
+  border-color: #242820;
+  background: #242820;
+  color: #f8f5ed;
+}
+
+.secondary {
+  background: transparent;
+}
+
+.shortcuts {
+  flex-wrap: wrap;
+}
+
+.shortcuts button {
+  min-width: 50px;
+  padding: 0 10px;
+}
+
+.settings {
+  align-items: end;
+}
+
+select {
+  min-width: 108px;
+  padding: 0 32px 0 11px;
+}
+
+@media (max-width: 880px) {
+  .controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .roll-form {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 580px) {
+  .shell {
+    width: min(100% - 20px, 1120px);
+    padding-top: 20px;
+  }
+
+  .hero {
+    display: grid;
+  }
+
+  .status {
+    text-align: left;
+  }
+
+  .tray-panel {
+    min-height: 52vh;
+    border-radius: 20px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .roll-form {
+    grid-column: auto;
+  }
+
+  .input-row {
+    flex-wrap: wrap;
+  }
+
+  .input-row input {
+    flex-basis: 100%;
+  }
+
+  .input-row button {
+    flex: 1;
+  }
+
+  .settings {
+    flex-wrap: wrap;
+  }
+
+  .settings label,
+  .settings select {
+    flex: 1;
+  }
+}

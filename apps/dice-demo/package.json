@@ -4,8 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "dev": "bun --hot ./index.html",
+    "build": "bun build ./index.html --outdir ./dist --target browser --minify",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@creepiest-space/dice-engine": "workspace:*"
   }
 }
