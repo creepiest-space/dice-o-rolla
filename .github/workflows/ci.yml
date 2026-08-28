@@ -73,17 +73,31 @@ jobs:
       - name: Package dice-engine library
         run: bun run pack:dice-engine
 
-      - name: Verify package archive
+      - name: Verify local package artifacts
         run: |
-          test -f artifacts/dice-engine.tgz
+          for archive in dice-core dice-engine dice-geometry dice-physics dice-physics-rapier dice-renderer dice-renderer-three; do
+            test -f "artifacts/$archive.tgz"
+            tar -tzf "artifacts/$archive.tgz" | grep -Fx package/LICENSE
+            tar -tzf "artifacts/$archive.tgz" | grep -Fx package/NOTICE
+            tar -tzf "artifacts/$archive.tgz" | grep -Fx package/THIRD_PARTY_NOTICES.md
+            tar -tzf "artifacts/$archive.tgz" | grep -Fx package/dist/index.js
+            tar -tzf "artifacts/$archive.tgz" | grep -Fx package/dist/index.d.ts
+            ! tar -tzf "artifacts/$archive.tgz" | grep -F '/src/'
+            tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '.license == "Apache-2.0" and .scripts == null and .devDependencies == null'
+            ! tar -xOzf "artifacts/$archive.tgz" package/package.json | grep -F 'workspace:'
+          done
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/LICENSE
-          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/NOTICE
-          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/THIRD_PARTY_NOTICES.md
-          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/index.js
-          tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/index.d.ts
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/browser.js
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/dist/browser.d.ts
-          ! tar -tzf artifacts/dice-engine.tgz | grep -F '/src/'
-          tar -xOzf artifacts/dice-engine.tgz package/package.json | jq -e '.license == "Apache-2.0" and .scripts == null'
-          ! tar -xOzf artifacts/dice-engine.tgz package/package.json | grep -F 'workspace:'
-          shasum -a 256 artifacts/dice-engine.tgz
+          test -f artifacts/local-dependencies.json
+          test -f artifacts/README.md
+          shasum -a 256 -c artifacts/SHA256SUMS
+
+      - name: Verify consumer installation
+        run: |
+          consumer_directory="$(mktemp -d)"
+          cp -R artifacts "$consumer_directory/artifacts"
+          cp artifacts/local-dependencies.json "$consumer_directory/package.json"
+          cd "$consumer_directory"
+          bun install --offline
+          bun -e "const core = await import('@creepiest-space/dice-engine'); const browser = await import('@creepiest-space/dice-engine/browser'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function') process.exit(1)"

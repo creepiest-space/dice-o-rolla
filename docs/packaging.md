@@ -12,9 +12,9 @@ bun run build:dice-engine
 Turbo selects `dice-engine` plus its dependency graph and emits JavaScript and TypeScript declarations
 into each package's ignored `dist` directory.
 
-## Package archive
+## Local integration bundle
 
-Create a verified package archive with:
+Create a verified set of local package archives with:
 
 ```sh
 bun run pack:dice-engine
@@ -22,44 +22,61 @@ bun run pack:dice-engine
 
 The command:
 
-1. removes the previous package output and artifact staging directory;
+1. removes previous archives and the artifact staging directory;
 2. rebuilds `dice-engine` and its workspace dependencies;
-3. copies only the engine `dist` output, its package README, and distribution metadata into an
-   isolated staging package;
-4. replaces `workspace:*` dependency ranges with the exact versions from sibling manifests;
-5. verifies public entry points, declarations, license files, and the absence of source imports;
-6. creates `artifacts/dice-engine.tgz` and removes the staging directory.
+3. stages the `dist` output and distribution metadata for all seven runtime packages;
+4. replaces `workspace:*` ranges with local `file:./artifacts/*.tgz` references;
+5. verifies every package's public entry point, declarations, license files, and absence of source
+   imports;
+6. creates the archives, a consumer dependency fragment, instructions, and SHA-256 checksums in
+   `artifacts/`, then removes the staging directory.
 
-The archive contains:
+The bundle contains:
 
 ```text
-package/
-├─ dist/
-│  ├─ index.js
-│  ├─ index.d.ts
-│  ├─ browser.js
-│  └─ browser.d.ts
-├─ LICENSE
-├─ NOTICE
+artifacts/
+├─ dice-core.tgz
+├─ dice-engine.tgz
+├─ dice-geometry.tgz
+├─ dice-physics.tgz
+├─ dice-physics-rapier.tgz
+├─ dice-renderer.tgz
+├─ dice-renderer-three.tgz
+├─ local-dependencies.json
 ├─ README.md
-├─ THIRD_PARTY_NOTICES.md
-└─ package.json
+└─ SHA256SUMS
 ```
 
-Internal modules required by the public entry points are also present under `dist`, but the package
-`exports` map prevents consumers from importing undocumented subpaths.
+Each archive contains compiled ESM, TypeScript declarations, its package manifest, and the project
+license notices. The engine archive also includes its package README. Package `exports` maps prevent
+consumers from importing undocumented subpaths.
+
+## Consumer installation
+
+Copy the complete `artifacts` directory to the consumer application's root. Merge the `dependencies`
+object from `artifacts/local-dependencies.json` into its `package.json`, then run:
+
+```sh
+shasum -a 256 -c artifacts/SHA256SUMS
+bun install
+```
+
+Only `@creepiest-space/dice-engine` needs to be declared by the application. Its local dependency
+references install the other six archives transitively. Bun obtains the public runtime dependencies
+`@dimforge/rapier3d-compat` and `three` from the application's configured registry.
 
 ## Release boundary
 
-The generated archive is a packaging and CI artifact, not a registry publication. The package remains
-`private` and currently uses version `0.0.0`. Its normalized manifest depends on exact matching
-versions of the sibling `@creepiest-space/*` packages. Before an external release:
+The generated bundle is a local integration and CI artifact, not a registry publication. Packages
+remain `private`, use version `0.0.0`, and contain local artifact paths that are unsuitable for npm.
+Before an external release:
 
 - assign one coordinated non-zero version to every publishable workspace package;
 - package and publish the dependency graph before `dice-engine`;
 - remove `private` only from packages intended for publication;
 - add registry and repository metadata;
-- install the archives in an empty consumer project and test both public entry points;
+- replace local artifact references with coordinated registry version ranges;
+- install the release candidates in an empty consumer project and test both public entry points;
 - publish only through an explicitly authorized release workflow.
 
 No publish or registry mutation is performed by the packaging command.

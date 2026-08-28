@@ -11,53 +11,159 @@ interface PackageManifest {
   [key: string]: unknown;
 }
 
+interface WorkspacePackage {
+  readonly directory: string;
+  readonly archive: string;
+  readonly includeReadme?: boolean;
+}
+
+const workspacePackages: readonly WorkspacePackage[] = [
+  { directory: 'dice-core', archive: 'dice-core.tgz' },
+  { directory: 'dice-geometry', archive: 'dice-geometry.tgz' },
+  { directory: 'dice-physics', archive: 'dice-physics.tgz' },
+  { directory: 'dice-renderer', archive: 'dice-renderer.tgz' },
+  { directory: 'dice-physics-rapier', archive: 'dice-physics-rapier.tgz' },
+  { directory: 'dice-renderer-three', archive: 'dice-renderer-three.tgz' },
+  { directory: 'dice-engine', archive: 'dice-engine.tgz', includeReadme: true },
+];
+
 const rootDirectory = resolve(import.meta.dir, '..');
-const engineDirectory = resolve(rootDirectory, 'packages/dice-engine');
-const engineDistDirectory = resolve(engineDirectory, 'dist');
+const packagesDirectory = resolve(rootDirectory, 'packages');
 const artifactsDirectory = resolve(rootDirectory, 'artifacts');
-const stagingDirectory = resolve(artifactsDirectory, 'dice-engine-package');
-const archivePath = resolve(artifactsDirectory, 'dice-engine.tgz');
+const stagingRoot = resolve(artifactsDirectory, '.dice-engine-packages');
 
 await mkdir(artifactsDirectory, { recursive: true });
-await rm(stagingDirectory, { force: true, recursive: true });
-await rm(archivePath, { force: true });
-await rm(engineDistDirectory, { force: true, recursive: true });
+await rm(stagingRoot, { force: true, recursive: true });
+await Promise.all(
+  workspacePackages.map(({ archive }) => rm(resolve(artifactsDirectory, archive), { force: true })),
+);
 await run(['bun', 'run', 'build:dice-engine'], rootDirectory);
 
-await mkdir(stagingDirectory, { recursive: true });
-await cp(engineDistDirectory, resolve(stagingDirectory, 'dist'), { recursive: true });
-const distributionFiles = [
-  [resolve(rootDirectory, 'LICENSE'), 'LICENSE'],
-  [resolve(rootDirectory, 'NOTICE'), 'NOTICE'],
-  [resolve(engineDirectory, 'README.md'), 'README.md'],
-  [resolve(rootDirectory, 'THIRD_PARTY_NOTICES.md'), 'THIRD_PARTY_NOTICES.md'],
-] as const;
+const manifests = await Promise.all(
+  workspacePackages.map(async (workspacePackage) => ({
+    workspacePackage,
+    manifest: await readManifest(
+      resolve(packagesDirectory, workspacePackage.directory, 'package.json'),
+    ),
+  })),
+);
+const workspaceArchives = new Map(
+  manifests.map(
+    ({ manifest, workspacePackage }) => [manifest.name, workspacePackage.archive] as const,
+  ),
+);
+
 await Promise.all(
-  distributionFiles.map(([source, filename]) => cp(source, resolve(stagingDirectory, filename))),
+  manifests.map(({ workspacePackage, manifest }) =>
+    packageWorkspace(workspacePackage, manifest, workspaceArchives),
+  ),
 );
 
-const sourceManifest = await readManifest(resolve(engineDirectory, 'package.json'));
-const workspaceVersions = await readWorkspaceVersions();
-const packageManifest: PackageManifest = {
-  ...sourceManifest,
-  files: ['dist', 'LICENSE', 'NOTICE', 'README.md', 'THIRD_PARTY_NOTICES.md'],
-};
-delete packageManifest.scripts;
-packageManifest.dependencies = replaceWorkspaceVersions(
-  sourceManifest.dependencies ?? {},
-  workspaceVersions,
-);
+await writeConsumerFiles(manifests);
+await rm(stagingRoot, { force: true, recursive: true });
 
-await Bun.write(
-  resolve(stagingDirectory, 'package.json'),
-  `${JSON.stringify(packageManifest, null, 2)}\n`,
-);
-await verifyStagingPackage(packageManifest);
-await run(['bun', 'pm', 'pack', '--filename', 'dice-engine.tgz', '--quiet'], stagingDirectory);
-await rename(resolve(stagingDirectory, 'dice-engine.tgz'), archivePath);
-await rm(stagingDirectory, { force: true, recursive: true });
+console.log(`Created local integration artifacts in ${artifactsDirectory}`);
 
-console.log(`Created ${archivePath}`);
+async function packageWorkspace(
+  workspacePackage: WorkspacePackage,
+  sourceManifest: PackageManifest,
+  availableArchives: ReadonlyMap<string, string>,
+): Promise<void> {
+  const sourceDirectory = resolve(packagesDirectory, workspacePackage.directory);
+  const stagingDirectory = resolve(stagingRoot, workspacePackage.directory);
+  await mkdir(stagingDirectory, { recursive: true });
+  await cp(resolve(sourceDirectory, 'dist'), resolve(stagingDirectory, 'dist'), {
+    recursive: true,
+  });
+
+  const distributionFiles: Array<readonly [string, string]> = [
+    [resolve(rootDirectory, 'LICENSE'), 'LICENSE'],
+    [resolve(rootDirectory, 'NOTICE'), 'NOTICE'],
+    [resolve(rootDirectory, 'THIRD_PARTY_NOTICES.md'), 'THIRD_PARTY_NOTICES.md'],
+  ];
+  if (workspacePackage.includeReadme === true) {
+    distributionFiles.push([resolve(sourceDirectory, 'README.md'), 'README.md']);
+  }
+  await Promise.all(
+    distributionFiles.map(([source, filename]) => cp(source, resolve(stagingDirectory, filename))),
+  );
+
+  const files = ['dist', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'];
+  if (workspacePackage.includeReadme === true) files.push('README.md');
+  const packageManifest: PackageManifest = {
+    ...sourceManifest,
+    files,
+  };
+  delete packageManifest.scripts;
+  delete packageManifest.devDependencies;
+  packageManifest.dependencies = replaceWorkspaceDependencies(
+    sourceManifest.dependencies ?? {},
+    availableArchives,
+  );
+
+  await Bun.write(
+    resolve(stagingDirectory, 'package.json'),
+    `${JSON.stringify(packageManifest, null, 2)}\n`,
+  );
+  await verifyStagingPackage(stagingDirectory, packageManifest, workspacePackage.includeReadme);
+  await run(
+    ['bun', 'pm', 'pack', '--filename', workspacePackage.archive, '--quiet'],
+    stagingDirectory,
+  );
+  await rename(
+    resolve(stagingDirectory, workspacePackage.archive),
+    resolve(artifactsDirectory, workspacePackage.archive),
+  );
+}
+
+async function writeConsumerFiles(
+  packageManifests: ReadonlyArray<{
+    readonly workspacePackage: WorkspacePackage;
+    readonly manifest: PackageManifest;
+  }>,
+): Promise<void> {
+  const enginePackage = packageManifests.find(
+    ({ workspacePackage }) => workspacePackage.directory === 'dice-engine',
+  );
+  if (enginePackage === undefined) throw new Error('Missing dice-engine package configuration');
+  const dependencies = {
+    [enginePackage.manifest.name]: `file:./artifacts/${enginePackage.workspacePackage.archive}`,
+  };
+  await Bun.write(
+    resolve(artifactsDirectory, 'local-dependencies.json'),
+    `${JSON.stringify({ dependencies }, null, 2)}\n`,
+  );
+
+  const checksums = await Promise.all(
+    packageManifests.map(async ({ workspacePackage }) => {
+      const archivePath = resolve(artifactsDirectory, workspacePackage.archive);
+      const hasher = new Bun.CryptoHasher('sha256');
+      hasher.update(await Bun.file(archivePath).arrayBuffer());
+      return `${hasher.digest('hex')}  artifacts/${workspacePackage.archive}`;
+    }),
+  );
+  await Bun.write(resolve(artifactsDirectory, 'SHA256SUMS'), `${checksums.join('\n')}\n`);
+
+  await Bun.write(
+    resolve(artifactsDirectory, 'README.md'),
+    `# Local dice-engine artifacts
+
+Copy this entire \`artifacts\` directory to the root of the consumer application. Merge the
+\`dependencies\` object from \`artifacts/local-dependencies.json\` into the application's
+\`package.json\`, then run \`bun install\`.
+
+Import the browser composition with:
+
+\`\`\`ts
+import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
+\`\`\`
+
+All internal packages are included as local tarballs. Bun resolves the remaining public runtime
+dependencies, \`@dimforge/rapier3d-compat\` and \`three\`, from the configured registry. Verify the
+copied archives with \`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
+`,
+  );
+}
 
 async function readManifest(path: string): Promise<PackageManifest> {
   const parsed: unknown = JSON.parse(await readFile(path, 'utf8'));
@@ -85,63 +191,50 @@ function readStringRecord(value: unknown, description: string): Record<string, s
   return Object.fromEntries(Object.entries(value).map(([name, entry]) => [name, String(entry)]));
 }
 
-async function readWorkspaceVersions(): Promise<ReadonlyMap<string, string>> {
-  const versions = new Map<string, string>();
-  const glob = new Bun.Glob('packages/*/package.json');
-  const paths = await Array.fromAsync(glob.scan({ cwd: rootDirectory, onlyFiles: true }));
-  const manifests = await Promise.all(
-    paths.map((path) => readManifest(resolve(rootDirectory, path))),
-  );
-  for (const manifest of manifests) {
-    versions.set(manifest.name, manifest.version);
-  }
-  return versions;
-}
-
-function replaceWorkspaceVersions(
+function replaceWorkspaceDependencies(
   dependencies: Readonly<Record<string, string>>,
-  availableVersions: ReadonlyMap<string, string>,
+  availableArchives: ReadonlyMap<string, string>,
 ): Record<string, string> {
   return Object.fromEntries(
     Object.entries(dependencies).map(([name, range]) => {
       if (!range.startsWith('workspace:')) return [name, range];
-      const version = availableVersions.get(name);
-      if (version === undefined) throw new Error(`Missing workspace version for ${name}`);
-      return [name, version];
+      const archive = availableArchives.get(name);
+      if (archive === undefined) throw new Error(`Missing workspace archive for ${name}`);
+      return [name, `file:./artifacts/${archive}`];
     }),
   );
 }
 
-async function verifyStagingPackage(manifest: PackageManifest): Promise<void> {
+async function verifyStagingPackage(
+  stagingDirectory: string,
+  manifest: PackageManifest,
+  includeReadme = false,
+): Promise<void> {
   const requiredFiles = [
     'LICENSE',
     'NOTICE',
-    'README.md',
     'THIRD_PARTY_NOTICES.md',
     'dist/index.js',
     'dist/index.d.ts',
-    'dist/browser.js',
-    'dist/browser.d.ts',
   ];
+  if (includeReadme) requiredFiles.push('README.md', 'dist/browser.js', 'dist/browser.d.ts');
   await Promise.all(
     requiredFiles.map(async (path) => {
       if (!(await Bun.file(resolve(stagingDirectory, path)).exists())) {
-        throw new Error(`Package is missing required file: ${path}`);
+        throw new Error(`Package ${manifest.name} is missing required file: ${path}`);
       }
     }),
   );
 
   const serializedManifest = JSON.stringify(manifest);
   if (serializedManifest.includes('workspace:')) {
-    throw new Error('Package manifest contains an unresolved workspace dependency');
+    throw new Error(`Package ${manifest.name} contains an unresolved workspace dependency`);
   }
-  const publicDeclarations = ['dist/index.d.ts', 'dist/browser.d.ts'];
-  const declarations = await Promise.all(
-    publicDeclarations.map((path) => readFile(resolve(stagingDirectory, path), 'utf8')),
-  );
-  for (const [index, declaration] of declarations.entries()) {
+  const glob = new Bun.Glob('dist/**/*.d.ts');
+  for await (const declarationPath of glob.scan({ cwd: stagingDirectory, onlyFiles: true })) {
+    const declaration = await readFile(resolve(stagingDirectory, declarationPath), 'utf8');
     if (!declaration.includes('/src/')) continue;
-    throw new Error(`Public declaration exposes a source import: ${publicDeclarations[index]}`);
+    throw new Error(`Package ${manifest.name} exposes a source import: ${declarationPath}`);
   }
 }
 
