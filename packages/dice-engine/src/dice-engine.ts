@@ -108,7 +108,7 @@ const DEFAULT_THROW = {
 const DEFAULT_TRAY = {
   width: 10,
   depth: 10,
-  wallHeight: 2,
+  wallHeight: 6,
   wallThickness: 0.25,
   material: { friction: 0.8, restitution: 0.1 },
 } as const;
