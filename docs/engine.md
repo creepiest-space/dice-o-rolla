@@ -17,7 +17,8 @@ position, orientation, and impulses.
 
 Rolls containing more than four dice distribute their initial positions over the tray in a stable
 grid with small random jitter. This avoids overlapping convex bodies while leaving orientation and
-impulses random; the integration suite verifies that `20d6` settles before the hard timeout.
+impulses random. The default six-unit walls contain the complete spawn range; the load suite verifies
+that deterministic `20d6` and `50d6` profiles settle before the hard timeout.
 
 Every promise terminates through completion, cancellation, timeout, or failure. `AbortSignal` can
 cancel an individual queued or active call. `clear()` cancels all work and removes dice. `destroy()`
@@ -38,6 +39,9 @@ const result = await engine.roll('1d6 + 2');
 
 engine.destroy();
 ```
+
+`d%` and `d100` expand to physical tens and units d10 shapes; `d66` expands to two d6 shapes. The
+returned dice retain component group, role, and raw settled face metadata.
 
 Applications that need custom adapters can instantiate `DiceEngine` from the default entry point
 and inject any implementations of `PhysicsWorld` and `DiceRenderer`.

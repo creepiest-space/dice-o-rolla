@@ -213,9 +213,9 @@ For d4, a `FaceDefinition.normal` is a logical result direction rather than nece
 normal of the rendered triangle. Defining it as the negated resting-face normal preserves the generic
 `max(dot(rotatedNormal, worldUp))` resolver.
 
-The source d10 polygon ids `0–9` are converted explicitly to ordinary values `1–10`. A later
-percentile adapter can display value ten as digit `0` and tens value `00`; the pair `00 + 0` is 100.
-This avoids carrying the source's label/material offset arithmetic into geometry.
+The source d10 polygon ids `0–9` are converted explicitly to ordinary values `1–10`. The percentile
+adapter displays value ten as digit `0` and tens value `00`; the pair `00 + 0` is 100. This avoids
+carrying the source's label/material offset arithmetic into geometry.
 
 ## Coordinate convention
 
@@ -255,9 +255,9 @@ Definitions must have one tested result direction per possible value. Render cha
 triangulation are irrelevant. Tests will cover identity and known rotations plus a validity smoke
 test for every die.
 
-If the best and second-best dot products are too close, the die is cocked rather than confidently
-resolved. The first vertical slice will record the margin and either allow physics to continue or
-fail via the roll timeout; it will not return a random tie-break result.
+The implemented resolver deterministically selects the greatest alignment after the die settles. It
+does not yet expose a confidence margin for a physically stable cocked die; this limitation is
+explicit and never replaced by a random tie-break result.
 
 ## Cannon-to-Rapier concept mapping
 
@@ -280,9 +280,8 @@ Source values are calibration clues, not compatible constants.
 | termination      | sleep or 1000 iterations                        | stable-duration detector plus `maxRollTimeMs`                         |
 | cleanup          | remove bodies/meshes                            | explicit remove/clear/idempotent destroy and released WASM references |
 
-Exact Rapier method names and combine-rule defaults will be verified against the installed official
-package version during the Rapier milestone. Backend objects stay private to
-`dice-physics-rapier`.
+Rapier method use was verified against the installed official package. Combine rules remain at the
+backend defaults, and backend objects stay private to `dice-physics-rapier`.
 
 ## Anvil architecture comparison
 
@@ -368,14 +367,27 @@ backend-neutral engine. State flows only from physics to a domain snapshot and t
 9. Model every roll as an independent session and initially serialize sessions through a FIFO queue.
 10. Keep themes and physics profiles separate and make all cleanup paths idempotent.
 
-## Questions deferred to measured implementation
+## Final implementation disposition
 
-- exact normalized die radius, tray dimensions, mass, damping, friction, restitution, throw impulse,
-  torque impulse, sleep, and timeout presets;
-- whether ideal or render-chamfer-derived convex hulls provide the best stability/performance balance;
-- the minimum face-confidence dot margin that reliably identifies cocked dice;
-- whether CCD materially improves high-energy throws at the intended scale;
-- label-atlas versus per-face canvas textures in the first Three.js renderer.
+Measured implementation resolved the original open choices as follows:
 
-These choices require Rapier integration tests or browser measurements. They must be configured and
-documented rather than embedded as unexplained constants.
+- normalized circumradius-one geometry is shared by collider and renderer; the default die scale and
+  mass are both one;
+- the default tray is 10 × 10 with six-unit walls, which contain the full 3.5–5 spawn height and make
+  deterministic 20/50-die profiles reliable;
+- ideal polyhedral vertices form Rapier convex hulls; render triangulation and materials remain
+  irrelevant to collisions and results;
+- the engine uses a `1 / 60` fixed step, 0.25 damping, velocity thresholds of 0.08, 300 ms stability,
+  and a 10-second hard timeout;
+- CCD is enabled in the initial Rapier backend; its cost has not yet been isolated from other
+  high-count costs;
+- the initial renderer uses per-face canvas textures. An atlas, resource sharing, and instancing are
+  deferred optimizations;
+- a separate cocked-die confidence margin is not implemented. Velocity stability and the hard
+  timeout prevent resolving a still-moving die, but a physically stable edge case selects the best
+  aligned logical direction.
+
+The final architecture follows the recorded target boundaries. No Anvil implementation or assets
+were copied, no Cannon.js dependency was introduced, and percentile values are derived from two
+settled physical components. Remaining scale and rendering limitations are recorded in
+`docs/performance.md` rather than hidden behind fabricated success paths.

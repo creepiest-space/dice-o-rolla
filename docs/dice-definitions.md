@@ -56,6 +56,20 @@ d10 reference half-height was rounded to `0.105`; the target uses `0.10616611026
 normalized kite faces are exactly planar while preserving topology and numbering.
 The ordinary d10's logical value ten is rendered with the conventional `0` label.
 
+## Paired dice
+
+`d%` and `d100` are logical aliases for a pair of physical d10 shapes. The tens component renders
+logical faces 1–9 as `10`–`90` and face 10 as `00`; the units component renders face 10 as `0`. The
+aggregator derives digits from the two settled face values and maps `00 + 0` to 100.
+
+`d66` uses two physical d6 shapes. Its tens component renders `10`–`60`, and its units component
+renders `1`–`6`, producing the 36 values 11–16, 21–26, …, 61–66.
+
+Component results contain a group id, group type, tens/units role, and raw physical `faceValue`.
+Their public `value` is the displayed contribution (for example, 70 and 3), while aggregation
+validates and derives the group total from physical face values. No percentile path uses a random
+numeric shortcut.
+
 The d6 ideal cube vertices use coordinates `±1/sqrt(3)`, giving every vertex unit distance from the
 origin.
 
@@ -78,5 +92,6 @@ alignment is returned.
 
 Tests cover every result direction of every registered die, non-unit quaternion normalization,
 invalid quaternions, face/value alignment, polygon planarity, outward winding, complete value sets,
-and normalized vertex scale. Rapier integration tests physically settle every standard shape and
-verify that the renderer snapshot resolves to the returned value.
+and normalized vertex scale. They also cover all 100 d100 and all 36 d66 face combinations. Rapier
+integration tests physically settle every standard shape and verify that the renderer snapshot
+resolves to the returned value.
