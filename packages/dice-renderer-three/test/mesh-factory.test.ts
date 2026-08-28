@@ -41,17 +41,17 @@ describe('createPolyhedronGeometry', () => {
     geometry.dispose();
   });
 
-  test('keeps face UVs in their canonical non-mirrored orientation', () => {
+  test('maps CanvasTexture labels without horizontal mirroring', () => {
     const geometry = createPolyhedronGeometry(D6_DEFINITION);
     const uv = geometry.getAttribute('uv');
 
     expect(Array.from({ length: 6 }, (_, index) => [uv.getX(index), uv.getY(index)])).toEqual([
       [0.5, 1],
-      [1, 0.5],
+      [0, 0.5],
       [0.5, 0],
       [0.5, 1],
       [0.5, 0],
-      [0, 0.5],
+      [1, 0.5],
     ]);
     geometry.dispose();
   });

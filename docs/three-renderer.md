@@ -19,8 +19,9 @@ const renderer = new TopDownDiceRenderer(container, {
 ```
 
 Set `trayWidth` and `trayDepth` to the matching physics tray dimensions. The top-down camera adapts
-to portrait, landscape, and rectangular viewports without cropping the tray. Both adapters preserve
-the canonical face-label UV orientation produced by the shared mesh factory.
+to portrait, landscape, and rectangular viewports without cropping the tray. Both adapters use the
+same face-label UV correction from the shared mesh factory, preventing horizontal mirroring of canvas
+labels.
 
 The renderer uses the same right-handed, Y-up coordinates and `{x, y, z, w}` quaternion convention
 as the geometry and physics packages. Standard meshes are generated from the shared geometry

@@ -34,7 +34,7 @@ export function createPolyhedronGeometry(
     const start = positions.length / 3;
     const uvByVertex = face.indices.map((_, index) => {
       const angle = Math.PI / 2 - (index / face.indices.length) * Math.PI * 2;
-      return [0.5 + Math.cos(angle) * 0.5, 0.5 + Math.sin(angle) * 0.5] as const;
+      return [0.5 - Math.cos(angle) * 0.5, 0.5 + Math.sin(angle) * 0.5] as const;
     });
 
     for (let index = 1; index < face.indices.length - 1; index += 1) {
