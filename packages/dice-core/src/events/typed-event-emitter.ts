@@ -12,10 +12,16 @@ class EventChannel<Payload> {
     this.#listeners.delete(listener);
   }
 
-  public emit(payload: Payload): void {
+  public emit(payload: Payload): readonly unknown[] {
+    const errors: unknown[] = [];
     for (const listener of Array.from(this.#listeners)) {
-      listener(payload);
+      try {
+        listener(payload);
+      } catch (error) {
+        errors.push(error);
+      }
     }
+    return errors;
   }
 
   public clear(): void {
@@ -57,8 +63,8 @@ export class TypedEventEmitter<Events extends EventMap> {
     this.#channels[event]?.delete(listener);
   }
 
-  public emit<Key extends keyof Events>(event: Key, payload: Events[Key]): void {
-    this.#channels[event]?.emit(payload);
+  public emit<Key extends keyof Events>(event: Key, payload: Events[Key]): readonly unknown[] {
+    return this.#channels[event]?.emit(payload) ?? [];
   }
 
   public clear(event?: keyof Events): void {

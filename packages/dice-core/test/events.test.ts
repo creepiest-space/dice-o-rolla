@@ -46,4 +46,19 @@ describe('TypedEventEmitter', () => {
     emitter.clear();
     expect(emitter.listenerCount('message')).toBe(0);
   });
+
+  test('isolates listener failures and reports them to the emitter', () => {
+    const emitter = new TypedEventEmitter<TestEvents>();
+    const listenerError = new Error('listener failed');
+    const values: number[] = [];
+    emitter.on('count', () => {
+      throw listenerError;
+    });
+    emitter.on('count', (value) => values.push(value));
+
+    const errors = emitter.emit('count', 7);
+
+    expect(errors).toEqual([listenerError]);
+    expect(values).toEqual([7]);
+  });
 });

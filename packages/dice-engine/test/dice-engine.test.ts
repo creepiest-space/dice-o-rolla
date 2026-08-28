@@ -198,6 +198,48 @@ describe('DiceEngine', () => {
     expect(errors).toEqual([backendError]);
   });
 
+  test('listener failures do not interrupt rolls, cancellation, or backend errors', async () => {
+    const rollHarness = createHarness();
+    await rollHarness.engine.initialize();
+    const observed: string[] = [];
+    rollHarness.engine.on('roll:start', () => {
+      throw new Error('start listener failed');
+    });
+    rollHarness.engine.on('die:settled', () => {
+      throw new Error('settled listener failed');
+    });
+    rollHarness.engine.on('roll:complete', () => {
+      throw new Error('complete listener failed');
+    });
+    rollHarness.engine.on('roll:complete', ({ id }) => observed.push(id));
+
+    const first = rollHarness.engine.roll('1d6');
+    const second = rollHarness.engine.roll('1d6');
+    rollHarness.scheduler.flush();
+    expect((await first).id).toBe('roll-1');
+    expect((await second).id).toBe('roll-2');
+    expect(observed).toEqual(['roll-1', 'roll-2']);
+
+    const cancelHarness = createHarness(100);
+    await cancelHarness.engine.initialize();
+    cancelHarness.engine.on('roll:cancel', () => {
+      throw new Error('cancel listener failed');
+    });
+    const cancelled = cancelHarness.engine.roll('1d6');
+    cancelHarness.engine.cancel();
+    expect(await rejectionOf(cancelled)).toBeInstanceOf(RollCancelledError);
+
+    const errorHarness = createHarness();
+    await errorHarness.engine.initialize();
+    errorHarness.physics.errorOnStep = new Error('backend failed');
+    errorHarness.engine.on('error', () => {
+      throw new Error('error listener failed');
+    });
+    const failed = errorHarness.engine.roll('1d6');
+    errorHarness.scheduler.advance();
+    expect(String(await rejectionOf(failed))).toContain('backend failed');
+  });
+
   test('merges themes and destroys dependencies idempotently', async () => {
     const { engine, physics, renderer } = createHarness();
     await engine.initialize();

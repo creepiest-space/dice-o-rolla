@@ -384,7 +384,9 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#accumulatorSeconds = 0;
       this.#scheduleFrame();
     } catch (error) {
-      this.#failTask(task, error);
+      const active = this.#active;
+      if (active?.task === task) this.#failActive(active, error);
+      else this.#failTask(task, error);
     }
   }
 
@@ -588,8 +590,8 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     for (const die of active.dice) this.#displayedDieIds.add(die.id);
     this.#active = undefined;
     this.#detachAbort(active.task);
-    this.emit('roll:complete', result);
     active.task.resolve(result);
+    this.emit('roll:complete', result);
     this.#startNext();
   }
 
@@ -607,8 +609,8 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     task.session.state = 'cancelled';
     task.session.completedAt = this.#now();
     this.#detachAbort(task);
-    this.emit('roll:cancel', snapshotSession(task.session));
     task.reject(new RollCancelledError(task.session.id));
+    this.emit('roll:cancel', snapshotSession(task.session));
   }
 
   #failActive(active: ActiveRoll, error: unknown): void {
@@ -621,8 +623,8 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     task.session.state = 'failed';
     task.session.completedAt = this.#now();
     this.#detachAbort(task);
-    this.emit('error', { session: snapshotSession(task.session), error });
     task.reject(error);
+    this.emit('error', { session: snapshotSession(task.session), error });
     this.#startNext();
   }
 
