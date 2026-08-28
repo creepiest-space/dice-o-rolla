@@ -5,7 +5,7 @@ import type {
   RendererTheme,
   RendererViewport,
 } from '@creepiest-space/dice-renderer';
-import { PCFSoftShadowMap, WebGLRenderer } from 'three';
+import { PCFShadowMap, WebGLRenderer } from 'three';
 
 import { DEFAULT_THREE_THEME, ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
 import { ThreeCamera, ThreeScene } from './scene.js';
@@ -83,7 +83,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
       powerPreference: 'high-performance',
     });
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = PCFSoftShadowMap;
+    renderer.shadowMap.type = PCFShadowMap;
     this.#container.append(renderer.domElement);
     this.#scene = scene;
     this.#camera = camera;
