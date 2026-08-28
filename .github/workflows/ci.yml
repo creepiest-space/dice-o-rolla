@@ -39,7 +39,7 @@ jobs:
         run: bun run deadcode
 
   test:
-    needs: quality
+    needs: [quality, library]
     strategy:
       fail-fast: false
       matrix:
@@ -58,3 +58,24 @@ jobs:
 
       - name: Build
         run: bun run build
+
+  library:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install
+        run: bun ci
+
+      - name: Build dice-engine library
+        run: bun run build:dice-engine
+
+      - name: Verify package artifacts
+        run: |
+          test -f packages/dice-engine/dist/index.js
+          test -f packages/dice-engine/dist/index.d.ts
+          test -f packages/dice-engine/dist/browser.js
+          test -f packages/dice-engine/dist/browser.d.ts
