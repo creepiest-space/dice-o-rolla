@@ -10,10 +10,19 @@ import { PCFSoftShadowMap, WebGLRenderer } from 'three';
 import { DEFAULT_THREE_THEME, ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
 import { ThreeCamera, ThreeScene } from './scene.js';
 import { applyInterpolatedTransform } from './transform.js';
+import {
+  fitViewportToLimits,
+  resolveViewportLimits,
+  validateViewport,
+  type ViewportLimits,
+} from './viewport-limits.js';
 
 export interface ThreeDiceRendererOptions extends Partial<RendererTheme> {
   readonly antialias?: boolean;
   readonly observeResize?: boolean;
+  readonly maxPixelRatio?: number;
+  readonly maxViewportDimension?: number;
+  readonly maxFramebufferPixels?: number;
 }
 
 interface RenderEntry {
@@ -42,6 +51,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
   readonly #options: ThreeDiceRendererOptions;
   readonly #meshFactory = new ThreeDiceMeshFactory();
   readonly #entries = new Map<string, RenderEntry>();
+  readonly #viewportLimits: ViewportLimits;
   #theme: RendererTheme;
   #scene: ThreeScene | undefined;
   #camera: ThreeCamera | undefined;
@@ -52,6 +62,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
   constructor(container: HTMLElement, options: ThreeDiceRendererOptions = {}) {
     this.#container = container;
     this.#options = options;
+    this.#viewportLimits = resolveViewportLimits(options);
     this.#theme = {
       material: options.material ?? DEFAULT_THREE_THEME.material,
       bodyColor: options.bodyColor ?? DEFAULT_THREE_THEME.bodyColor,
@@ -128,12 +139,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
 
   resize(viewport: RendererViewport): void {
     this.#assertInitialized();
-    if (![viewport.width, viewport.height, viewport.pixelRatio].every(Number.isFinite)) {
-      throw new RangeError('Viewport values must be finite');
-    }
-    if (viewport.width <= 0 || viewport.height <= 0 || viewport.pixelRatio <= 0) {
-      throw new RangeError('Viewport values must be positive');
-    }
+    validateViewport(viewport, this.#viewportLimits);
     this.#camera?.resize(viewport.width, viewport.height);
     this.#renderer?.setPixelRatio(viewport.pixelRatio);
     this.#renderer?.setSize(viewport.width, viewport.height, false);
@@ -176,11 +182,16 @@ export class ThreeDiceRenderer implements DiceRenderer {
   #resizeToContainer(): void {
     const bounds = this.#container.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
-    this.resize({
-      width: bounds.width,
-      height: bounds.height,
-      pixelRatio: Math.min(globalThis.devicePixelRatio || 1, 2),
-    });
+    this.resize(
+      fitViewportToLimits(
+        {
+          width: bounds.width,
+          height: bounds.height,
+          pixelRatio: globalThis.devicePixelRatio || 1,
+        },
+        this.#viewportLimits,
+      ),
+    );
   }
 
   #createResource(

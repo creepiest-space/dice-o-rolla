@@ -108,9 +108,11 @@ export class FakeRenderer implements DiceRenderer {
   destroyCalls = 0;
   lastViewport: RendererViewport | undefined;
   theme: RendererTheme | undefined;
+  errorOnInitialize: unknown;
 
   initialize(): void {
     this.initializeCalls += 1;
+    if (this.errorOnInitialize !== undefined) throw this.errorOnInitialize;
   }
 
   createDie(state: RenderDieState): void {

@@ -73,6 +73,7 @@ const PRESETS = {
 
 let engine: Engine | undefined;
 let engineGeneration = 0;
+let rolling = false;
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -108,6 +109,7 @@ void initializeEngine('classic');
 
 async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
   const generation = ++engineGeneration;
+  rolling = false;
   setEnabled(false);
   setStatus('Starting engine…');
   engine?.destroy();
@@ -137,8 +139,9 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
 
 async function roll(source: string): Promise<void> {
   const activeEngine = engine;
-  if (activeEngine === undefined) return;
-  rollButton.disabled = true;
+  if (activeEngine === undefined || rolling) return;
+  rolling = true;
+  setRolling(true);
   setStatus(`Rolling ${source}…`);
   try {
     const rollResult = await activeEngine.roll(source);
@@ -153,7 +156,10 @@ async function roll(source: string): Promise<void> {
     if (error instanceof Error && error.name === 'RollCancelledError') return;
     showError(error);
   } finally {
-    if (engine === activeEngine) rollButton.disabled = false;
+    if (engine === activeEngine) {
+      rolling = false;
+      setRolling(false);
+    }
   }
 }
 
@@ -178,7 +184,15 @@ function setStatus(message: string, failed = false): void {
 function setEnabled(enabled: boolean): void {
   rollButton.disabled = !enabled;
   clearButton.disabled = !enabled;
+  theme.disabled = !enabled;
+  preset.disabled = !enabled;
   for (const shortcut of shortcuts) shortcut.disabled = !enabled;
+}
+
+function setRolling(active: boolean): void {
+  rollButton.disabled = active;
+  preset.disabled = active;
+  for (const shortcut of shortcuts) shortcut.disabled = active;
 }
 
 function text(tag: 'span' | 'strong', className: string, value: string): HTMLElement {
