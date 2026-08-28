@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 
+import { cryptoRandomSource } from '@creepiest-space/dice-core';
 import {
   RapierPhysics,
   type RapierPhysicsWorldOptions,
@@ -24,7 +25,12 @@ export async function createDefaultDiceEngine(
 ): Promise<DiceEngine> {
   const physics = await RapierPhysics.create(options.physics);
   const renderer = new ThreeDiceRenderer(options.container, options.renderer);
-  const engine = new DiceEngine({ ...options.engine, physics, renderer });
+  const engine = new DiceEngine({
+    ...options.engine,
+    random: options.engine?.random ?? cryptoRandomSource,
+    physics,
+    renderer,
+  });
 
   try {
     await engine.initialize();

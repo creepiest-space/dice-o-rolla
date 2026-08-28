@@ -22,7 +22,11 @@ export { NotationParseError } from './notation/errors.js';
 export type { NotationParseErrorCode } from './notation/errors.js';
 export { parseNotation } from './notation/parser.js';
 export type { RandomSource } from './random/random-source.js';
-export { mathRandomSource, SeededRandomSource } from './random/random-source.js';
+export {
+  cryptoRandomSource,
+  mathRandomSource,
+  SeededRandomSource,
+} from './random/random-source.js';
 export { createRollResult, getNotationModifier } from './roll/aggregation.js';
 export type {
   CreateRollResultOptions,

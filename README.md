@@ -54,6 +54,13 @@ engine.destroy();
 Applications with custom backends can import `DiceEngine` from `@creepiest-space/dice-engine` and
 inject implementations of `PhysicsWorld` and `DiceRenderer`.
 
+The browser composition uses Web Crypto for throw generation by default. `mathRandomSource` remains
+available as an explicitly non-cryptographic adapter, while `SeededRandomSource` is intended for
+reproducible tests and simulations. A cryptographic random source makes initial throw conditions
+harder to predict, but it does not make a result calculated in an end-user browser authoritative.
+Competitive play, rankings, prizes, and wagering require a trusted server-side result; publicly
+verifiable fairness additionally requires a protocol such as commit-reveal.
+
 ## Supported notation
 
 ```text

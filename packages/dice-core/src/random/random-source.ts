@@ -2,8 +2,24 @@ export interface RandomSource {
   next(): number;
 }
 
+const UINT32_RANGE = 4_294_967_296;
+const UINT53_RANGE = 9_007_199_254_740_992;
+
 export const mathRandomSource: RandomSource = Object.freeze({
   next: (): number => Math.random(),
+});
+
+export const cryptoRandomSource: RandomSource = Object.freeze({
+  next: (): number => {
+    const crypto = globalThis.crypto;
+    if (crypto === undefined) {
+      throw new Error('Web Crypto is required for cryptographic dice randomness');
+    }
+    const words = new Uint32Array(2);
+    crypto.getRandomValues(words);
+    const high = words[0]! & 0x001f_ffff;
+    return (high * UINT32_RANGE + words[1]!) / UINT53_RANGE;
+  },
 });
 
 export class SeededRandomSource implements RandomSource {
