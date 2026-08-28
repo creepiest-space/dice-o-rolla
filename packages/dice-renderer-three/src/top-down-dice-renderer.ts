@@ -232,11 +232,7 @@ export class TopDownDiceRenderer implements DiceRenderer {
   ): ThreeDiceMesh {
     const type = getRegisteredDieTypes().find((registered) => registered === geometryId);
     if (type === undefined) throw new Error(`Unsupported geometry: ${geometryId}`);
-    const resource = this.#meshFactory.create(getDieGeometry(type), this.#theme, 1, faceLabels);
-    const uv = resource.mesh.geometry.getAttribute('uv');
-    for (let index = 0; index < uv.count; index += 1) uv.setX(index, 1 - uv.getX(index));
-    uv.needsUpdate = true;
-    return resource;
+    return this.#meshFactory.create(getDieGeometry(type), this.#theme, 1, faceLabels);
   }
 
   #assertAlive(): void {

@@ -41,6 +41,21 @@ describe('createPolyhedronGeometry', () => {
     geometry.dispose();
   });
 
+  test('keeps face UVs in their canonical non-mirrored orientation', () => {
+    const geometry = createPolyhedronGeometry(D6_DEFINITION);
+    const uv = geometry.getAttribute('uv');
+
+    expect(Array.from({ length: 6 }, (_, index) => [uv.getX(index), uv.getY(index)])).toEqual([
+      [0.5, 1],
+      [1, 0.5],
+      [0.5, 0],
+      [0.5, 1],
+      [0.5, 0],
+      [0, 0.5],
+    ]);
+    geometry.dispose();
+  });
+
   test('preserves outward normals for bottom and top faces', () => {
     const geometry = createPolyhedronGeometry(D6_DEFINITION);
     const normal = geometry.getAttribute('normal');
