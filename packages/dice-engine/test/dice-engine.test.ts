@@ -2,7 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { SeededRandomSource } from '@creepiest-space/dice-core';
 
-import { DiceEngine, RollCancelledError, RollTimeoutError } from '../src/index.js';
+import {
+  DiceEngine,
+  RollCancelledError,
+  RollLimitExceededError,
+  RollTimeoutError,
+} from '../src/index.js';
+import type { DiceEngineLimits } from '../src/index.js';
 import { FakePhysics, FakeRenderer, FakeScheduler } from './fakes.js';
 
 async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
@@ -14,7 +20,7 @@ async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
   }
 }
 
-function createHarness(settleAfterSteps = 2) {
+function createHarness(settleAfterSteps = 2, limits?: Partial<DiceEngineLimits>) {
   const physics = new FakePhysics(settleAfterSteps);
   const renderer = new FakeRenderer();
   const scheduler = new FakeScheduler();
@@ -32,6 +38,7 @@ function createHarness(settleAfterSteps = 2) {
       stableTimeMs: 10,
       maxRollTimeMs: 100,
     },
+    ...(limits === undefined ? {} : { limits }),
   });
   return { engine, physics, renderer, scheduler };
 }
@@ -133,6 +140,41 @@ describe('DiceEngine', () => {
     expect(await activeOutcome).toBeInstanceOf(RollCancelledError);
     expect(await queuedOutcome).toBeInstanceOf(RollCancelledError);
     expect(renderer.dice.size).toBe(0);
+  });
+
+  test('rejects rolls that exceed notation and dice limits before allocating bodies', async () => {
+    const { engine, physics } = createHarness();
+    await engine.initialize();
+
+    const errors = await Promise.all(
+      ['51d6', '26d100', '9007199254740991d6', '25d6 + 26d6'].map((notation) =>
+        rejectionOf(engine.roll(notation)),
+      ),
+    );
+    for (const error of errors) expect(error).toBeInstanceOf(RollLimitExceededError);
+    const longNotation = `1d6${' '.repeat(254)}`;
+    const lengthError = await rejectionOf(engine.roll(longNotation));
+    expect(lengthError).toBeInstanceOf(RollLimitExceededError);
+    expect((lengthError as RollLimitExceededError).limit).toBe('notation-length');
+    expect(physics.createdIds).toHaveLength(0);
+  });
+
+  test('bounds the pending roll queue', async () => {
+    const { engine } = createHarness(100, { maxQueuedRolls: 1 });
+    await engine.initialize();
+    const active = engine.roll('1d6');
+    const queued = engine.roll('1d6');
+    const rejected = engine.roll('1d6');
+
+    const error = await rejectionOf(rejected);
+    expect(error).toBeInstanceOf(RollLimitExceededError);
+    expect((error as RollLimitExceededError).limit).toBe('queue-size');
+
+    const activeOutcome = active.catch((rollError: unknown) => rollError);
+    const queuedOutcome = queued.catch((rollError: unknown) => rollError);
+    engine.clear();
+    expect(await activeOutcome).toBeInstanceOf(RollCancelledError);
+    expect(await queuedOutcome).toBeInstanceOf(RollCancelledError);
   });
 
   test('rejects timeout and backend failures, then advances the queue', async () => {

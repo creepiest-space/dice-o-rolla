@@ -22,10 +22,16 @@ import type { PhysicsDieHandle, PhysicsDieState } from '@creepiest-space/dice-ph
 import type { RenderDieState, RendererViewport } from '@creepiest-space/dice-renderer';
 
 import { DEFAULT_THEME, defaultFrameScheduler } from './defaults.js';
-import { DiceEngineDestroyedError, RollCancelledError, RollTimeoutError } from './errors.js';
+import {
+  DiceEngineDestroyedError,
+  RollCancelledError,
+  RollLimitExceededError,
+  RollTimeoutError,
+} from './errors.js';
 import type {
   DiceEngineEvents,
   DiceEngineFacade,
+  DiceEngineLimits,
   DiceEngineOptions,
   DiceTheme,
   FrameToken,
@@ -120,6 +126,13 @@ const DEFAULT_DICE_MATERIAL = {
   angularDamping: 0.25,
 } as const;
 
+const DEFAULT_LIMITS: DiceEngineLimits = Object.freeze({
+  maxNotationLength: 256,
+  maxLogicalDice: 50,
+  maxPhysicalDice: 50,
+  maxQueuedRolls: 8,
+});
+
 const D100_TENS_LABELS = Object.freeze({
   1: 10,
   2: 20,
@@ -162,6 +175,12 @@ function assertPositive(value: number, name: string): void {
   }
 }
 
+function assertPositiveSafeInteger(value: number, name: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${name} must be a positive safe integer`);
+  }
+}
+
 export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements DiceEngineFacade {
   readonly #physics: DiceEngineOptions['physics'];
   readonly #renderer: DiceEngineOptions['renderer'];
@@ -173,6 +192,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   readonly #throwGenerator: ThrowGenerator;
   readonly #tray: NonNullable<DiceEngineOptions['tray']>;
   readonly #diceMaterial: NonNullable<DiceEngineOptions['diceMaterial']>;
+  readonly #limits: DiceEngineLimits;
   readonly #queue: RollTask[] = [];
   readonly #displayedDieIds = new Set<string>();
   #active: ActiveRoll | undefined;
@@ -201,6 +221,15 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     );
     this.#tray = options.tray ?? DEFAULT_TRAY;
     this.#diceMaterial = options.diceMaterial ?? DEFAULT_DICE_MATERIAL;
+    this.#limits = Object.freeze({ ...DEFAULT_LIMITS, ...options.limits });
+    for (const [name, value] of [
+      ['maxNotationLength', this.#limits.maxNotationLength],
+      ['maxLogicalDice', this.#limits.maxLogicalDice],
+      ['maxPhysicalDice', this.#limits.maxPhysicalDice],
+      ['maxQueuedRolls', this.#limits.maxQueuedRolls],
+    ] as const) {
+      assertPositiveSafeInteger(value, `limits.${name}`);
+    }
     this.#theme = this.#mergeTheme(options.theme ?? {});
   }
 
@@ -219,8 +248,22 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       if ((options.mode ?? 'queue') !== 'queue') {
         throw new RangeError('Only queue roll mode is currently supported');
       }
+      if (notation.length > this.#limits.maxNotationLength) {
+        throw new RollLimitExceededError(
+          'notation-length',
+          this.#limits.maxNotationLength,
+          notation.length,
+        );
+      }
       const parsed = parseNotation(notation);
-      this.#assertSupported(parsed);
+      this.#assertSupportedAndWithinLimits(parsed);
+      if (this.#active !== undefined && this.#queue.length >= this.#limits.maxQueuedRolls) {
+        throw new RollLimitExceededError(
+          'queue-size',
+          this.#limits.maxQueuedRolls,
+          this.#queue.length + 1,
+        );
+      }
       const task = this.#createTask(notation, parsed, options.signal);
       if (options.signal?.aborted === true) {
         this.#rejectCancelled(task);
@@ -604,14 +647,57 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     }
   }
 
-  #assertSupported(parsed: RollNotation): void {
+  #assertSupportedAndWithinLimits(parsed: RollNotation): void {
+    let logicalDice = 0;
+    let physicalDice = 0;
     for (const expression of parsed.expressions) {
-      if (expression.kind !== 'dice') continue;
-      const type = `d${expression.sides}`;
-      if (!isDieType(type) || !hasDieGeometry(type)) {
-        throw new RangeError(`${type} is not supported by the current engine`);
+      if (expression.kind === 'modifier') continue;
+      if (expression.kind === 'dice') {
+        const type = `d${expression.sides}`;
+        if (!isDieType(type) || !hasDieGeometry(type)) {
+          throw new RangeError(`${type} is not supported by the current engine`);
+        }
       }
+
+      logicalDice = this.#addWithinLimit(
+        logicalDice,
+        expression.count,
+        'logical-dice',
+        this.#limits.maxLogicalDice,
+      );
+      physicalDice = this.#addWeightedWithinLimit(
+        physicalDice,
+        expression.count,
+        expression.kind === 'paired-dice' ? 2 : 1,
+        'physical-dice',
+        this.#limits.maxPhysicalDice,
+      );
     }
+  }
+
+  #addWithinLimit(
+    current: number,
+    increment: number,
+    limit: 'logical-dice' | 'physical-dice',
+    maximum: number,
+  ): number {
+    if (increment > maximum - current) {
+      throw new RollLimitExceededError(limit, maximum, current + increment);
+    }
+    return current + increment;
+  }
+
+  #addWeightedWithinLimit(
+    current: number,
+    count: number,
+    weight: number,
+    limit: 'physical-dice',
+    maximum: number,
+  ): number {
+    if (count > Math.floor((maximum - current) / weight)) {
+      throw new RollLimitExceededError(limit, maximum, current + count * weight);
+    }
+    return current + count * weight;
   }
 
   #mergeTheme(theme: Partial<DiceTheme>): DiceTheme {

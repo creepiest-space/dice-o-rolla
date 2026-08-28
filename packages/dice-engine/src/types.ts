@@ -30,6 +30,13 @@ export interface RollOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface DiceEngineLimits {
+  readonly maxNotationLength: number;
+  readonly maxLogicalDice: number;
+  readonly maxPhysicalDice: number;
+  readonly maxQueuedRolls: number;
+}
+
 export interface DiceEngineEvents {
   readonly 'roll:start': RollSession;
   readonly 'die:settled': { readonly sessionId: string; readonly die: DieResult };
@@ -52,6 +59,7 @@ export interface DiceEngineOptions {
   readonly tray?: TrayOptions;
   readonly diceMaterial?: DicePhysicsMaterial;
   readonly theme?: Partial<DiceTheme>;
+  readonly limits?: Partial<DiceEngineLimits>;
 }
 
 export interface DiceEngineFacade {
