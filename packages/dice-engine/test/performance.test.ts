@@ -49,6 +49,7 @@ describe('DiceEngine load profile', () => {
       scheduler,
       now: () => scheduler.now,
       random: new SeededRandomSource(10_100),
+      limits: { maxLogicalDice: 100, maxPhysicalDice: 100 },
     });
     await engine.initialize();
 
