@@ -91,7 +91,8 @@ and their component roles.
 | `@creepiest-space/dice-demo`           | thin browser UI                                        |
 
 See [architecture](docs/architecture.md), [physics](docs/physics.md), [Rapier backend](docs/rapier-backend.md),
-and [dice definitions](docs/dice-definitions.md) for design details.
+[dice definitions](docs/dice-definitions.md), and [security guidance](docs/security.md) for design and
+deployment details.
 
 ## Verification
 
