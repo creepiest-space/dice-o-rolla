@@ -104,3 +104,8 @@ bun run check:full
 The full gate runs formatting, ordinary and type-aware lint, strict TypeScript checks, tests,
 dead-code analysis, and every production build. See [performance observations](docs/performance.md)
 for the measured 20/50/100-die load profile.
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
+[third-party notices](THIRD_PARTY_NOTICES.md).
