@@ -84,7 +84,7 @@ jobs:
             tar -tzf "artifacts/$archive.tgz" | grep -Fx package/dist/index.d.ts
             ! tar -tzf "artifacts/$archive.tgz" | grep -F '/src/'
             tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '.license == "Apache-2.0" and .scripts == null and .devDependencies == null'
-            tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '[(.dependencies // {} | keys[]) | startswith("@creepiest-space/")] | any | not'
+            tar -xOzf "artifacts/$archive.tgz" package/package.json | jq -e '[(.dependencies // {} | keys[]) | startswith("@dice-o-rolla/")] | any | not'
             ! tar -xOzf "artifacts/$archive.tgz" package/package.json | grep -F 'workspace:'
           done
           tar -tzf artifacts/dice-engine.tgz | grep -Fx package/LICENSE
@@ -102,7 +102,7 @@ jobs:
           cp artifacts/local-dependencies.json "$consumer_directory/package.json"
           cd "$consumer_directory"
           bun install --offline
-          bun -e "const core = await import('@creepiest-space/dice-engine'); const browser = await import('@creepiest-space/dice-engine/browser'); const renderer = await import('@creepiest-space/dice-renderer-three'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function' || typeof renderer.TopDownDiceRenderer !== 'function') process.exit(1)"
+          bun -e "const core = await import('@dice-o-rolla/dice-engine'); const browser = await import('@dice-o-rolla/dice-engine/browser'); const renderer = await import('@dice-o-rolla/dice-renderer-three'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function' || typeof renderer.TopDownDiceRenderer !== 'function') process.exit(1)"
 
       - name: Verify npm consumer installation
         run: |
@@ -111,4 +111,4 @@ jobs:
           cp artifacts/local-dependencies.json "$consumer_directory/package.json"
           cd "$consumer_directory"
           npm install --ignore-scripts
-          node --input-type=module -e "const core = await import('@creepiest-space/dice-engine'); const browser = await import('@creepiest-space/dice-engine/browser'); const renderer = await import('@creepiest-space/dice-renderer-three'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function' || typeof renderer.TopDownDiceRenderer !== 'function') process.exit(1)"
+          node --input-type=module -e "const core = await import('@dice-o-rolla/dice-engine'); const browser = await import('@dice-o-rolla/dice-engine/browser'); const renderer = await import('@dice-o-rolla/dice-renderer-three'); if (typeof core.DiceEngine !== 'function' || typeof browser.createDefaultDiceEngine !== 'function' || typeof renderer.TopDownDiceRenderer !== 'function') process.exit(1)"
