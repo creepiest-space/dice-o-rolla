@@ -1,4 +1,4 @@
-import type { RendererViewport } from '@creepiest-space/dice-renderer';
+import type { RendererViewport } from '@dice-o-rolla/dice-renderer';
 
 export interface ViewportLimitOptions {
   readonly maxPixelRatio?: number;

@@ -1,14 +1,11 @@
 /// <reference lib="dom" />
 
-import { cryptoRandomSource } from '@creepiest-space/dice-core';
-import {
-  RapierPhysics,
-  type RapierPhysicsWorldOptions,
-} from '@creepiest-space/dice-physics-rapier';
+import { cryptoRandomSource } from '@dice-o-rolla/dice-core';
+import { RapierPhysics, type RapierPhysicsWorldOptions } from '@dice-o-rolla/dice-physics-rapier';
 import {
   ThreeDiceRenderer,
   type ThreeDiceRendererOptions,
-} from '@creepiest-space/dice-renderer-three';
+} from '@dice-o-rolla/dice-renderer-three';
 
 import { initializeOwnedDiceEngine } from './composition.js';
 import type { DiceEngine } from './dice-engine.js';

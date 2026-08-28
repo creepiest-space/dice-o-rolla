@@ -21,67 +21,67 @@
       },
     },
     "apps/dice-demo": {
-      "name": "@creepiest-space/dice-demo",
+      "name": "@dice-o-rolla/dice-demo",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-engine": "workspace:*",
+        "@dice-o-rolla/dice-engine": "workspace:*",
       },
     },
     "packages/dice-core": {
-      "name": "@creepiest-space/dice-core",
+      "name": "@dice-o-rolla/dice-core",
       "version": "0.0.0",
     },
     "packages/dice-engine": {
-      "name": "@creepiest-space/dice-engine",
+      "name": "@dice-o-rolla/dice-engine",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-core": "workspace:*",
-        "@creepiest-space/dice-geometry": "workspace:*",
-        "@creepiest-space/dice-physics": "workspace:*",
-        "@creepiest-space/dice-physics-rapier": "workspace:*",
-        "@creepiest-space/dice-renderer": "workspace:*",
-        "@creepiest-space/dice-renderer-three": "workspace:*",
+        "@dice-o-rolla/dice-core": "workspace:*",
+        "@dice-o-rolla/dice-geometry": "workspace:*",
+        "@dice-o-rolla/dice-physics": "workspace:*",
+        "@dice-o-rolla/dice-physics-rapier": "workspace:*",
+        "@dice-o-rolla/dice-renderer": "workspace:*",
+        "@dice-o-rolla/dice-renderer-three": "workspace:*",
       },
     },
     "packages/dice-geometry": {
-      "name": "@creepiest-space/dice-geometry",
+      "name": "@dice-o-rolla/dice-geometry",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-core": "workspace:*",
+        "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics": {
-      "name": "@creepiest-space/dice-physics",
+      "name": "@dice-o-rolla/dice-physics",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-core": "workspace:*",
+        "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics-rapier": {
-      "name": "@creepiest-space/dice-physics-rapier",
+      "name": "@dice-o-rolla/dice-physics-rapier",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-core": "workspace:*",
-        "@creepiest-space/dice-physics": "workspace:*",
+        "@dice-o-rolla/dice-core": "workspace:*",
+        "@dice-o-rolla/dice-physics": "workspace:*",
         "@dimforge/rapier3d-compat": "^0.20.0",
       },
       "devDependencies": {
-        "@creepiest-space/dice-geometry": "workspace:*",
+        "@dice-o-rolla/dice-geometry": "workspace:*",
       },
     },
     "packages/dice-renderer": {
-      "name": "@creepiest-space/dice-renderer",
+      "name": "@dice-o-rolla/dice-renderer",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-core": "workspace:*",
+        "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-renderer-three": {
-      "name": "@creepiest-space/dice-renderer-three",
+      "name": "@dice-o-rolla/dice-renderer-three",
       "version": "0.0.0",
       "dependencies": {
-        "@creepiest-space/dice-geometry": "workspace:*",
-        "@creepiest-space/dice-renderer": "workspace:*",
+        "@dice-o-rolla/dice-geometry": "workspace:*",
+        "@dice-o-rolla/dice-renderer": "workspace:*",
         "three": "^0.185.0",
       },
       "devDependencies": {
@@ -132,21 +132,21 @@
 
     "@conventional-changelog/template": ["@conventional-changelog/template@1.4.0", "", {}, "sha512-aalGyl7dbB5PArRebDIX43ZvBlXrYm9uWzGJ26t+4SzJVPsOuvfILGGbw5X4yX7i50YEmJ8zvbiWnqH/AAnZqg=="],
 
-    "@creepiest-space/dice-core": ["@creepiest-space/dice-core@workspace:packages/dice-core"],
+    "@dice-o-rolla/dice-core": ["@dice-o-rolla/dice-core@workspace:packages/dice-core"],
 
-    "@creepiest-space/dice-demo": ["@creepiest-space/dice-demo@workspace:apps/dice-demo"],
+    "@dice-o-rolla/dice-demo": ["@dice-o-rolla/dice-demo@workspace:apps/dice-demo"],
 
-    "@creepiest-space/dice-engine": ["@creepiest-space/dice-engine@workspace:packages/dice-engine"],
+    "@dice-o-rolla/dice-engine": ["@dice-o-rolla/dice-engine@workspace:packages/dice-engine"],
 
-    "@creepiest-space/dice-geometry": ["@creepiest-space/dice-geometry@workspace:packages/dice-geometry"],
+    "@dice-o-rolla/dice-geometry": ["@dice-o-rolla/dice-geometry@workspace:packages/dice-geometry"],
 
-    "@creepiest-space/dice-physics": ["@creepiest-space/dice-physics@workspace:packages/dice-physics"],
+    "@dice-o-rolla/dice-physics": ["@dice-o-rolla/dice-physics@workspace:packages/dice-physics"],
 
-    "@creepiest-space/dice-physics-rapier": ["@creepiest-space/dice-physics-rapier@workspace:packages/dice-physics-rapier"],
+    "@dice-o-rolla/dice-physics-rapier": ["@dice-o-rolla/dice-physics-rapier@workspace:packages/dice-physics-rapier"],
 
-    "@creepiest-space/dice-renderer": ["@creepiest-space/dice-renderer@workspace:packages/dice-renderer"],
+    "@dice-o-rolla/dice-renderer": ["@dice-o-rolla/dice-renderer@workspace:packages/dice-renderer"],
 
-    "@creepiest-space/dice-renderer-three": ["@creepiest-space/dice-renderer-three@workspace:packages/dice-renderer-three"],
+    "@dice-o-rolla/dice-renderer-three": ["@dice-o-rolla/dice-renderer-three@workspace:packages/dice-renderer-three"],
 
     "@dimforge/rapier3d-compat": ["@dimforge/rapier3d-compat@0.20.0", "", {}, "sha512-X4W9pJBdGRX5CO3c/gUNjBFEFG2fn4nYxp9k8STdBDaLa0/w5XTW2ArpayS+9jGFojTi3uFSOWAElCd4rkpekA=="],
 

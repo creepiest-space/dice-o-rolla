@@ -1,4 +1,4 @@
-import type { DieType } from '@creepiest-space/dice-core';
+import type { DieType } from '@dice-o-rolla/dice-core';
 
 import { D4_DEFINITION } from './definitions/d4.js';
 import { D6_DEFINITION } from './definitions/d6.js';

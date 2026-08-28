@@ -5,7 +5,7 @@ import {
   D6_DEFINITION,
   getDieGeometry,
   getRegisteredDieTypes,
-} from '@creepiest-space/dice-geometry';
+} from '@dice-o-rolla/dice-geometry';
 
 import { createFaceUvs, createPolyhedronGeometry, getFaceLabel } from '../src/index.js';
 

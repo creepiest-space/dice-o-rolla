@@ -1,4 +1,4 @@
-import type { QuaternionLike, Vector3Like } from '@creepiest-space/dice-core';
+import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 
 export interface RenderTransform {
   readonly position: Vector3Like;

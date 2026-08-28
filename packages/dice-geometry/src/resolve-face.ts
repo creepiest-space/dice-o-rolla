@@ -1,4 +1,4 @@
-import type { QuaternionLike } from '@creepiest-space/dice-core';
+import type { QuaternionLike } from '@dice-o-rolla/dice-core';
 
 import type { PolyhedronDefinition, Vector3Tuple } from './types.js';
 import { dot } from './vector-math.js';

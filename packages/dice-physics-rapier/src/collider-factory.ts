@@ -1,7 +1,4 @@
-import type {
-  ConvexHullColliderDefinition,
-  DicePhysicsMaterial,
-} from '@creepiest-space/dice-physics';
+import type { ConvexHullColliderDefinition, DicePhysicsMaterial } from '@dice-o-rolla/dice-physics';
 import type RAPIER from '@dimforge/rapier3d-compat';
 
 import { assertNonNegative, assertPositive, assertVector } from './validation.js';

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { D6_DEFINITION, resolveFace } from '@creepiest-space/dice-geometry';
-import type { CreatePhysicsDieOptions } from '@creepiest-space/dice-physics';
+import { D6_DEFINITION, resolveFace } from '@dice-o-rolla/dice-geometry';
+import type { CreatePhysicsDieOptions } from '@dice-o-rolla/dice-physics';
 
 import { RapierPhysics } from '../src/index.js';
 

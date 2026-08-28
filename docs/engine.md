@@ -1,8 +1,8 @@
 # DiceEngine lifecycle
 
-`@creepiest-space/dice-engine` is the backend-neutral facade. Its default entry point imports only
+`@dice-o-rolla/dice-engine` is the backend-neutral facade. Its default entry point imports only
 the core, geometry, physics, and renderer contracts. Concrete Rapier and Three.js composition lives
-in the separate `@creepiest-space/dice-engine/browser` entry point.
+in the separate `@dice-o-rolla/dice-engine/browser` entry point.
 
 ## Roll flow
 
@@ -32,7 +32,7 @@ and `error` events. Payloads carry their session identity; there is no singleton
 ## Browser composition
 
 ```ts
-import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
+import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 
 const engine = await createDefaultDiceEngine({ container });
 const result = await engine.roll('1d6 + 2');

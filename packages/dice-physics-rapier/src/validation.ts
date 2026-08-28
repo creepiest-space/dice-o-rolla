@@ -1,4 +1,4 @@
-import type { QuaternionLike, Vector3Like } from '@creepiest-space/dice-core';
+import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 
 export function assertPositive(value: number, name: string): void {
   if (!Number.isFinite(value) || value <= 0) {

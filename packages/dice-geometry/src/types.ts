@@ -1,4 +1,4 @@
-import type { DieType } from '@creepiest-space/dice-core';
+import type { DieType } from '@dice-o-rolla/dice-core';
 
 export type Vector3Tuple = readonly [x: number, y: number, z: number];
 

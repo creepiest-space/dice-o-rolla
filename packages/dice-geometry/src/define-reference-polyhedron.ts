@@ -1,4 +1,4 @@
-import type { DieType } from '@creepiest-space/dice-core';
+import type { DieType } from '@dice-o-rolla/dice-core';
 
 import { definePolyhedron } from './define-polyhedron.js';
 import { calculateFaceNormal } from './face-normal.js';

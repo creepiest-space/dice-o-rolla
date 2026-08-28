@@ -63,7 +63,7 @@ bun install
 # or: npm install
 ```
 
-All seven `@creepiest-space/*` packages must remain direct `file:` dependencies. Internal dependency
+All seven `@dice-o-rolla/*` packages must remain direct `file:` dependencies. Internal dependency
 edges are intentionally omitted only from these local-only manifests because npm and Bun resolve
 relative tarballs differently. The application's complete dependency list makes the packages
 available from its root `node_modules` without registry lookups. The package manager obtains the

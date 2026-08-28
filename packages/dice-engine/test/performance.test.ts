@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { SeededRandomSource } from '@creepiest-space/dice-core';
-import { RapierPhysics } from '@creepiest-space/dice-physics-rapier';
+import { SeededRandomSource } from '@dice-o-rolla/dice-core';
+import { RapierPhysics } from '@dice-o-rolla/dice-physics-rapier';
 
 import { DiceEngine, RollTimeoutError } from '../src/index.js';
 import { FakeRenderer, FakeScheduler } from './fakes.js';

@@ -1,4 +1,4 @@
-import type { Vector3Like } from '@creepiest-space/dice-core';
+import type { Vector3Like } from '@dice-o-rolla/dice-core';
 
 export interface SettlingOptions {
   readonly linearVelocityThreshold: number;

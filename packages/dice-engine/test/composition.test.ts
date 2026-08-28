@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { SeededRandomSource } from '@creepiest-space/dice-core';
+import { SeededRandomSource } from '@dice-o-rolla/dice-core';
 
 import { initializeOwnedDiceEngine } from '../src/composition.js';
 import { FakePhysics, FakeRenderer } from './fakes.js';

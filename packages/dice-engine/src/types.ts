@@ -4,15 +4,15 @@ import type {
   RollMode,
   RollResult,
   RollSession,
-} from '@creepiest-space/dice-core';
+} from '@dice-o-rolla/dice-core';
 import type {
   DicePhysicsMaterial,
   PhysicsWorld,
   SettlingOptions,
   ThrowGeneratorOptions,
   TrayOptions,
-} from '@creepiest-space/dice-physics';
-import type { DiceRenderer, RendererTheme, RendererViewport } from '@creepiest-space/dice-renderer';
+} from '@dice-o-rolla/dice-physics';
+import type { DiceRenderer, RendererTheme, RendererViewport } from '@dice-o-rolla/dice-renderer';
 
 export interface FrameToken {
   cancel(): void;

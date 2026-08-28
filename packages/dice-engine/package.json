@@ -1,5 +1,5 @@
 {
-  "name": "@creepiest-space/dice-engine",
+  "name": "@dice-o-rolla/dice-engine",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -27,11 +27,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@creepiest-space/dice-core": "workspace:*",
-    "@creepiest-space/dice-geometry": "workspace:*",
-    "@creepiest-space/dice-physics": "workspace:*",
-    "@creepiest-space/dice-physics-rapier": "workspace:*",
-    "@creepiest-space/dice-renderer": "workspace:*",
-    "@creepiest-space/dice-renderer-three": "workspace:*"
+    "@dice-o-rolla/dice-core": "workspace:*",
+    "@dice-o-rolla/dice-geometry": "workspace:*",
+    "@dice-o-rolla/dice-physics": "workspace:*",
+    "@dice-o-rolla/dice-physics-rapier": "workspace:*",
+    "@dice-o-rolla/dice-renderer": "workspace:*",
+    "@dice-o-rolla/dice-renderer-three": "workspace:*"
   }
 }

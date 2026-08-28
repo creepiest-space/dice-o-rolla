@@ -36,7 +36,7 @@ The browser composition entry creates the official Rapier and Three.js adapters 
 engine:
 
 ```ts
-import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
+import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 
 const container = document.querySelector<HTMLElement>('#dice-tray');
 if (container === null) throw new Error('Missing dice tray');
@@ -51,7 +51,7 @@ engine.setTheme({ material: 'matte', roughness: 0.85 });
 engine.destroy();
 ```
 
-Applications with custom backends can import `DiceEngine` from `@creepiest-space/dice-engine` and
+Applications with custom backends can import `DiceEngine` from `@dice-o-rolla/dice-engine` and
 inject implementations of `PhysicsWorld` and `DiceRenderer`.
 
 The browser composition uses Web Crypto for throw generation by default. `mathRandomSource` remains
@@ -79,16 +79,16 @@ and their component roles.
 
 ## Packages
 
-| Workspace                              | Responsibility                                         |
-| -------------------------------------- | ------------------------------------------------------ |
-| `@creepiest-space/dice-core`           | notation, results, events, random source, domain types |
-| `@creepiest-space/dice-geometry`       | immutable polyhedra and face resolution                |
-| `@creepiest-space/dice-physics`        | backend contracts, throw generation, settling policy   |
-| `@creepiest-space/dice-physics-rapier` | Rapier WASM world, bodies, tray, convex colliders      |
-| `@creepiest-space/dice-renderer`       | renderer-neutral snapshots and lifecycle               |
-| `@creepiest-space/dice-renderer-three` | Three.js scene, meshes, labels, interpolation          |
-| `@creepiest-space/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
-| `@creepiest-space/dice-demo`           | thin browser UI                                        |
+| Workspace                           | Responsibility                                         |
+| ----------------------------------- | ------------------------------------------------------ |
+| `@dice-o-rolla/dice-core`           | notation, results, events, random source, domain types |
+| `@dice-o-rolla/dice-geometry`       | immutable polyhedra and face resolution                |
+| `@dice-o-rolla/dice-physics`        | backend contracts, throw generation, settling policy   |
+| `@dice-o-rolla/dice-physics-rapier` | Rapier WASM world, bodies, tray, convex colliders      |
+| `@dice-o-rolla/dice-renderer`       | renderer-neutral snapshots and lifecycle               |
+| `@dice-o-rolla/dice-renderer-three` | Three.js scene, meshes, labels, interpolation          |
+| `@dice-o-rolla/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
+| `@dice-o-rolla/dice-demo`           | thin browser UI                                        |
 
 See [architecture](docs/architecture.md), [physics](docs/physics.md), [Rapier backend](docs/rapier-backend.md),
 [dice definitions](docs/dice-definitions.md), and [security guidance](docs/security.md) for design and

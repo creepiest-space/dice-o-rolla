@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { RenderDieState } from '@creepiest-space/dice-renderer';
+import type { RenderDieState } from '@dice-o-rolla/dice-renderer';
 import { Object3D } from 'three';
 
 import { applyInterpolatedTransform } from '../src/index.js';

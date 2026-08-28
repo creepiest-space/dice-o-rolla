@@ -5,7 +5,7 @@ import {
   mathRandomSource,
   parseNotation,
   TypedEventEmitter,
-} from '@creepiest-space/dice-core';
+} from '@dice-o-rolla/dice-core';
 import type {
   DieResult,
   DieType,
@@ -15,11 +15,11 @@ import type {
   RollResult,
   RollSession,
   RollState,
-} from '@creepiest-space/dice-core';
-import { getDieGeometry, hasDieGeometry, resolveFace } from '@creepiest-space/dice-geometry';
-import { SettlingDetector, ThrowGenerator } from '@creepiest-space/dice-physics';
-import type { PhysicsDieHandle, PhysicsDieState } from '@creepiest-space/dice-physics';
-import type { RenderDieState, RendererViewport } from '@creepiest-space/dice-renderer';
+} from '@dice-o-rolla/dice-core';
+import { getDieGeometry, hasDieGeometry, resolveFace } from '@dice-o-rolla/dice-geometry';
+import { SettlingDetector, ThrowGenerator } from '@dice-o-rolla/dice-physics';
+import type { PhysicsDieHandle, PhysicsDieState } from '@dice-o-rolla/dice-physics';
+import type { RenderDieState, RendererViewport } from '@dice-o-rolla/dice-renderer';
 
 import { DEFAULT_THEME, defaultFrameScheduler } from './defaults.js';
 import {

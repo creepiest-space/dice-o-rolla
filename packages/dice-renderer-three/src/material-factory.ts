@@ -1,4 +1,4 @@
-import type { RendererTheme } from '@creepiest-space/dice-renderer';
+import type { RendererTheme } from '@dice-o-rolla/dice-renderer';
 import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace } from 'three';
 
 export type DiceMaterialStyle = RendererTheme['material'];

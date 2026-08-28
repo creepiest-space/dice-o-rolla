@@ -1,6 +1,6 @@
-import { D6_DEFINITION } from '@creepiest-space/dice-geometry';
-import type { PolygonDefinition, PolyhedronDefinition } from '@creepiest-space/dice-geometry';
-import type { RendererTheme } from '@creepiest-space/dice-renderer';
+import { D6_DEFINITION } from '@dice-o-rolla/dice-geometry';
+import type { PolygonDefinition, PolyhedronDefinition } from '@dice-o-rolla/dice-geometry';
+import type { RendererTheme } from '@dice-o-rolla/dice-renderer';
 import { BufferGeometry, Float32BufferAttribute, Mesh, type MeshStandardMaterial } from 'three';
 
 import { ThreeMaterialFactory } from './material-factory.js';

@@ -1,4 +1,4 @@
-import type { RenderDieState } from '@creepiest-space/dice-renderer';
+import type { RenderDieState } from '@dice-o-rolla/dice-renderer';
 import type { Object3D } from 'three';
 
 export function applyInterpolatedTransform(

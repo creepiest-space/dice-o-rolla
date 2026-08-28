@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { QuaternionLike } from '@creepiest-space/dice-core';
+import type { QuaternionLike } from '@dice-o-rolla/dice-core';
 
 import {
   calculateFaceNormal,

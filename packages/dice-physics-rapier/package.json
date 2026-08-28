@@ -1,5 +1,5 @@
 {
-  "name": "@creepiest-space/dice-physics-rapier",
+  "name": "@dice-o-rolla/dice-physics-rapier",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -22,11 +22,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@creepiest-space/dice-core": "workspace:*",
-    "@creepiest-space/dice-physics": "workspace:*",
+    "@dice-o-rolla/dice-core": "workspace:*",
+    "@dice-o-rolla/dice-physics": "workspace:*",
     "@dimforge/rapier3d-compat": "^0.20.0"
   },
   "devDependencies": {
-    "@creepiest-space/dice-geometry": "workspace:*"
+    "@dice-o-rolla/dice-geometry": "workspace:*"
   }
 }

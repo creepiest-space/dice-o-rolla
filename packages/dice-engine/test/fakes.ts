@@ -1,17 +1,17 @@
-import type { QuaternionLike, Vector3Like } from '@creepiest-space/dice-core';
+import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
   PhysicsDieHandle,
   PhysicsDieState,
   PhysicsWorld,
   TrayOptions,
-} from '@creepiest-space/dice-physics';
+} from '@dice-o-rolla/dice-physics';
 import type {
   DiceRenderer,
   RenderDieState,
   RendererTheme,
   RendererViewport,
-} from '@creepiest-space/dice-renderer';
+} from '@dice-o-rolla/dice-renderer';
 
 import type { FrameScheduler, FrameToken } from '../src/index.js';
 

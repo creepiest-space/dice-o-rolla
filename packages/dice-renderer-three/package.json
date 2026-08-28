@@ -1,5 +1,5 @@
 {
-  "name": "@creepiest-space/dice-renderer-three",
+  "name": "@dice-o-rolla/dice-renderer-three",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -22,8 +22,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@creepiest-space/dice-geometry": "workspace:*",
-    "@creepiest-space/dice-renderer": "workspace:*",
+    "@dice-o-rolla/dice-geometry": "workspace:*",
+    "@dice-o-rolla/dice-renderer": "workspace:*",
     "three": "^0.185.0"
   },
   "devDependencies": {

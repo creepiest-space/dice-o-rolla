@@ -1,4 +1,4 @@
-import type { DieType, QuaternionLike, Vector3Like } from '@creepiest-space/dice-core';
+import type { DieType, QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 
 export interface PhysicsTransform {
   readonly position: Vector3Like;

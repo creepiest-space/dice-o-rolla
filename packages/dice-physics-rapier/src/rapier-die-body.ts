@@ -1,5 +1,5 @@
-import type { Vector3Like } from '@creepiest-space/dice-core';
-import type { PhysicsDieHandle, PhysicsDieState } from '@creepiest-space/dice-physics';
+import type { Vector3Like } from '@dice-o-rolla/dice-core';
+import type { PhysicsDieHandle, PhysicsDieState } from '@dice-o-rolla/dice-physics';
 import type { RigidBody } from '@dimforge/rapier3d-compat';
 
 export class RapierDieBody implements PhysicsDieHandle {

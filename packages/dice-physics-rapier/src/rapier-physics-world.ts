@@ -1,10 +1,10 @@
-import type { Vector3Like } from '@creepiest-space/dice-core';
+import type { Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
   PhysicsDieHandle,
   PhysicsWorld,
   TrayOptions,
-} from '@creepiest-space/dice-physics';
+} from '@dice-o-rolla/dice-physics';
 import type RAPIER from '@dimforge/rapier3d-compat';
 import type { RigidBody, World } from '@dimforge/rapier3d-compat';
 

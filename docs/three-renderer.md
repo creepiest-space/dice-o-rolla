@@ -1,13 +1,13 @@
 # Three.js renderer
 
-`@creepiest-space/dice-renderer-three` provides two browser rendering adapters. The default
+`@dice-o-rolla/dice-renderer-three` provides two browser rendering adapters. The default
 `ThreeDiceRenderer` uses an angled perspective tray. `TopDownDiceRenderer` frames the complete tray
 from directly above for application-wide dice surfaces and overlays. Both own their Three.js scene,
 camera, WebGL renderer, resize observer, meshes, geometries, materials, label textures, lights, and
 canvas. `destroy()` releases or disconnects each owned resource and is safe to repeat.
 
 ```ts
-import { TopDownDiceRenderer } from '@creepiest-space/dice-renderer-three';
+import { TopDownDiceRenderer } from '@dice-o-rolla/dice-renderer-three';
 
 const renderer = new TopDownDiceRenderer(container, {
   trayWidth: 10,

@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "build:dice-engine": "turbo build --filter=@creepiest-space/dice-engine...",
+    "build:dice-engine": "turbo build --filter=@dice-o-rolla/dice-engine...",
     "pack:dice-engine": "bun ./scripts/package-dice-engine.ts",
     "test": "turbo test",
     "typecheck": "turbo typecheck",

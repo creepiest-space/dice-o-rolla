@@ -1,4 +1,4 @@
-import type { QuaternionLike, RandomSource, Vector3Like } from '@creepiest-space/dice-core';
+import type { QuaternionLike, RandomSource, Vector3Like } from '@dice-o-rolla/dice-core';
 
 export interface NumberRange {
   readonly min: number;

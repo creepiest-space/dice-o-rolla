@@ -150,11 +150,11 @@ Copy this entire \`artifacts\` directory to the root of the consumer application
 Import the browser composition with:
 
 \`\`\`ts
-import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
+import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 \`\`\`
 
 For an overhead application surface, import \`TopDownDiceRenderer\` from
-\`@creepiest-space/dice-renderer-three\` and inject it into the backend-neutral engine.
+\`@dice-o-rolla/dice-renderer-three\` and inject it into the backend-neutral engine.
 
 All seven local tarballs must remain direct application dependencies. Their package manifests omit
 workspace-only dependency edges so npm and Bun do not query a registry for unpublished packages. The

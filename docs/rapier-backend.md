@@ -1,6 +1,6 @@
 # Rapier physics backend
 
-`@creepiest-space/dice-physics-rapier` implements the renderer-neutral physics contracts with the
+`@dice-o-rolla/dice-physics-rapier` implements the renderer-neutral physics contracts with the
 official `@dimforge/rapier3d-compat` WebAssembly package.
 
 The backend is the only workspace that imports Rapier. Its public surface accepts and returns plain

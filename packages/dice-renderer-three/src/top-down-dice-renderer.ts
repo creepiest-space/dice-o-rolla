@@ -1,10 +1,10 @@
-import { getDieGeometry, getRegisteredDieTypes } from '@creepiest-space/dice-geometry';
+import { getDieGeometry, getRegisteredDieTypes } from '@dice-o-rolla/dice-geometry';
 import type {
   DiceRenderer,
   RenderDieState,
   RendererTheme,
   RendererViewport,
-} from '@creepiest-space/dice-renderer';
+} from '@dice-o-rolla/dice-renderer';
 import {
   AmbientLight,
   DirectionalLight,

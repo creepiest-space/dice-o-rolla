@@ -1,4 +1,4 @@
-# `@creepiest-space/dice-engine`
+# `@dice-o-rolla/dice-engine`
 
 Framework-neutral orchestration for physically simulated polyhedral dice. The package exposes a
 backend-neutral engine and an optional browser composition backed by Rapier and Three.js.
@@ -6,7 +6,7 @@ backend-neutral engine and an optional browser composition backed by Rapier and 
 ## Browser usage
 
 ```ts
-import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
+import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 
 const container = document.querySelector<HTMLElement>('#dice-tray');
 if (container === null) throw new Error('Missing dice tray');
@@ -24,7 +24,7 @@ throw generation, and releases partially initialized resources if composition fa
 ## Custom adapters
 
 ```ts
-import { DiceEngine } from '@creepiest-space/dice-engine';
+import { DiceEngine } from '@dice-o-rolla/dice-engine';
 
 const engine = new DiceEngine({ physics, renderer });
 await engine.initialize();

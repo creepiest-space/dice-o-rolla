@@ -1,5 +1,5 @@
 {
-  "name": "@creepiest-space/dice-demo",
+  "name": "@dice-o-rolla/dice-demo",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -11,6 +11,6 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@creepiest-space/dice-engine": "workspace:*"
+    "@dice-o-rolla/dice-engine": "workspace:*"
   }
 }

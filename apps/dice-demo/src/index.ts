@@ -1,5 +1,5 @@
-import { createDefaultDiceEngine } from '@creepiest-space/dice-engine/browser';
-import type { DefaultDiceEngineOptions } from '@creepiest-space/dice-engine/browser';
+import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
+import type { DefaultDiceEngineOptions } from '@dice-o-rolla/dice-engine/browser';
 
 import { presentRollResult } from './presentation.js';
 

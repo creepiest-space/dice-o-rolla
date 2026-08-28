@@ -1,5 +1,5 @@
-import type { PhysicsWorld } from '@creepiest-space/dice-physics';
-import type { DiceRenderer } from '@creepiest-space/dice-renderer';
+import type { PhysicsWorld } from '@dice-o-rolla/dice-physics';
+import type { DiceRenderer } from '@dice-o-rolla/dice-renderer';
 
 import { DiceEngine } from './dice-engine.js';
 import type { DiceEngineOptions } from './types.js';

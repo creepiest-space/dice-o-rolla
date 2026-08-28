@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { SeededRandomSource } from '@creepiest-space/dice-core';
+import { SeededRandomSource } from '@dice-o-rolla/dice-core';
 
 import { ThrowGenerator } from '../src/index.js';
 import type { ThrowGeneratorOptions } from '../src/index.js';

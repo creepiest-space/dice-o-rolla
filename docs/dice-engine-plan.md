@@ -16,7 +16,7 @@ Both local references required by the specification are available:
 - `tmp/3DDiceRoller` — algorithms and behavioral reference;
 - `tmp/anvil-dice-engine` — architecture reference only.
 
-The implementation will use the `@creepiest-space/*` package scope, explicit public exports,
+The implementation will use the `@dice-o-rolla/*` package scope, explicit public exports,
 workspace dependencies, and the existing root toolchain.
 
 ## 2. Delivery strategy
