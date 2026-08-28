@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  D10_DEFINITION,
   D6_DEFINITION,
   getDieGeometry,
   getRegisteredDieTypes,
 } from '@creepiest-space/dice-geometry';
 
-import { createPolyhedronGeometry, getFaceLabel } from '../src/index.js';
+import { createFaceUvs, createPolyhedronGeometry, getFaceLabel } from '../src/index.js';
 
 describe('createPolyhedronGeometry', () => {
   test.each([...getRegisteredDieTypes()])(
@@ -54,6 +55,38 @@ describe('createPolyhedronGeometry', () => {
       [1, 0.5],
     ]);
     geometry.dispose();
+  });
+
+  test('preserves d10 kite proportions in texture coordinates', () => {
+    const face = D10_DEFINITION.faces[0]!;
+    const uvs = createFaceUvs(D10_DEFINITION, face);
+    const vertices = face.indices.map((index) => D10_DEFINITION.vertices[index]!);
+    const scaleRatios: number[] = [];
+
+    for (let left = 0; left < vertices.length; left += 1) {
+      for (let right = left + 1; right < vertices.length; right += 1) {
+        const vertexDistance = Math.hypot(
+          vertices[left]![0] - vertices[right]![0],
+          vertices[left]![1] - vertices[right]![1],
+          vertices[left]![2] - vertices[right]![2],
+        );
+        const uvDistance = Math.hypot(
+          uvs[left]![0] - uvs[right]![0],
+          uvs[left]![1] - uvs[right]![1],
+        );
+        scaleRatios.push(uvDistance / vertexDistance);
+      }
+    }
+
+    for (const ratio of scaleRatios.slice(1)) {
+      expect(ratio).toBeCloseTo(scaleRatios[0]!, 10);
+    }
+    for (const [u, v] of uvs) {
+      expect(u).toBeGreaterThanOrEqual(0.07);
+      expect(u).toBeLessThanOrEqual(0.93);
+      expect(v).toBeGreaterThanOrEqual(0.07);
+      expect(v).toBeLessThanOrEqual(0.93);
+    }
   });
 
   test('preserves outward normals for bottom and top faces', () => {

@@ -27,7 +27,9 @@ The renderer uses the same right-handed, Y-up coordinates and `{x, y, z, w}` qua
 as the geometry and physics packages. Standard meshes are generated from the shared geometry
 registry; logical polygon faces become separate material groups, so face labels and result resolution
 share one numbering source. The d4 uses three labels per triangular face to preserve its
-vertex-result convention.
+vertex-result convention. Ambiguous scalar labels `6`/`9` on every die and percentile labels
+`60`/`90` include an orientation dot below the value. The d10 geometry uses a planar UV projection
+and compact labels so d10 and d100 values preserve their proportions on elongated kite faces.
 
 `updateDie()` stores a plain snapshot. `render(alpha)` interpolates the previous and current
 positions with lerp and orientations with quaternion slerp. It never writes back to physics state.

@@ -2,9 +2,11 @@ export {
   ThreeMaterialFactory,
   type DiceMaterialStyle,
   type FaceLabel,
+  type FaceMaterialOptions,
 } from './material-factory.js';
 export {
   createPolyhedronGeometry,
+  createFaceUvs,
   DEFAULT_THREE_THEME,
   getFaceLabel,
   ThreeDiceMeshFactory,

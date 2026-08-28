@@ -4,8 +4,18 @@ import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace } from 'three';
 export type DiceMaterialStyle = RendererTheme['material'];
 export type FaceLabel = string | number | readonly number[];
 
+export interface FaceMaterialOptions {
+  readonly labelScale?: number;
+}
+
+const ORIENTATION_DOT_LABELS = new Set(['6', '9', '60', '90']);
+
 export class ThreeMaterialFactory {
-  createFace(label: FaceLabel, theme: RendererTheme): MeshStandardMaterial {
+  createFace(
+    label: FaceLabel,
+    theme: RendererTheme,
+    options: FaceMaterialOptions = {},
+  ): MeshStandardMaterial {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
@@ -16,12 +26,25 @@ export class ThreeMaterialFactory {
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = theme.labelColor;
     const scalarLabel = typeof label === 'string' || typeof label === 'number';
-    const fontSize = scalarLabel && String(label).length >= 2 ? 100 : 128;
+    const labelScale = options.labelScale ?? 1;
+    const fontSize = (scalarLabel && String(label).length >= 2 ? 100 : 128) * labelScale;
     context.font = `700 ${fontSize}px system-ui, sans-serif`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     if (scalarLabel) {
-      context.fillText(String(label), canvas.width / 2, canvas.height / 2 + 8);
+      const labelY = canvas.height / 2 + 8;
+      context.fillText(String(label), canvas.width / 2, labelY);
+      if (requiresOrientationDot(label)) {
+        context.beginPath();
+        context.arc(
+          canvas.width / 2,
+          labelY + fontSize * 0.55,
+          canvas.width * 0.025,
+          0,
+          Math.PI * 2,
+        );
+        context.fill();
+      }
     } else {
       context.font = '700 58px system-ui, sans-serif';
       context.save();
@@ -42,4 +65,9 @@ export class ThreeMaterialFactory {
       roughness: theme.roughness,
     });
   }
+}
+
+export function requiresOrientationDot(label: FaceLabel): boolean {
+  if (typeof label !== 'string' && typeof label !== 'number') return false;
+  return ORIENTATION_DOT_LABELS.has(String(label));
 }
