@@ -96,10 +96,10 @@ and their component roles.
 | `@dice-o-rolla/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
 | `@dice-o-rolla/dice-demo`           | thin browser UI                                        |
 
-See [architecture](docs/architecture.md), [physics](docs/physics.md),
-[Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md),
-[versioning](docs/versioning.md), [npm publishing](docs/npm-publishing.md), and
-[security guidance](docs/security.md) for design, release, and deployment details.
+See the [user documentation](docs/README.md), [engine lifecycle](docs/engine.md),
+[Three.js renderers](docs/three-renderer.md), [physics](docs/physics.md),
+[Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md), and
+[security guidance](docs/security.md).
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
 integration bundle in `artifacts/` with `bun run pack:dice-engine`. See
@@ -114,8 +114,7 @@ bun run check:full
 ```
 
 The full gate runs formatting, ordinary and type-aware lint, strict TypeScript checks, tests,
-dead-code analysis, and every production build. See [performance observations](docs/performance.md)
-for the measured 20/50/100-die load profile.
+dead-code analysis, and every production build.
 
 ## License
 

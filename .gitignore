@@ -14,3 +14,7 @@ artifacts/
 !.vscode/settings.json
 tmp
 temp
+
+# Local maintainer and agent documentation
+/AGENTS.md
+/docs/internal/
