@@ -28,28 +28,31 @@ The command:
 4. removes workspace-only dependency edges from the local-only package manifests;
 5. verifies every package's public entry point, declarations, license files, and absence of source
    imports;
-6. creates the archives, a consumer dependency fragment, instructions, and SHA-256 checksums in
-   `artifacts/`, then removes the staging directory.
+6. verifies that all runtime packages have one coordinated version;
+7. creates versioned archives, a release manifest, a consumer dependency fragment, instructions,
+   and SHA-256 checksums in `artifacts/`, then removes the staging directory.
 
 The bundle contains:
 
 ```text
 artifacts/
-├─ dice-core.tgz
-├─ dice-engine.tgz
-├─ dice-geometry.tgz
-├─ dice-physics.tgz
-├─ dice-physics-rapier.tgz
-├─ dice-renderer.tgz
-├─ dice-renderer-three.tgz
+├─ dice-core-<version>.tgz
+├─ dice-engine-<version>.tgz
+├─ dice-geometry-<version>.tgz
+├─ dice-physics-<version>.tgz
+├─ dice-physics-rapier-<version>.tgz
+├─ dice-renderer-<version>.tgz
+├─ dice-renderer-three-<version>.tgz
 ├─ local-dependencies.json
+├─ release-manifest.json
 ├─ README.md
 └─ SHA256SUMS
 ```
 
 Each archive contains compiled ESM, TypeScript declarations, its package manifest, and the project
 license notices. The engine archive also includes its package README. Package `exports` maps prevent
-consumers from importing undocumented subpaths.
+consumers from importing undocumented subpaths. `release-manifest.json` records the coordinated
+version, source commit, archive filename, and SHA-256 of every package.
 
 ## Consumer installation
 
@@ -72,9 +75,10 @@ public runtime dependencies `@dimforge/rapier3d-compat` and `three` from the con
 ## Release boundary
 
 The generated bundle is a local integration and CI artifact, not a registry publication. Packages
-remain `private` and use version `0.0.0`. Before an external release:
+remain `private` until publication is explicitly authorized. Before an external release:
 
-- assign one coordinated non-zero version to every publishable workspace package;
+- prepare one coordinated non-zero version with the Changesets workflow documented in
+  `docs/versioning.md`;
 - package and publish the dependency graph before `dice-engine`;
 - remove `private` only from packages intended for publication;
 - add registry and repository metadata;

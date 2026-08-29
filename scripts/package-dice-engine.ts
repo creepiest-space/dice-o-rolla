@@ -13,18 +13,26 @@ interface PackageManifest {
 
 interface WorkspacePackage {
   readonly directory: string;
-  readonly archive: string;
   readonly includeReadme?: boolean;
 }
 
+interface VersionedWorkspacePackage extends WorkspacePackage {
+  readonly archive: string;
+}
+
+interface PackagedWorkspace {
+  readonly workspacePackage: VersionedWorkspacePackage;
+  readonly manifest: PackageManifest;
+}
+
 const workspacePackages: readonly WorkspacePackage[] = [
-  { directory: 'dice-core', archive: 'dice-core.tgz' },
-  { directory: 'dice-geometry', archive: 'dice-geometry.tgz' },
-  { directory: 'dice-physics', archive: 'dice-physics.tgz' },
-  { directory: 'dice-renderer', archive: 'dice-renderer.tgz' },
-  { directory: 'dice-physics-rapier', archive: 'dice-physics-rapier.tgz' },
-  { directory: 'dice-renderer-three', archive: 'dice-renderer-three.tgz' },
-  { directory: 'dice-engine', archive: 'dice-engine.tgz', includeReadme: true },
+  { directory: 'dice-core' },
+  { directory: 'dice-geometry' },
+  { directory: 'dice-physics' },
+  { directory: 'dice-renderer' },
+  { directory: 'dice-physics-rapier' },
+  { directory: 'dice-renderer-three' },
+  { directory: 'dice-engine', includeReadme: true },
 ];
 
 const rootDirectory = resolve(import.meta.dir, '..');
@@ -34,12 +42,9 @@ const stagingRoot = resolve(artifactsDirectory, '.dice-engine-packages');
 
 await mkdir(artifactsDirectory, { recursive: true });
 await rm(stagingRoot, { force: true, recursive: true });
-await Promise.all(
-  workspacePackages.map(({ archive }) => rm(resolve(artifactsDirectory, archive), { force: true })),
-);
 await run(['bun', 'run', 'build:dice-engine'], rootDirectory);
 
-const manifests = await Promise.all(
+const sourceManifests = await Promise.all(
   workspacePackages.map(async (workspacePackage) => ({
     workspacePackage,
     manifest: await readManifest(
@@ -47,7 +52,22 @@ const manifests = await Promise.all(
     ),
   })),
 );
+const releaseVersion = getCoordinatedVersion(sourceManifests.map(({ manifest }) => manifest));
+const manifests: readonly PackagedWorkspace[] = sourceManifests.map(
+  ({ workspacePackage, manifest }) => ({
+    workspacePackage: {
+      ...workspacePackage,
+      archive: `${workspacePackage.directory}-${releaseVersion}.tgz`,
+    },
+    manifest,
+  }),
+);
 const workspaceNames = new Set(manifests.map(({ manifest }) => manifest.name));
+
+const oldArchiveGlob = new Bun.Glob('dice-*.tgz');
+for await (const archive of oldArchiveGlob.scan({ cwd: artifactsDirectory, onlyFiles: true })) {
+  await rm(resolve(artifactsDirectory, archive), { force: true });
+}
 
 await Promise.all(
   manifests.map(({ workspacePackage, manifest }) =>
@@ -55,13 +75,13 @@ await Promise.all(
   ),
 );
 
-await writeConsumerFiles(manifests);
+await writeConsumerFiles(manifests, releaseVersion);
 await rm(stagingRoot, { force: true, recursive: true });
 
 console.log(`Created local integration artifacts in ${artifactsDirectory}`);
 
 async function packageWorkspace(
-  workspacePackage: WorkspacePackage,
+  workspacePackage: VersionedWorkspacePackage,
   sourceManifest: PackageManifest,
   availableWorkspaceNames: ReadonlySet<string>,
 ): Promise<void> {
@@ -113,10 +133,8 @@ async function packageWorkspace(
 }
 
 async function writeConsumerFiles(
-  packageManifests: ReadonlyArray<{
-    readonly workspacePackage: WorkspacePackage;
-    readonly manifest: PackageManifest;
-  }>,
+  packageManifests: readonly PackagedWorkspace[],
+  coordinatedVersion: string,
 ): Promise<void> {
   const dependencies = Object.fromEntries(
     packageManifests.map(({ workspacePackage, manifest }) => [
@@ -129,15 +147,41 @@ async function writeConsumerFiles(
     `${JSON.stringify({ dependencies }, null, 2)}\n`,
   );
 
-  const checksums = await Promise.all(
-    packageManifests.map(async ({ workspacePackage }) => {
+  const packagedEntries = await Promise.all(
+    packageManifests.map(async ({ workspacePackage, manifest }) => {
       const archivePath = resolve(artifactsDirectory, workspacePackage.archive);
       const hasher = new Bun.CryptoHasher('sha256');
       hasher.update(await Bun.file(archivePath).arrayBuffer());
-      return `${hasher.digest('hex')}  artifacts/${workspacePackage.archive}`;
+      return {
+        name: manifest.name,
+        version: manifest.version,
+        archive: workspacePackage.archive,
+        sha256: hasher.digest('hex'),
+      };
     }),
   );
+  const checksums = packagedEntries.map(({ archive, sha256 }) => `${sha256}  artifacts/${archive}`);
   await Bun.write(resolve(artifactsDirectory, 'SHA256SUMS'), `${checksums.join('\n')}\n`);
+
+  const gitCommit = await readCommand(['git', 'rev-parse', 'HEAD'], rootDirectory);
+  await Bun.write(
+    resolve(artifactsDirectory, 'release-manifest.json'),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        version: coordinatedVersion,
+        gitCommit,
+        packages: Object.fromEntries(
+          packagedEntries.map(({ name, version, archive, sha256 }) => [
+            name,
+            { version, archive, sha256 },
+          ]),
+        ),
+      },
+      null,
+      2,
+    )}\n`,
+  );
 
   await Bun.write(
     resolve(artifactsDirectory, 'README.md'),
@@ -161,8 +205,24 @@ workspace-only dependency edges so npm and Bun do not query a registry for unpub
 package manager resolves the remaining public runtime dependencies, \`@dimforge/rapier3d-compat\` and
 \`three\`, from the configured registry. Verify the copied archives with
 \`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
+
+This bundle contains coordinated package version \`${coordinatedVersion}\`. Machine-readable package
+versions, archive names, checksums, and the source commit are recorded in
+\`artifacts/release-manifest.json\`.
 `,
   );
+}
+
+function getCoordinatedVersion(packageManifestsInput: readonly PackageManifest[]): string {
+  const versions = new Set(packageManifestsInput.map(({ version }) => version));
+  if (versions.size !== 1) {
+    throw new Error(`Runtime package versions must match: ${[...versions].join(', ')}`);
+  }
+  const version = packageManifestsInput[0]?.version;
+  if (version === undefined || version.length === 0) {
+    throw new Error('At least one versioned runtime package is required');
+  }
+  return version;
 }
 
 async function readManifest(path: string): Promise<PackageManifest> {
@@ -249,4 +309,23 @@ async function run(command: readonly string[], cwd: string): Promise<void> {
   if (exitCode !== 0) {
     throw new Error(`Command failed with exit code ${exitCode}: ${command.join(' ')}`);
   }
+}
+
+async function readCommand(command: readonly string[], cwd: string): Promise<string> {
+  const process = Bun.spawn(command, {
+    cwd,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  const [exitCode, stdout, stderr] = await Promise.all([
+    process.exited,
+    new Response(process.stdout).text(),
+    new Response(process.stderr).text(),
+  ]);
+  if (exitCode !== 0) {
+    throw new Error(
+      `Command failed with exit code ${exitCode}: ${command.join(' ')}\n${stderr.trim()}`,
+    );
+  }
+  return stdout.trim();
 }
