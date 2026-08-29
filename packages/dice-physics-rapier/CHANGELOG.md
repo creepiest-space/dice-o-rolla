@@ -1,5 +1,12 @@
 # @dice-o-rolla/dice-physics-rapier
 
+## 0.1.1
+
+### Patch Changes
+
+- @dice-o-rolla/dice-core@0.1.1
+  - @dice-o-rolla/dice-physics@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

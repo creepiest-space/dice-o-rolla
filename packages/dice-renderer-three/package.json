@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-renderer-three",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Three.js WebGL renderers for animated physical dice.",
   "keywords": [
     "dice",
