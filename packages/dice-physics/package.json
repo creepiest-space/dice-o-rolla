@@ -8,7 +8,16 @@
     "simulation",
     "typescript"
   ],
+  "homepage": "https://github.com/creepiest-space/dice-o-rolla#readme",
+  "bugs": {
+    "url": "https://github.com/creepiest-space/dice-o-rolla/issues"
+  },
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creepiest-space/dice-o-rolla.git",
+    "directory": "packages/dice-physics"
+  },
   "files": [
     "dist",
     "README.md",
