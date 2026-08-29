@@ -1,10 +1,20 @@
 {
   "name": "@dice-o-rolla/dice-geometry",
   "version": "0.0.0",
-  "private": true,
+  "description": "Immutable polyhedral dice geometry and settled-face resolution.",
+  "keywords": [
+    "dice",
+    "geometry",
+    "polyhedra",
+    "typescript"
+  ],
   "license": "Apache-2.0",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "type": "module",
   "sideEffects": false,
@@ -16,6 +26,10 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test --pass-with-no-tests",
@@ -23,5 +37,8 @@
   },
   "dependencies": {
     "@dice-o-rolla/dice-core": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

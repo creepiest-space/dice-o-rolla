@@ -1,10 +1,22 @@
 {
   "name": "@dice-o-rolla/dice-engine",
   "version": "0.0.0",
-  "private": true,
+  "description": "Framework-neutral physical dice engine with Rapier and Three.js browser adapters.",
+  "keywords": [
+    "dice",
+    "dice-roller",
+    "physics",
+    "rpg",
+    "three.js",
+    "typescript"
+  ],
   "license": "Apache-2.0",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "type": "module",
   "sideEffects": false,
@@ -21,6 +33,10 @@
       "default": "./dist/browser.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test --pass-with-no-tests",
@@ -33,5 +49,8 @@
     "@dice-o-rolla/dice-physics-rapier": "workspace:*",
     "@dice-o-rolla/dice-renderer": "workspace:*",
     "@dice-o-rolla/dice-renderer-three": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

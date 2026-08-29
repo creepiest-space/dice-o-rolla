@@ -4,7 +4,7 @@ A framework-neutral physical dice engine built with strict TypeScript, Rapier, a
 results come from settled rigid-body orientations; random values are used only to generate the
 physical throw.
 
-The repository is currently a private Bun workspace. Its packages are independently layered so the
+The repository is a Bun workspace whose publishable packages are independently layered so the
 domain, geometry, physics contracts, Rapier backend, renderer contracts, Three.js adapter, and
 consumer-facing engine can evolve without application coupling.
 
@@ -31,6 +31,12 @@ bun run build
 ```
 
 ## Browser consumer
+
+Install the complete browser composition from npm:
+
+```sh
+npm install @dice-o-rolla/dice-engine
+```
 
 The browser composition entry creates the official Rapier and Three.js adapters and initializes the
 engine:
@@ -92,8 +98,8 @@ and their component roles.
 
 See [architecture](docs/architecture.md), [physics](docs/physics.md),
 [Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md),
-[versioning](docs/versioning.md), and [security guidance](docs/security.md) for design, release, and
-deployment details.
+[versioning](docs/versioning.md), [npm publishing](docs/npm-publishing.md), and
+[security guidance](docs/security.md) for design, release, and deployment details.
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
 integration bundle in `artifacts/` with `bun run pack:dice-engine`. See

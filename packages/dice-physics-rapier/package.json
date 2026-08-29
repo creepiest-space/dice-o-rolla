@@ -1,10 +1,20 @@
 {
   "name": "@dice-o-rolla/dice-physics-rapier",
   "version": "0.0.0",
-  "private": true,
+  "description": "Rapier 3D physics backend for physical dice simulation.",
+  "keywords": [
+    "dice",
+    "physics",
+    "rapier",
+    "wasm"
+  ],
   "license": "Apache-2.0",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "type": "module",
   "sideEffects": false,
@@ -15,6 +25,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -28,5 +42,8 @@
   },
   "devDependencies": {
     "@dice-o-rolla/dice-geometry": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

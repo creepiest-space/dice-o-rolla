@@ -76,6 +76,9 @@ jobs:
       - name: Package dice-engine library
         run: bun run pack:dice-engine
 
+      - name: Verify npm package contents
+        run: bun ./scripts/verify-npm-packages.ts
+
       - name: Verify local package artifacts
         run: |
           test -f artifacts/release-manifest.json

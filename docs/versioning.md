@@ -17,9 +17,8 @@ The seven runtime packages form one product and use a coordinated version:
 Changesets configures them as a fixed group, so changing one package versions the complete runtime
 set. The private root workspace and `@dice-o-rolla/dice-demo` are not release units.
 
-Packages remain private until registry publication is explicitly authorized. Private package
-versioning is enabled only to produce coherent local artifacts and changelogs; it does not publish
-anything.
+All seven runtime packages are configured as public scoped npm packages. The private root workspace
+and demo cannot be published. Versioning still does not publish anything.
 
 ## Version policy
 
@@ -65,6 +64,7 @@ bun run version:packages
 bun install --frozen-lockfile
 bun run check:full
 bun run pack:dice-engine
+bun run pack:npm
 ```
 
 Review all package versions, internal dependency ranges, generated changelogs, the lockfile, local
@@ -83,12 +83,15 @@ Generated `packages/*/CHANGELOG.md` files are the package-level record. The engi
 primary consumer entry point; GitHub Releases provide the consolidated release summary. Avoid a
 manually duplicated root changelog.
 
-Coordinated repository releases use one annotated tag, `vX.Y.Z`. If registry publication is added
-later, package-specific tags produced by the publishing tool may supplement the repository tag.
+Changesets creates one package-specific tag per published package. A consolidated repository tag
+`vX.Y.Z` and GitHub Release may be added after publication when a canonical remote exists.
 
 ## Publication boundary
 
 Versioning, packaging, tagging, GitHub Releases, and registry publication are distinct actions.
-Neither `version:packages` nor `pack:dice-engine` publishes packages. Publishing requires an
-explicitly authorized workflow, protected credentials, a complete release gate, and verified
-release candidates installed in clean Bun and npm consumers.
+Neither `version:packages`, `pack:dice-engine`, nor `pack:npm` publishes packages. `pack:npm` resolves
+`workspace:*` in isolated staging manifests and uses Bun to produce registry tarballs. `bun run
+release:publish` is the only publishing command and must be explicitly authorized; it sends those
+tarballs with the npm CLI. The manual GitHub workflow uses a protected `npm` environment and npm
+trusted publishing after it is configured. See `docs/npm-publishing.md` for bootstrap and release
+instructions.

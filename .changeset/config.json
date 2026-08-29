@@ -14,13 +14,9 @@
     ]
   ],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "main",
   "format": "oxfmt",
-  "privatePackages": {
-    "version": true,
-    "tag": false
-  },
   "updateInternalDependencies": "patch",
   "bumpVersionsWithWorkspaceProtocolOnly": true,
   "ignore": ["@dice-o-rolla/dice-demo"]

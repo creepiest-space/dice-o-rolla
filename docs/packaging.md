@@ -74,16 +74,17 @@ public runtime dependencies `@dimforge/rapier3d-compat` and `three` from the con
 
 ## Release boundary
 
-The generated bundle is a local integration and CI artifact, not a registry publication. Packages
-remain `private` until publication is explicitly authorized. Before an external release:
+The generated bundle is a local integration and CI artifact, not a registry publication. Before an
+external release:
 
 - prepare one coordinated non-zero version with the Changesets workflow documented in
   `docs/versioning.md`;
 - package and publish the dependency graph before `dice-engine`;
-- remove `private` only from packages intended for publication;
-- add registry and repository metadata;
+- verify the Bun-packed registry manifests and tarballs with `bun run release:check`;
+- add repository metadata after the canonical remote has been created;
 - replace local consumer references with coordinated registry version ranges;
 - install the release candidates in an empty consumer project and test both public entry points;
 - publish only through an explicitly authorized release workflow.
 
-No publish or registry mutation is performed by the packaging command.
+No publish or registry mutation is performed by the packaging command. See `docs/npm-publishing.md`
+for the separate registry release process.
