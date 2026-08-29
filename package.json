@@ -22,7 +22,7 @@
     "release:check": "bun run check:full && bun ./scripts/verify-npm-packages.ts",
     "release:publish": "bun run release:check && bun ./scripts/publish-npm-packages.ts",
     "test": "turbo test",
-    "test:e2e": "playwright test",
+    "test:e2e": "bun run build && playwright test",
     "typecheck": "turbo typecheck",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
