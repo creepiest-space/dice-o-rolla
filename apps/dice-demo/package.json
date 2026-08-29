@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun --hot ./index.html",
     "build": "bun build ./index.html --outdir ./dist --target browser --minify",
-    "test": "bun test --pass-with-no-tests",
+    "test": "bun test ./test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

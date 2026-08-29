@@ -9,6 +9,7 @@
         "@commitlint/cli": "^21.2.0",
         "@commitlint/config-conventional": "^21.2.0",
         "@commitlint/types": "^21.2.0",
+        "@playwright/test": "^1.62.1",
         "@types/bun": "^1.4.0",
         "@types/node": "^20.19.0",
         "czg": "^1.13.0",
@@ -30,11 +31,11 @@
     },
     "packages/dice-core": {
       "name": "@dice-o-rolla/dice-core",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "packages/dice-engine": {
       "name": "@dice-o-rolla/dice-engine",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-geometry": "workspace:*",
@@ -46,21 +47,21 @@
     },
     "packages/dice-geometry": {
       "name": "@dice-o-rolla/dice-geometry",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics": {
       "name": "@dice-o-rolla/dice-physics",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics-rapier": {
       "name": "@dice-o-rolla/dice-physics-rapier",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-physics": "workspace:*",
@@ -72,14 +73,14 @@
     },
     "packages/dice-renderer": {
       "name": "@dice-o-rolla/dice-renderer",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-renderer-three": {
       "name": "@dice-o-rolla/dice-renderer-three",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@dice-o-rolla/dice-geometry": "workspace:*",
         "@dice-o-rolla/dice-renderer": "workspace:*",
@@ -365,6 +366,8 @@
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.80.0", "", { "os": "win32", "cpu": "x64" }, "sha512-yAnO7lwBYQnz2pcfBPIGQQZWIX5zd5R/1aAKIF3oE+TVj7IhoHcROjOkz3sRDngzqhfPKfFaXqug5j5rE5dn6Q=="],
 
+    "@playwright/test": ["@playwright/test@1.62.1", "", { "dependencies": { "playwright": "1.62.1" }, "bin": { "playwright": "cli.js" } }, "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ=="],
+
     "@pnpm/deps.graph-sequencer": ["@pnpm/deps.graph-sequencer@1100.0.1", "", {}, "sha512-pOr5+q1fLYKwFN3LAJuGZEnfXDcQ73zqgDHMtGy+K+uIoUqyY+6MeDCWFwfu+4EFuq76I5EPFofoNAI+Bmmq4A=="],
 
     "@simple-libs/child-process-utils": ["@simple-libs/child-process-utils@2.0.0", "", { "dependencies": { "@simple-libs/stream-utils": "^2.0.0" } }, "sha512-dvNoRKLijXnD0XoJAz94pbNuB5GQgDr55UhpSPhffDkTT0Cmcqh9jSCOtwfT2d4H6MI9E7c4SgtMuJXZ6F3c6A=="],
@@ -495,6 +498,8 @@
 
     "formatly": ["formatly@0.3.0", "", { "dependencies": { "fd-package-json": "^2.0.0" }, "bin": { "formatly": "bin/index.mjs" } }, "sha512-9XNj/o4wrRFyhSMJOvsuyMwy8aUfBaZ1VrqHVfohyXf0Sw0e+yfKG+xZaY3arGCOMdwFsqObtzVOc1gU9KiT9w=="],
 
+    "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
+
     "get-caller-file": ["get-caller-file@2.0.5", "", {}, "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg=="],
 
     "get-east-asian-width": ["get-east-asian-width@1.6.0", "", {}, "sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA=="],
@@ -578,6 +583,10 @@
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
     "picomatch": ["picomatch@4.0.7", "", {}, "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA=="],
+
+    "playwright": ["playwright@1.62.1", "", { "dependencies": { "playwright-core": "1.62.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg=="],
+
+    "playwright-core": ["playwright-core@1.62.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw=="],
 
     "require-from-string": ["require-from-string@2.0.2", "", {}, "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw=="],
 
