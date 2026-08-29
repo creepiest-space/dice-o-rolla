@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@dice-o-rolla/dice-core",
+      "@dice-o-rolla/dice-geometry",
+      "@dice-o-rolla/dice-physics",
+      "@dice-o-rolla/dice-physics-rapier",
+      "@dice-o-rolla/dice-renderer",
+      "@dice-o-rolla/dice-renderer-three",
+      "@dice-o-rolla/dice-engine"
+    ]
+  ],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "format": "oxfmt",
+  "privatePackages": {
+    "version": true,
+    "tag": false
+  },
+  "updateInternalDependencies": "patch",
+  "bumpVersionsWithWorkspaceProtocolOnly": true,
+  "ignore": ["@dice-o-rolla/dice-demo"]
+}

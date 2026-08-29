@@ -38,6 +38,9 @@ jobs:
       - name: Dead code
         run: bun run deadcode
 
+      - name: Validate release metadata
+        run: bun run version:status
+
   test:
     needs: [quality, library]
     strategy:

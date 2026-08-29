@@ -90,8 +90,9 @@ and their component roles.
 | `@dice-o-rolla/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
 | `@dice-o-rolla/dice-demo`           | thin browser UI                                        |
 
-See [architecture](docs/architecture.md), [physics](docs/physics.md), [Rapier backend](docs/rapier-backend.md),
-[dice definitions](docs/dice-definitions.md), and [security guidance](docs/security.md) for design and
+See [architecture](docs/architecture.md), [physics](docs/physics.md),
+[Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md),
+[versioning](docs/versioning.md), and [security guidance](docs/security.md) for design, release, and
 deployment details.
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
