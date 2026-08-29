@@ -89,6 +89,24 @@ describe('createPolyhedronGeometry', () => {
     }
   });
 
+  test('aligns d10 and percentile labels with the kite symmetry axis', () => {
+    for (const face of D10_DEFINITION.faces) {
+      const uvs = createFaceUvs(D10_DEFINITION, face);
+      const [left, shortApex, right, longApex] = uvs;
+
+      expect(left).toBeDefined();
+      expect(shortApex).toBeDefined();
+      expect(right).toBeDefined();
+      expect(longApex).toBeDefined();
+      expect(left![0]).toBeCloseTo(1 - right![0], 10);
+      expect(left![1]).toBeCloseTo(right![1], 10);
+      expect(shortApex![0]).toBeCloseTo(0.5, 10);
+      expect(longApex![0]).toBeCloseTo(0.5, 10);
+      expect(shortApex![1]).toBeLessThan(left![1]);
+      expect(left![1]).toBeLessThan(longApex![1]);
+    }
+  });
+
   test('preserves outward normals for bottom and top faces', () => {
     const geometry = createPolyhedronGeometry(D6_DEFINITION);
     const normal = geometry.getAttribute('normal');

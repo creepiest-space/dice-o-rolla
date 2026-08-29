@@ -123,12 +123,12 @@ export function createFaceUvs(
     return vertex;
   });
   const centroid = average(vertices);
-  const vertical = normalize(subtract(vertices[0]!, centroid));
+  const vertical = normalize(subtract(vertices[3]!, vertices[1]!));
   const normal = normalize(
     cross(subtract(vertices[1]!, vertices[0]!), subtract(vertices[2]!, vertices[0]!)),
   );
   let horizontal = normalize(cross(vertical, normal));
-  if (dot(subtract(vertices[1]!, centroid), horizontal) > 0) {
+  if (dot(subtract(vertices[0]!, centroid), horizontal) > 0) {
     horizontal = scaleVector(horizontal, -1);
   }
 
