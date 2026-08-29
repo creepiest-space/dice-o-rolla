@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-geometry",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Immutable polyhedral dice geometry and settled-face resolution.",
   "keywords": [
     "dice",

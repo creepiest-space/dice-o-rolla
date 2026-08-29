@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Framework-neutral dice notation, roll results, events, and random sources.",
   "keywords": [
     "dice",
