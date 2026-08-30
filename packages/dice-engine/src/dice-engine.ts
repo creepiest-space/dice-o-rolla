@@ -10,6 +10,8 @@ import type {
   DieResult,
   DieType,
   DiceComponentRole,
+  DiceScoreRule,
+  DiceSelection,
   PairedDiceType,
   RollNotation,
   RollResult,
@@ -61,6 +63,9 @@ interface ActiveDie {
   readonly id: string;
   readonly type: DieType;
   readonly geometryType: DieType;
+  readonly expressionIndex: number;
+  readonly selection?: DiceSelection;
+  readonly scoreRules?: readonly DiceScoreRule[];
   readonly component?: {
     readonly groupId: string;
     readonly groupType: PairedDiceType;
@@ -77,6 +82,9 @@ interface ActiveDie {
 interface PhysicalDieSpec {
   readonly type: DieType;
   readonly geometryType: DieType;
+  readonly expressionIndex: number;
+  readonly selection?: DiceSelection;
+  readonly scoreRules?: readonly DiceScoreRule[];
   readonly component?: ActiveDie['component'];
   readonly faceLabels?: Readonly<Record<number, string | number>>;
 }
@@ -419,6 +427,9 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
           id,
           type: spec.type,
           geometryType: spec.geometryType,
+          expressionIndex: spec.expressionIndex,
+          ...(spec.selection === undefined ? {} : { selection: spec.selection }),
+          ...(spec.scoreRules === undefined ? {} : { scoreRules: spec.scoreRules }),
           ...(spec.component === undefined ? {} : { component: spec.component }),
           ...(spec.faceLabels === undefined ? {} : { faceLabels: spec.faceLabels }),
           body,
@@ -443,13 +454,19 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   #createPhysicalSpecs(task: RollTask): PhysicalDieSpec[] {
     const specs: PhysicalDieSpec[] = [];
     let groupIndex = 0;
-    for (const expression of task.parsed.expressions) {
+    for (const [expressionIndex, expression] of task.parsed.expressions.entries()) {
       if (expression.kind === 'modifier') continue;
       if (expression.kind === 'dice') {
         const type = `d${expression.sides}`;
         if (!isDieType(type)) throw new RangeError(`${type} is not a standard die type`);
         for (let count = 0; count < expression.count; count += 1) {
-          specs.push({ type, geometryType: type });
+          specs.push({
+            type,
+            geometryType: type,
+            expressionIndex,
+            ...(expression.selection === undefined ? {} : { selection: expression.selection }),
+            ...(expression.score === undefined ? {} : { scoreRules: expression.score }),
+          });
         }
         continue;
       }
@@ -460,12 +477,14 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
           specs.push({
             type: 'd100',
             geometryType: 'd10',
+            expressionIndex,
             component: { groupId, groupType: 'd100', role: 'tens' },
             faceLabels: D100_TENS_LABELS,
           });
           specs.push({
             type: 'd10',
             geometryType: 'd10',
+            expressionIndex,
             component: { groupId, groupType: 'd100', role: 'units' },
           });
           continue;
@@ -473,12 +492,14 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
         specs.push({
           type: 'd6',
           geometryType: 'd6',
+          expressionIndex,
           component: { groupId, groupType: 'd66', role: 'tens' },
           faceLabels: D66_TENS_LABELS,
         });
         specs.push({
           type: 'd6',
           geometryType: 'd6',
+          expressionIndex,
           component: { groupId, groupType: 'd66', role: 'units' },
         });
       }
@@ -575,10 +596,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     session.state = 'settled';
     session.completedAt = this.#now();
     if (session.startedAt === undefined) throw new Error('Active roll has no start time');
-    const diceResults = active.dice.map((die) => {
-      if (die.result === undefined) throw new Error(`Die ${die.id} has no settled result`);
-      return die.result;
-    });
+    const diceResults = this.#applyRollRules(active.dice);
     const result = createRollResult({
       id: session.id,
       notation: session.notation,
@@ -593,6 +611,58 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     active.task.resolve(result);
     this.emit('roll:complete', result);
     this.#startNext();
+  }
+
+  #applyRollRules(dice: readonly ActiveDie[]): DieResult[] {
+    const expressionGroups = new Map<number, ActiveDie[]>();
+    for (const die of dice) {
+      const group = expressionGroups.get(die.expressionIndex) ?? [];
+      group.push(die);
+      expressionGroups.set(die.expressionIndex, group);
+    }
+
+    const inclusion = new Map<string, boolean>();
+    for (const group of expressionGroups.values()) {
+      const selection = group[0]?.selection;
+      if (selection === undefined) continue;
+      const ranked = group
+        .map((die, index) => {
+          if (die.result === undefined) throw new Error(`Die ${die.id} has no settled result`);
+          return { die, index, value: die.result.value };
+        })
+        .toSorted((left, right) => {
+          const highest = selection.operator === 'kh' || selection.operator === 'dh';
+          const valueOrder = highest ? right.value - left.value : left.value - right.value;
+          return valueOrder === 0 ? left.index - right.index : valueOrder;
+        });
+      const selected = new Set(ranked.slice(0, selection.count).map(({ die }) => die.id));
+      const keepsSelected = selection.operator === 'kh' || selection.operator === 'kl';
+      for (const die of group) {
+        inclusion.set(die.id, keepsSelected ? selected.has(die.id) : !selected.has(die.id));
+      }
+    }
+
+    return dice.map((die) => {
+      if (die.result === undefined) throw new Error(`Die ${die.id} has no settled result`);
+      const included = inclusion.get(die.id);
+      const score =
+        die.scoreRules === undefined
+          ? undefined
+          : this.#scoreFace(die.result.value, die.scoreRules);
+      if (included === undefined && score === undefined) return die.result;
+      if (die.result.component !== undefined) {
+        throw new Error(`Paired die ${die.id} cannot use keep/drop or score rules`);
+      }
+      return Object.freeze({
+        ...die.result,
+        ...(included === undefined ? {} : { included }),
+        ...(score === undefined ? {} : { score }),
+      });
+    });
+  }
+
+  #scoreFace(value: number, rules: readonly DiceScoreRule[]): number {
+    return rules.find((rule) => value >= rule.minimum && value <= rule.maximum)?.score ?? 0;
   }
 
   #cancelActive(task: RollTask): void {

@@ -74,6 +74,9 @@ d20
 2d6
 4d6+5
 1d8 + 2d6 - 1
+4d6kh3
+2d20kl1
+5d20s{1=-2,17..19=1,20=2}
 d%
 d100
 d66
@@ -82,6 +85,13 @@ d66
 `d%` and `d100` each create a tens d10 and a units d10. `00 + 0` is 100. `d66` creates two physical
 d6 dice and produces values from 11 through 66. Percentile and d66 results retain both physical dice
 and their component roles.
+
+`kh`, `kl`, `dh`, and `dl` keep or drop the requested number of highest or lowest dice. Every die is
+still physically rolled and retained in the result; selected dice have `included: true` and dropped
+dice have `included: false`. A score map such as `s{1=-2,17..19=1,20=2}` replaces raw face values
+with per-die score contributions, with unlisted faces scoring zero. Keep/drop runs before scoring,
+and integer modifiers are applied last. Paired `d%`, `d100`, and `d66` terms do not currently accept
+keep/drop or score suffixes. See the [notation reference](docs/notation.md) for the complete grammar.
 
 ## Packages
 

@@ -53,6 +53,48 @@ describe('createRollResult', () => {
     ).toThrow(RangeError);
   });
 
+  test('excludes dropped dice and uses scores instead of raw face values', () => {
+    const result = createRollResult({
+      id: 'roll-rules',
+      notation: '4d20kh3s{1=-2,17..19=1,20=2}+1',
+      dice: [
+        { id: 'die-1', type: 'd20', value: 20, included: true, score: 2 },
+        { id: 'die-2', type: 'd20', value: 18, included: true, score: 1 },
+        { id: 'die-3', type: 'd20', value: 12, included: true, score: 0 },
+        { id: 'die-4', type: 'd20', value: 1, included: false, score: -2 },
+      ],
+      modifier: 1,
+      startedAt: 0,
+      completedAt: 1,
+    });
+
+    expect(result.total).toBe(4);
+    expect(result.dice[3]).toEqual({
+      id: 'die-4',
+      type: 'd20',
+      value: 1,
+      included: false,
+      score: -2,
+    });
+  });
+
+  test('rejects selection and score metadata on paired components', () => {
+    expect(() =>
+      createRollResult({
+        id: 'roll-components',
+        notation: 'd%',
+        dice: [
+          // @ts-expect-error Runtime validation also protects untyped JavaScript consumers.
+          { ...percentileDice('percentile-1', 4, 2)[0]!, score: 1 },
+          percentileDice('percentile-1', 4, 2)[1]!,
+        ],
+        modifier: 0,
+        startedAt: 0,
+        completedAt: 1,
+      }),
+    ).toThrow('not supported on paired dice');
+  });
+
   test('aggregates every d100 face combination, including 00 + 0 = 100', () => {
     for (let tensFace = 1; tensFace <= 10; tensFace += 1) {
       for (let unitsFace = 1; unitsFace <= 10; unitsFace += 1) {

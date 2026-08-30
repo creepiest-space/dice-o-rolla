@@ -126,6 +126,50 @@ describe('DiceEngine', () => {
     expect(renderer.dice.get('roll-2:die-0')?.faceLabels?.[6]).toBe(60);
   });
 
+  test('applies keep/drop and score rules per dice term after every die settles', async () => {
+    const { engine, scheduler } = createHarness();
+    await engine.initialize();
+
+    const roll = engine.roll('4d20kh3s{1=-2,17..19=1,20=2}+1');
+    scheduler.flush();
+    const result = await roll;
+    const ranked = result.dice.toSorted(
+      (left, right) => right.value - left.value || left.id.localeCompare(right.id),
+    );
+    const expectedIncluded = new Set(ranked.slice(0, 3).map((die) => die.id));
+
+    expect(result.dice).toHaveLength(4);
+    for (const die of result.dice) {
+      expect(die.included).toBe(expectedIncluded.has(die.id));
+      expect(die.score).toBe(die.value === 1 ? -2 : die.value === 20 ? 2 : die.value >= 17 ? 1 : 0);
+    }
+    expect(result.total).toBe(
+      result.dice.reduce(
+        (total, die) => total + (die.included === false ? 0 : (die.score ?? 0)),
+        1,
+      ),
+    );
+
+    const separateTerms = engine.roll('2d6kh1 + 2d6kl1');
+    scheduler.flush();
+    const separateResult = await separateTerms;
+    expect(separateResult.dice.slice(0, 2).filter((die) => die.included)).toHaveLength(1);
+    expect(separateResult.dice.slice(2).filter((die) => die.included)).toHaveLength(1);
+
+    const dropHighest = engine.roll('4d6dh1');
+    const dropLowest = engine.roll('4d6dl1');
+    scheduler.flush();
+    const dropResults = await Promise.all([dropHighest, dropLowest]);
+    for (const [dropResult, extreme] of [
+      [dropResults[0], Math.max],
+      [dropResults[1], Math.min],
+    ] as const) {
+      const dropped = dropResult.dice.filter((die) => die.included === false);
+      expect(dropped).toHaveLength(1);
+      expect(dropped[0]?.value).toBe(extreme(...dropResult.dice.map((die) => die.value)));
+    }
+  });
+
   test('cancels active and queued sessions without orphaning promises', async () => {
     const { engine, renderer } = createHarness(100);
     await engine.initialize();

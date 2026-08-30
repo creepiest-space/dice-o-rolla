@@ -74,6 +74,27 @@ test('resizes, changes presentation settings, and clears safely', async ({ page 
   await expect(page.locator('#result strong')).toHaveText('—');
 });
 
+test('presents keep/drop and score results without hiding physical dice', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#status')).toHaveText('Classic throw ready');
+
+  await page.locator('[data-notation="4d6kh3"]').click();
+  await expect(page.locator('#status')).toHaveText('Roll settled');
+  const keptDice = page.locator('#result span').last();
+  await expect(keptDice).toContainText('(dropped)');
+  await expect(keptDice).toHaveText(
+    /^(?:d6: [1-6](?: \(dropped\))? · ){3}d6: [1-6](?: \(dropped\))?$/,
+  );
+
+  await page.locator('[data-notation="3d20s{1=-2,17..19=1,20=2}"]').click();
+  await expect(page.locator('#status')).toHaveText('Roll settled');
+  const scoredDice = page.locator('#result span').last();
+  await expect(scoredDice).toHaveText(/→ (?:\+1|\+2|0|-2)/);
+  const score = Number(await page.locator('#result strong').textContent());
+  expect(score).toBeGreaterThanOrEqual(-6);
+  expect(score).toBeLessThanOrEqual(6);
+});
+
 async function verifyRoll(page: Page, testInfo: TestInfo, rollCase: RollCase): Promise<void> {
   const result = page.locator('#result');
   const tray = page.locator('#tray');

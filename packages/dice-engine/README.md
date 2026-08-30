@@ -39,10 +39,18 @@ The initial grammar supports standard polyhedral expressions and integer modifie
 ```text
 d20
 4d6 + 2
+4d6kh3
+2d20kl1
+5d20s{1=-2,17..19=1,20=2}
 d%
 d100
 d66
 ```
+
+Keep/drop rolls retain every physical die in `result.dice` and expose the selection through
+`included`. Score maps expose each contribution through `score`; unlisted faces contribute zero.
+Selection is applied before scoring, followed by integer modifiers. Paired `d%`, `d100`, and `d66`
+terms currently reject keep/drop and score operations.
 
 Default resource limits reject oversized notation, more than 50 logical or physical dice, and more
 than eight pending rolls. Consumers may lower or explicitly raise these limits through

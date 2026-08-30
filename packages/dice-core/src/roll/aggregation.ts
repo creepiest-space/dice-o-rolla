@@ -17,14 +17,7 @@ export function createRollResult(options: CreateRollResultOptions): RollResult {
     throw new RangeError('Roll completion time must not precede its start time');
   }
 
-  const dice = Object.freeze(
-    options.dice.map((die) =>
-      Object.freeze({
-        ...die,
-        ...(die.component === undefined ? {} : { component: Object.freeze({ ...die.component }) }),
-      }),
-    ),
-  );
+  const dice = Object.freeze(options.dice.map(freezeDieResult));
   const diceTotal = getDiceTotal(dice);
 
   return Object.freeze({
@@ -36,6 +29,11 @@ export function createRollResult(options: CreateRollResultOptions): RollResult {
     startedAt: options.startedAt,
     completedAt: options.completedAt,
   });
+}
+
+function freezeDieResult(die: DieResult): DieResult {
+  if (die.component === undefined) return Object.freeze({ ...die });
+  return Object.freeze({ ...die, component: Object.freeze({ ...die.component }) });
 }
 
 interface ComponentGroup {
@@ -51,8 +49,14 @@ function getDiceTotal(dice: readonly DieResult[]): number {
   for (const die of dice) {
     const component = die.component;
     if (component === undefined) {
-      total += die.value;
+      if (die.included !== false) total += die.score ?? die.value;
       continue;
+    }
+
+    if (die.included !== undefined || die.score !== undefined) {
+      throw new RangeError(
+        'Keep/drop and score metadata is not supported on paired dice components',
+      );
     }
 
     const existing = groups.get(component.groupId);
