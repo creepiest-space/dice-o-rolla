@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "assets:sync": "bun ./scripts/sync-assets.ts",
-    "dev": "bun run assets:sync && bun --hot ./index.html",
+    "dev": "bun ./scripts/dev.ts",
     "build": "bun ./scripts/build.ts",
     "test": "bun test ./test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
