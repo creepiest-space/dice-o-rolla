@@ -52,7 +52,9 @@ artifacts/
 ```
 
 Each archive contains compiled ESM, TypeScript declarations, its package manifest, and the project
-license notices. The engine archive also includes its package README. Package `exports` maps prevent
+license notices. The engine archive also includes its package README. The optional `dice-assets`
+archive additionally contains its production catalog, KTX2 textures, and mono WebM/Opus sprites;
+source WAV/PNG/SVG masters stay outside the published archive. Package `exports` maps prevent
 consumers from importing undocumented subpaths. `release-manifest.json` records the coordinated
 version, source commit, archive filename, and SHA-256 of every package.
 

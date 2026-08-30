@@ -21,7 +21,7 @@ engine.on('die:impact', ({ force, soundPackId }) => {
     void audio.playImpact({
       force,
       dieMaterialBankId: soundPackId,
-      surfaceMaterialBankId: 'procedural-wood',
+      surfaceMaterialBankId: 'classic-wood-table',
     });
 });
 ```
@@ -40,9 +40,11 @@ Run `bun run --filter @dice-o-rolla/dice-assets assets:build`. The documented bu
 - `ktx create` conversion to UASTC KTX2 with offline mipmaps and Zstd supercompression;
 - KTX validation with `ktx validate`;
 - FFmpeg conversion and concatenation into mono WebM/Opus audio sprites;
-- production JSON catalog generation with clip offsets and atlas regions.
+- production JSON catalog generation with clip offsets, material banks, and atlas regions.
 
-The checked-in procedural set is original project test material. No binary or source asset from
-3DDiceRoller or Dice So Nice is included.
+The checked-in set combines original procedural test textures/audio with Unlicense impact WAV
+masters from 3DDiceRoller. Runtime audio is split into dice, coin, felt, metal, wood-table, and
+wood-tray mono Opus sprites. See `THIRD_PARTY_NOTICES.md` and the upstream license copied beside the
+source masters. No Dice So Nice assets are included.
 
 Licensed under Apache-2.0.

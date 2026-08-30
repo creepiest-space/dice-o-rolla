@@ -87,14 +87,29 @@
             Impact audio
             <input id="audio" type="checkbox" />
           </label>
+          <label>
+            Impact surface
+            <select id="audio-surface">
+              <option value="wood-table">Wood table</option>
+              <option value="wood-tray">Wood tray</option>
+              <option value="felt">Felt</option>
+              <option value="metal">Metal</option>
+            </select>
+          </label>
         </div>
 
         <div class="asset-cases" aria-label="Asset examples">
           <span>Asset cases</span>
           <button type="button" data-asset-skin="amethyst" data-notation="d20">Amethyst d20</button>
           <button type="button" data-asset-skin="emerald" data-notation="2d6">Recolored 2d6</button>
-          <button type="button" data-asset-skin="amethyst" data-notation="4d6" data-audio="true">
-            Audio impacts
+          <button
+            type="button"
+            data-asset-skin="amethyst"
+            data-notation="4d6"
+            data-audio="true"
+            data-audio-surface="wood-table"
+          >
+            Classic impact audio
           </button>
         </div>
       </section>

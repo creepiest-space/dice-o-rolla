@@ -116,6 +116,7 @@ test('loads KTX2 skin variants and Web Audio sprite banks from dice-assets', asy
 
   await page.locator('[data-audio="true"]').click();
   await expect(page.locator('#audio')).toBeChecked();
+  await expect(page.locator('#audio-surface')).toHaveValue('wood-table');
   await expect(status).toHaveText('Roll settled');
 });
 

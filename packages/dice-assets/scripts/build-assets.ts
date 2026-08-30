@@ -27,6 +27,18 @@ interface PipelineConfig {
       readonly durationSeconds: number;
     }[];
   }[];
+  readonly banks: readonly {
+    readonly id: string;
+    readonly kind: 'die-material' | 'surface-material';
+    readonly spriteId: string;
+    readonly clipIds: readonly string[];
+    readonly forceRange: readonly [number, number];
+    readonly gainRange: readonly [number, number];
+    readonly pitchVariationCents?: number;
+    readonly gainVariation?: number;
+    readonly maxVoices?: number;
+    readonly metadata?: Readonly<Record<string, string | number | boolean>>;
+  }[];
 }
 const pipelineSource: unknown = JSON.parse(await readFile(join(source, 'pipeline.json'), 'utf8'));
 if (!isPipelineConfig(pipelineSource)) throw new TypeError('Invalid asset pipeline config');
@@ -92,30 +104,7 @@ const catalog = {
       ]),
     ),
   })),
-  audioBanks: [
-    {
-      id: 'procedural-resin',
-      kind: 'die-material',
-      spriteId: 'procedural-resin',
-      clipIds: ['hit1', 'hit2'],
-      forceRange: [0.5, 140],
-      gainRange: [0.025, 0.85],
-      pitchVariationCents: 28,
-      gainVariation: 0.05,
-      maxVoices: 8,
-    },
-    {
-      id: 'procedural-wood',
-      kind: 'surface-material',
-      spriteId: 'procedural-wood',
-      clipIds: ['hit1', 'hit2'],
-      forceRange: [0.5, 140],
-      gainRange: [0.015, 0.55],
-      pitchVariationCents: 22,
-      gainVariation: 0.04,
-      maxVoices: 8,
-    },
-  ],
+  audioBanks: pipeline.banks,
   materials: [
     {
       id: 'procedural-resin',
@@ -220,6 +209,7 @@ function isPipelineConfig(value: unknown): value is PipelineConfig {
   if (!Array.isArray(value.textures)) return false;
   if (!Array.isArray(value.atlases)) return false;
   if (!Array.isArray(value.sprites)) return false;
+  if (!Array.isArray(value.banks)) return false;
   return (
     value.textures.every((item: unknown) => hasStrings(item, ['input', 'output', 'colorSpace'])) &&
     value.atlases.every(
@@ -239,7 +229,25 @@ function isPipelineConfig(value: unknown): value is PipelineConfig {
             'durationSeconds' in clip &&
             typeof clip.durationSeconds === 'number',
         ),
-    )
+    ) &&
+    value.banks.every(isAudioBank)
+  );
+}
+
+function isAudioBank(value: unknown): boolean {
+  if (!hasStrings(value, ['id', 'kind', 'spriteId'])) return false;
+  if (value.kind !== 'die-material' && value.kind !== 'surface-material') return false;
+  return (
+    Array.isArray(value.clipIds) &&
+    value.clipIds.every((id: unknown) => typeof id === 'string') &&
+    isNumberPair(value.forceRange) &&
+    isNumberPair(value.gainRange)
+  );
+}
+
+function isNumberPair(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) && value.length === 2 && value.every((item) => typeof item === 'number')
   );
 }
 

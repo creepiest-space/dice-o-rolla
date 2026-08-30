@@ -13,6 +13,7 @@ import { presentRollResult } from './presentation.js';
 type Engine = Awaited<ReturnType<typeof createDefaultDiceEngine>>;
 type PhysicsPreset = 'calm' | 'classic' | 'lively';
 type AssetSkin = 'amethyst' | 'classic' | 'emerald';
+type AudioSurface = 'felt' | 'metal' | 'wood-table' | 'wood-tray';
 
 const tray = element('tray', HTMLDivElement);
 const form = element('roll-form', HTMLFormElement);
@@ -25,6 +26,7 @@ const theme = element('theme', HTMLSelectElement);
 const preset = element('preset', HTMLSelectElement);
 const assets = element('assets', HTMLSelectElement);
 const audio = element('audio', HTMLInputElement);
+const audioSurface = element('audio-surface', HTMLSelectElement);
 const shortcuts = document.querySelectorAll<HTMLButtonElement>('.shortcuts [data-notation]');
 const assetCases = document.querySelectorAll<HTMLButtonElement>('[data-asset-skin]');
 
@@ -181,7 +183,7 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
       void audioPlayer.playImpact({
         force: event.force,
         dieMaterialBankId: event.soundPackId,
-        surfaceMaterialBankId: 'procedural-wood',
+        surfaceMaterialBankId: toAudioSurfaceBank(audioSurface.value),
       });
     });
     if (generation !== engineGeneration) {
@@ -309,7 +311,7 @@ function registerAssetPresets(activeEngine: Engine): void {
         dieType,
         geometryId: dieType,
         skinId: `procedural-${skin}`,
-        soundPackId: 'procedural-resin',
+        soundPackId: 'classic-dice',
       });
     }
   }
@@ -330,8 +332,11 @@ async function enableAudio(): Promise<void> {
       audioContext = new AudioContext();
       audioPlayer = new WebAudioSpritePlayer(assetRegistry, { context: audioContext });
       await Promise.all([
-        audioPlayer.preloadBank('procedural-resin'),
-        audioPlayer.preloadBank('procedural-wood'),
+        audioPlayer.preloadBank('classic-dice'),
+        audioPlayer.preloadBank('classic-felt'),
+        audioPlayer.preloadBank('classic-metal'),
+        audioPlayer.preloadBank('classic-wood-table'),
+        audioPlayer.preloadBank('classic-wood-tray'),
       ]);
     }
     await audioContext.resume();
@@ -349,11 +354,21 @@ async function runAssetCase(button: HTMLButtonElement): Promise<void> {
   assets.value = skin;
   if (engine !== undefined) applyAssetSkin(engine, skin);
   if (button.dataset.audio === 'true') {
+    audioSurface.value = toAudioSurface(button.dataset.audioSurface ?? 'wood-table');
     audio.checked = true;
     await enableAudio();
   }
   notation.value = source;
   await roll(source);
+}
+
+function toAudioSurface(value: string): AudioSurface {
+  if (value === 'felt' || value === 'metal' || value === 'wood-tray') return value;
+  return 'wood-table';
+}
+
+function toAudioSurfaceBank(value: string): string {
+  return `classic-${toAudioSurface(value)}`;
 }
 
 function capitalize(value: string): string {
