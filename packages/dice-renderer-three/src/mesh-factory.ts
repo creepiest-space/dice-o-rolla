@@ -39,6 +39,7 @@ export interface FaceMaterialResource {
 
 export interface ThreeFaceMaterialProvider {
   createFace(context: FaceMaterialContext): FaceMaterialResource;
+  dispose?(): void;
 }
 
 export function createPolyhedronGeometry(

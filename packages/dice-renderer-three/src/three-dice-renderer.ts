@@ -61,6 +61,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
   readonly #container: HTMLElement;
   readonly #options: ThreeDiceRendererOptions;
   #meshFactory: ThreeDiceMeshFactory;
+  #materialProvider: ThreeFaceMaterialProvider | undefined;
   readonly #entries = new Map<string, RenderEntry>();
   readonly #presets = new Map<string, VisualPresetDescriptor>();
   readonly #pendingPresetRemovals = new Set<string>();
@@ -75,9 +76,9 @@ export class ThreeDiceRenderer implements DiceRenderer {
   constructor(container: HTMLElement, options: ThreeDiceRendererOptions = {}) {
     this.#container = container;
     this.#options = options;
-    this.#meshFactory = new ThreeDiceMeshFactory(
-      typeof options.materialProvider === 'function' ? undefined : options.materialProvider,
-    );
+    this.#materialProvider =
+      typeof options.materialProvider === 'function' ? undefined : options.materialProvider;
+    this.#meshFactory = new ThreeDiceMeshFactory(this.#materialProvider);
     this.#viewportLimits = resolveViewportLimits(options);
     this.#theme = {
       material: options.material ?? DEFAULT_THREE_THEME.material,
@@ -99,7 +100,8 @@ export class ThreeDiceRenderer implements DiceRenderer {
       powerPreference: 'high-performance',
     });
     if (typeof this.#options.materialProvider === 'function') {
-      this.#meshFactory = new ThreeDiceMeshFactory(this.#options.materialProvider(renderer));
+      this.#materialProvider = this.#options.materialProvider(renderer);
+      this.#meshFactory = new ThreeDiceMeshFactory(this.#materialProvider);
     }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFShadowMap;
@@ -216,6 +218,8 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#renderer = undefined;
     this.#presets.clear();
     this.#pendingPresetRemovals.clear();
+    this.#materialProvider?.dispose?.();
+    this.#materialProvider = undefined;
     this.#destroyed = true;
   }
 

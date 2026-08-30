@@ -95,11 +95,35 @@ test('presents keep/drop and score results without hiding physical dice', async 
   expect(score).toBeLessThanOrEqual(6);
 });
 
+test('loads KTX2 skin variants and Web Audio sprite banks from dice-assets', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/');
+  const status = page.locator('#status');
+  await expect(status).toHaveText('Classic throw ready');
+
+  await page.locator('[data-asset-skin="amethyst"][data-notation="d20"]').click();
+  await expect(page.locator('#assets')).toHaveValue('amethyst');
+  await expect(status).toHaveText('Roll settled');
+  await testInfo.attach('amethyst-ktx2-d20.png', {
+    body: await page.locator('#tray').screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.locator('[data-asset-skin="emerald"][data-notation="2d6"]').click();
+  await expect(page.locator('#assets')).toHaveValue('emerald');
+  await expect(status).toHaveText('Roll settled');
+
+  await page.locator('[data-audio="true"]').click();
+  await expect(page.locator('#audio')).toBeChecked();
+  await expect(status).toHaveText('Roll settled');
+});
+
 async function verifyRoll(page: Page, testInfo: TestInfo, rollCase: RollCase): Promise<void> {
   const result = page.locator('#result');
   const tray = page.locator('#tray');
 
-  await page.locator(`[data-notation="${rollCase.notation}"]`).click();
+  await page.locator(`.shortcuts [data-notation="${rollCase.notation}"]`).click();
   await expect(result.locator('.result-label')).toHaveText(rollCase.notation);
   await expect(page.locator('#status')).toHaveText('Roll settled');
 

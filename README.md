@@ -22,7 +22,9 @@ bun run dev
 ```
 
 Turbo starts `apps/dice-demo`; open the URL printed by Bun. The demo supports notation input,
-quick-roll buttons, clearing, plastic/matte themes, throw presets, and responsive resizing.
+quick-roll buttons, clearing, plastic/matte themes, throw presets, and responsive resizing. Its
+asset cases demonstrate shared KTX2 PBR skins with shader recoloring and force-driven Web Audio
+sprite banks from the optional `dice-assets` package.
 
 Create a production bundle with:
 

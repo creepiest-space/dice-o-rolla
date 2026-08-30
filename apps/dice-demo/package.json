@@ -5,12 +5,15 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "dev": "bun --hot ./index.html",
-    "build": "bun build ./index.html --outdir ./dist --target browser --minify",
+    "assets:sync": "bun ./scripts/sync-assets.ts",
+    "dev": "bun run assets:sync && bun --hot ./index.html",
+    "build": "bun ./scripts/build.ts",
     "test": "bun test ./test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@dice-o-rolla/dice-engine": "workspace:*"
+    "@dice-o-rolla/dice-assets": "workspace:*",
+    "@dice-o-rolla/dice-engine": "workspace:*",
+    "three": "^0.185.0"
   }
 }

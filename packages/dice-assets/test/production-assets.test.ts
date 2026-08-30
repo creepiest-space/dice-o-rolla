@@ -26,6 +26,9 @@ describe('production asset fixtures', () => {
         .map(({ kind }) => kind)
         .toSorted(),
     ).toEqual(['die-material', 'surface-material']);
+    expect(registry.patterns.get('procedural-speckle')?.baseColor.uri).toBe(
+      '/textures/speckle-base.ktx2',
+    );
   });
 
   test('contains KTX2 textures and WebM audio rather than source formats', async () => {

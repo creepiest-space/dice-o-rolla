@@ -54,7 +54,7 @@ export class WebAudioSpritePlayer {
     options: WebAudioSpritePlayerOptions,
   ) {
     this.#context = options.context;
-    this.#fetch = options.fetch ?? globalThis.fetch;
+    this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.#random = options.random ?? Math.random;
   }
 

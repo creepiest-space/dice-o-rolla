@@ -20,6 +20,7 @@ export {
 export {
   DiceAssetCatalogLoader,
   parseCatalog,
+  resolveCatalogReferences,
   type DiceAssetCatalogLoaderOptions,
 } from './catalog-loader.js';
 export type {

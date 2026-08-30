@@ -153,7 +153,7 @@ const catalog = {
       labelColor: '#fff8dc',
       hueRotation: 0.04,
       saturation: 1.08,
-      composite: 'normal',
+      composite: 'multiply',
     },
   ],
 };
@@ -199,6 +199,12 @@ async function sprite(inputs: string[], output: string): Promise<void> {
     'libopus',
     '-b:a',
     '64k',
+    '-fflags',
+    '+bitexact',
+    '-flags:a',
+    '+bitexact',
+    '-map_metadata',
+    '-1',
     join(runtime, 'audio', output),
   ]);
 }

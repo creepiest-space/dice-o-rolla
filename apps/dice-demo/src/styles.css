@@ -155,10 +155,36 @@ h1 {
   background: rgb(246 242 232 / 72%);
 }
 
+.asset-cases {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid #c9c2b4;
+}
+
+.asset-cases > span {
+  margin-right: 4px;
+  color: #635f55;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
 .roll-form,
 .settings label {
   display: grid;
   gap: 8px;
+}
+
+.audio-toggle input {
+  width: 42px;
+  min-height: 42px;
+  margin: 0;
+  accent-color: #4e326d;
 }
 
 .input-row,

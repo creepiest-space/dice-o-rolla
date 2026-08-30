@@ -240,7 +240,7 @@
       "labelColor": "#fff8dc",
       "hueRotation": 0.04,
       "saturation": 1.08,
-      "composite": "normal"
+      "composite": "multiply"
     }
   ]
 }

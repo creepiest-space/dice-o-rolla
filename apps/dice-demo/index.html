@@ -75,6 +75,27 @@
               <option value="lively">Lively</option>
             </select>
           </label>
+          <label>
+            Assets
+            <select id="assets">
+              <option value="classic">Classic</option>
+              <option value="amethyst">Amethyst PBR</option>
+              <option value="emerald">Emerald recolor</option>
+            </select>
+          </label>
+          <label class="audio-toggle">
+            Impact audio
+            <input id="audio" type="checkbox" />
+          </label>
+        </div>
+
+        <div class="asset-cases" aria-label="Asset examples">
+          <span>Asset cases</span>
+          <button type="button" data-asset-skin="amethyst" data-notation="d20">Amethyst d20</button>
+          <button type="button" data-asset-skin="emerald" data-notation="2d6">Recolored 2d6</button>
+          <button type="button" data-asset-skin="amethyst" data-notation="4d6" data-audio="true">
+            Audio impacts
+          </button>
         </div>
       </section>
     </main>
