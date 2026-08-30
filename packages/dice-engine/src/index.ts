@@ -12,6 +12,7 @@ export type {
   DiceEngineLimits,
   DiceEngineOptions,
   DiceCollisionEvent,
+  DiceImpactEvent,
   DiceCollisionEventOptions,
   DiceMaterialType,
   DiceRemovalReason,

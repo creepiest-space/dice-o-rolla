@@ -314,6 +314,47 @@ describe('DiceEngine', () => {
     expect(await outcome).toBeInstanceOf(RollCancelledError);
   });
 
+  test('publishes Rapier impact force with visual asset ids', async () => {
+    const physics = new FakePhysics(100);
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const engine = new DiceEngine({
+      physics,
+      renderer,
+      scheduler,
+      now: () => scheduler.now,
+      random: new SeededRandomSource(42),
+      fixedStepSeconds: 0.01,
+      collisionEvents: { enabled: true, maxEventsPerFrame: 4 },
+    });
+    engine.registerVisualPreset(
+      {
+        id: 'custom:audio-d6',
+        dieType: 'd6',
+        geometryId: 'd6',
+        skinId: 'amethyst',
+        soundPackId: 'resin',
+      },
+      { makeDefault: true },
+    );
+    const impacts: unknown[] = [];
+    engine.on('die:impact', (event) => impacts.push(event));
+    await engine.initialize();
+    const outcome = engine.roll('1d6').catch((error: unknown) => error);
+    physics.impactEvents.push({ dieId: 'roll-1:die-0', force: 37.5 });
+    scheduler.advance(10);
+    expect(impacts).toEqual([
+      expect.objectContaining({
+        dieId: 'roll-1:die-0',
+        force: 37.5,
+        skinId: 'amethyst',
+        soundPackId: 'resin',
+      }),
+    ]);
+    engine.cancel();
+    expect(await outcome).toBeInstanceOf(RollCancelledError);
+  });
+
   test('cancels active and queued sessions without orphaning promises', async () => {
     const { engine, renderer } = createHarness(100);
     await engine.initialize();

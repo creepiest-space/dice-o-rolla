@@ -35,30 +35,30 @@ rejected while that ID is still in use.
 
 ## Skins and sounds
 
-`@dice-o-rolla/dice-assets` is an optional package containing immutable descriptors and registries
-for skin and sound-pack resources. No other Dice O Rolla package depends on it. Core engine presets
-carry only opaque `skinId` and `soundPackId` strings; the application connects those IDs to its
-renderer and audio adapters.
+`@dice-o-rolla/dice-assets` is an optional leaf package. No other Dice O Rolla package depends on
+it. Core engine presets carry only opaque `skinId` and `soundPackId` strings; the application
+connects those IDs to its renderer and audio adapters.
 
 ```ts
 import { DiceAssetRegistry } from '@dice-o-rolla/dice-assets';
 
 const assets = new DiceAssetRegistry();
-assets.registerSkin({
-  id: 'runic-stone',
-  material: 'custom',
-  textures: { body: { uri: '/dice/runic-stone.webp', mediaType: 'image/webp' } },
-});
-assets.registerSoundPack({
-  id: 'stone-table',
-  dieCollision: {
-    samples: [{ uri: '/dice/stone-hit-1.ogg' }, { uri: '/dice/stone-hit-2.ogg' }],
+assets.materials.register({ id: 'stone', roughness: 0.8, metalness: 0 });
+assets.patterns.register({
+  id: 'runes',
+  baseColor: {
+    uri: '/dice/runes.ktx2',
+    mediaType: 'image/ktx2',
+    colorSpace: 'srgb',
+    mipmaps: true,
   },
 });
+assets.skins.register({ id: 'runic-stone', materialId: 'stone', patternId: 'runes' });
 ```
 
-The asset package does not fetch, decode, render, or play resources. This keeps consumers that do
-not need custom skins or audio free of asset code and files.
+Runtime textures are UASTC KTX2 with offline mipmaps. PBR patterns split base color, normal, and
+packed ORM; reusable face atlases come from SVG/font sources. `ThreeAssetMaterialProvider` and
+`WebAudioSpritePlayer` are opt-in application adapters.
 
 ## Lifecycle and collision events
 
@@ -78,6 +78,10 @@ const engine = new DiceEngine({
 engine.on('die:collision', (event) => {
   if (!event.started || event.soundPackId === undefined) return;
   // Resolve event.soundPackId through the application's DiceAssetRegistry.
+});
+
+engine.on('die:impact', ({ force, soundPackId }) => {
+  // WebAudioSpritePlayer maps Rapier force to gain and applies small randomized pitch/gain.
 });
 ```
 

@@ -6,8 +6,14 @@ import {
   getDieGeometry,
   getRegisteredDieTypes,
 } from '@dice-o-rolla/dice-geometry';
+import { MeshStandardMaterial } from 'three';
 
-import { createFaceUvs, createPolyhedronGeometry, getFaceLabel } from '../src/index.js';
+import {
+  createFaceUvs,
+  createPolyhedronGeometry,
+  getFaceLabel,
+  ThreeDiceMeshFactory,
+} from '../src/index.js';
 
 describe('createPolyhedronGeometry', () => {
   test.each([...getRegisteredDieTypes()])(
@@ -152,5 +158,26 @@ describe('createPolyhedronGeometry', () => {
 
     expect(getFaceLabel(d10, zeroFace, { 10: '00' })).toBe('00');
     expect(getFaceLabel(d10, sevenFace, { 7: 70 })).toBe(70);
+  });
+
+  test('passes preset and face context to an injected material provider', () => {
+    const contexts: unknown[] = [];
+    const factory = new ThreeDiceMeshFactory({
+      createFace(context) {
+        contexts.push(context);
+        const material = new MeshStandardMaterial();
+        return { material, dispose: () => material.dispose() };
+      },
+    });
+    const preset = {
+      id: 'custom:d6',
+      dieType: 'd6',
+      geometryId: 'd6',
+      skinId: 'amethyst',
+    } as const;
+    const resource = factory.create(D6_DEFINITION, undefined, 1, undefined, preset);
+    expect(contexts).toHaveLength(6);
+    expect(contexts[0]).toEqual(expect.objectContaining({ faceValue: 1, preset }));
+    resource.dispose();
   });
 });

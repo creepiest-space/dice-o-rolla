@@ -8,7 +8,12 @@ import type {
 } from '@dice-o-rolla/dice-renderer';
 import { PCFShadowMap, WebGLRenderer } from 'three';
 
-import { DEFAULT_THREE_THEME, ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
+import {
+  DEFAULT_THREE_THEME,
+  ThreeDiceMeshFactory,
+  type ThreeDiceMesh,
+  type ThreeFaceMaterialProvider,
+} from './mesh-factory.js';
 import { ThreeCamera, ThreeScene } from './scene.js';
 import { applyInterpolatedTransform } from './transform.js';
 import {
@@ -24,6 +29,9 @@ export interface ThreeDiceRendererOptions extends Partial<RendererTheme> {
   readonly maxPixelRatio?: number;
   readonly maxViewportDimension?: number;
   readonly maxFramebufferPixels?: number;
+  readonly materialProvider?:
+    | ThreeFaceMaterialProvider
+    | ((renderer: WebGLRenderer) => ThreeFaceMaterialProvider);
 }
 
 interface RenderEntry {
@@ -52,7 +60,7 @@ function copyState(state: RenderDieState): RenderDieState {
 export class ThreeDiceRenderer implements DiceRenderer {
   readonly #container: HTMLElement;
   readonly #options: ThreeDiceRendererOptions;
-  readonly #meshFactory = new ThreeDiceMeshFactory();
+  #meshFactory: ThreeDiceMeshFactory;
   readonly #entries = new Map<string, RenderEntry>();
   readonly #presets = new Map<string, VisualPresetDescriptor>();
   readonly #pendingPresetRemovals = new Set<string>();
@@ -67,6 +75,9 @@ export class ThreeDiceRenderer implements DiceRenderer {
   constructor(container: HTMLElement, options: ThreeDiceRendererOptions = {}) {
     this.#container = container;
     this.#options = options;
+    this.#meshFactory = new ThreeDiceMeshFactory(
+      typeof options.materialProvider === 'function' ? undefined : options.materialProvider,
+    );
     this.#viewportLimits = resolveViewportLimits(options);
     this.#theme = {
       material: options.material ?? DEFAULT_THREE_THEME.material,
@@ -87,6 +98,9 @@ export class ThreeDiceRenderer implements DiceRenderer {
       alpha: true,
       powerPreference: 'high-performance',
     });
+    if (typeof this.#options.materialProvider === 'function') {
+      this.#meshFactory = new ThreeDiceMeshFactory(this.#options.materialProvider(renderer));
+    }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFShadowMap;
     this.#container.append(renderer.domElement);
@@ -233,6 +247,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
       this.#theme,
       state.scale,
       state.faceLabels,
+      preset,
     );
   }
 

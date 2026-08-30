@@ -2,6 +2,7 @@ import type { Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
   PhysicsCollisionEvent,
+  PhysicsImpactEvent,
   PhysicsDieHandle,
   PhysicsWorld,
   TrayOptions,
@@ -71,7 +72,8 @@ export class RapierPhysicsWorld implements PhysicsWorld {
     );
     colliderDescriptor.setActiveEvents(
       this.#collisionEventsEnabled
-        ? this.#rapier.ActiveEvents.COLLISION_EVENTS
+        ? this.#rapier.ActiveEvents.COLLISION_EVENTS |
+            this.#rapier.ActiveEvents.CONTACT_FORCE_EVENTS
         : this.#rapier.ActiveEvents.NONE,
     );
     const body = this.#world.createRigidBody(bodyDescriptor);
@@ -173,7 +175,7 @@ export class RapierPhysicsWorld implements PhysicsWorld {
     this.#assertAlive();
     this.#collisionEventsEnabled = enabled;
     const activeEvents = enabled
-      ? this.#rapier.ActiveEvents.COLLISION_EVENTS
+      ? this.#rapier.ActiveEvents.COLLISION_EVENTS | this.#rapier.ActiveEvents.CONTACT_FORCE_EVENTS
       : this.#rapier.ActiveEvents.NONE;
     for (const die of this.#dice.values()) {
       for (let index = 0; index < die.body.numColliders(); index += 1) {
@@ -197,6 +199,26 @@ export class RapierPhysicsWorld implements PhysicsWorld {
           dieId,
           ...(otherDieId === undefined ? {} : { otherDieId }),
           started,
+        }),
+      );
+    });
+    return Object.freeze(events);
+  }
+
+  drainImpactEvents(): readonly PhysicsImpactEvent[] {
+    this.#assertAlive();
+    const events: PhysicsImpactEvent[] = [];
+    this.#eventQueue.drainContactForceEvents((contact) => {
+      const first = this.#colliderDice.get(contact.collider1());
+      const second = this.#colliderDice.get(contact.collider2());
+      const dieId = first ?? second;
+      if (dieId === undefined) return;
+      const otherDieId = first === undefined || second === undefined ? undefined : second;
+      events.push(
+        Object.freeze({
+          dieId,
+          ...(otherDieId === undefined ? {} : { otherDieId }),
+          force: contact.totalForceMagnitude(),
         }),
       );
     });

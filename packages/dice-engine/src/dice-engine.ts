@@ -712,6 +712,20 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
             );
             emittedCollisionEvents += 1;
           }
+          for (const impact of this.#physics.drainImpactEvents()) {
+            if (emittedCollisionEvents >= this.#collisionEvents.maxEventsPerFrame) continue;
+            const event = this.#dieEvents.get(impact.dieId);
+            if (event === undefined) continue;
+            this.emit(
+              'die:impact',
+              Object.freeze({
+                ...event,
+                ...(impact.otherDieId === undefined ? {} : { otherDieId: impact.otherDieId }),
+                force: impact.force,
+              }),
+            );
+            emittedCollisionEvents += 1;
+          }
         }
         this.#accumulatorSeconds -= this.#fixedStepSeconds;
         for (const die of active.dice) {

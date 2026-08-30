@@ -64,12 +64,20 @@ export interface PhysicsCollisionEvent {
   readonly started: boolean;
 }
 
+export interface PhysicsImpactEvent {
+  readonly dieId: string;
+  readonly otherDieId?: string;
+  /** Rapier total contact-force magnitude for the simulation step. */
+  readonly force: number;
+}
+
 export interface PhysicsWorld {
   createDie(options: CreatePhysicsDieOptions): PhysicsDieHandle;
   configureTray(options: TrayOptions): void;
   setGravity(gravity: Vector3Like): void;
   setCollisionEventsEnabled(enabled: boolean): void;
   drainCollisionEvents(): readonly PhysicsCollisionEvent[];
+  drainImpactEvents(): readonly PhysicsImpactEvent[];
   step(dtSeconds: number): void;
   removeDie(id: string): void;
   clear(): void;

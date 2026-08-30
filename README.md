@@ -97,7 +97,7 @@ keep/drop or score suffixes. See the [notation reference](docs/notation.md) for 
 
 | Workspace                           | Responsibility                                         |
 | ----------------------------------- | ------------------------------------------------------ |
-| `@dice-o-rolla/dice-assets`         | optional skin and sound-pack catalogs                  |
+| `@dice-o-rolla/dice-assets`         | optional KTX2 skins and Web Audio sprite banks         |
 | `@dice-o-rolla/dice-core`           | notation, results, events, random source, domain types |
 | `@dice-o-rolla/dice-geometry`       | immutable polyhedra and face resolution                |
 | `@dice-o-rolla/dice-physics`        | backend contracts, throw generation, settling policy   |

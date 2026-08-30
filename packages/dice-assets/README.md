@@ -1,25 +1,48 @@
 # `@dice-o-rolla/dice-assets`
 
-Backend-neutral descriptors and registries for optional Dice O Rolla skins and sound packs.
+Optional production asset system for Dice O Rolla. The dependency direction stays one-way:
+engine, physics, and renderer packages never import `dice-assets`; an application opts in and wires
+opaque preset IDs to these adapters.
 
-The package stores metadata and asset references only. It does not fetch files, create GPU
-resources, decode audio, or play sounds. Renderer and audio adapters decide how to load and dispose
-the referenced resources. Other Dice O Rolla packages do not depend on `dice-assets`; applications
-opt into it and connect asset IDs from visual presets to their chosen adapters.
+The catalog has independent registries for audio sprites, audio banks, PBR materials, reusable
+patterns, skins, and face atlases. A skin references assets by ID, so recolor, hue, saturation,
+pattern scale, and shader compositing create variants without duplicating KTX2 data.
 
 ```ts
-import { DiceAssetRegistry } from '@dice-o-rolla/dice-assets';
+import catalog from '@dice-o-rolla/dice-assets/catalog.json' with { type: 'json' };
+import { DiceAssetRegistry, WebAudioSpritePlayer } from '@dice-o-rolla/dice-assets';
 
 const assets = new DiceAssetRegistry();
-assets.registerSkin({
-  id: 'obsidian',
-  material: 'custom',
-  textures: { body: { uri: '/dice/obsidian.webp', mediaType: 'image/webp' } },
-});
-assets.registerSoundPack({
-  id: 'wooden-table',
-  dieCollision: { samples: [{ uri: '/dice/hit.ogg' }] },
+assets.registerCatalog(catalog);
+
+const audio = new WebAudioSpritePlayer(assets, { context: new AudioContext() });
+engine.on('die:impact', ({ force, soundPackId }) => {
+  if (soundPackId !== undefined)
+    void audio.playImpact({
+      force,
+      dieMaterialBankId: soundPackId,
+      surfaceMaterialBankId: 'procedural-wood',
+    });
 });
 ```
+
+For Three.js, pass a `materialProvider` factory to `ThreeDiceRenderer`; the factory receives its
+active `WebGLRenderer` and can construct `ThreeAssetMaterialProvider`. Call `prepareSkin()` before
+dice using that skin can spawn. It loads KTX2 through Three's `KTX2Loader`, shares texture instances, uses the
+packed ORM map for AO/roughness/metalness, and composites the face atlas in the material shader.
+
+## Asset pipeline
+
+Run `bun run --filter @dice-o-rolla/dice-assets assets:build`. The documented build performs:
+
+- procedural generation of original mono WAV, PNG, and SVG masters;
+- SVG/font text rasterization through Resvg into a single face atlas;
+- `ktx create` conversion to UASTC KTX2 with offline mipmaps and Zstd supercompression;
+- KTX validation with `ktx validate`;
+- FFmpeg conversion and concatenation into mono WebM/Opus audio sprites;
+- production JSON catalog generation with clip offsets and atlas regions.
+
+The checked-in procedural set is original project test material. No binary or source asset from
+3DDiceRoller or Dice So Nice is included.
 
 Licensed under Apache-2.0.

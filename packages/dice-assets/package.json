@@ -1,7 +1,7 @@
 {
   "name": "@dice-o-rolla/dice-assets",
   "version": "0.1.1",
-  "description": "Backend-neutral skin and sound-pack descriptors for Dice O Rolla.",
+  "description": "Optional Web Audio and KTX2/PBR asset system for Dice O Rolla.",
   "keywords": [
     "assets",
     "dice",
@@ -21,6 +21,7 @@
   },
   "files": [
     "dist",
+    "assets/runtime",
     "README.md",
     "LICENSE",
     "NOTICE",
@@ -34,16 +35,27 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./catalog.json": "./assets/runtime/catalog.json"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
+    "assets:generate": "bun ./scripts/generate-procedural-assets.ts",
+    "assets:build": "bun run assets:generate && bun ./scripts/build-assets.ts && oxfmt ./assets/runtime/catalog.json",
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dice-o-rolla/dice-renderer-three": "workspace:*",
+    "three": "^0.185.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/three": "^0.185.0"
   },
   "engines": {
     "node": ">=20.0.0"

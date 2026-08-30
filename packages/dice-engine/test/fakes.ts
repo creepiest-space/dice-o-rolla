@@ -2,6 +2,7 @@ import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
   PhysicsCollisionEvent,
+  PhysicsImpactEvent,
   PhysicsDieHandle,
   PhysicsDieState,
   PhysicsWorld,
@@ -65,6 +66,7 @@ export class FakePhysics implements PhysicsWorld {
   errorOnStep: unknown;
   collisionEventsEnabled = false;
   collisionEvents: PhysicsCollisionEvent[] = [];
+  impactEvents: PhysicsImpactEvent[] = [];
 
   constructor(settleAfterSteps = 2) {
     this.settleAfterSteps = settleAfterSteps;
@@ -91,6 +93,10 @@ export class FakePhysics implements PhysicsWorld {
   drainCollisionEvents(): readonly PhysicsCollisionEvent[] {
     const events = this.collisionEvents.splice(0);
     return events;
+  }
+
+  drainImpactEvents(): readonly PhysicsImpactEvent[] {
+    return this.impactEvents.splice(0);
   }
 
   step(): void {

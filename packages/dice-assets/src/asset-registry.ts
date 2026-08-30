@@ -1,11 +1,11 @@
 import type {
-  DiceAssetMetadataValue,
-  DiceAssetReference,
+  AudioBankDefinition,
+  AudioSpriteManifest,
+  DiceAssetCatalogManifest,
+  DiceFaceAtlasDefinition,
+  DiceMaterialDefinition,
+  DicePatternDefinition,
   DiceSkinDefinition,
-  DiceSkinTextures,
-  DiceSoundCue,
-  DiceSoundPackDefinition,
-  DiceSoundSample,
 } from './types.js';
 
 export interface RegisterDiceAssetOptions {
@@ -20,173 +20,217 @@ function assertId(value: string): void {
   }
 }
 
-function copyReference(reference: DiceAssetReference): DiceAssetReference {
-  if (reference.uri.trim().length === 0) throw new RangeError('asset uri must not be empty');
-  return Object.freeze({ ...reference });
-}
-
-function copySample(sample: DiceSoundSample): DiceSoundSample {
-  const reference = copyReference(sample);
-  const volume = sample.volume ?? 1;
-  const weight = sample.weight ?? 1;
-  if (!Number.isFinite(volume) || volume < 0) {
-    throw new RangeError('sound sample volume must be a non-negative finite number');
-  }
-  if (!Number.isFinite(weight) || weight <= 0) {
-    throw new RangeError('sound sample weight must be a positive finite number');
-  }
-  return Object.freeze({ ...reference, volume, weight });
-}
-
-function copyCue(cue: DiceSoundCue | undefined): DiceSoundCue | undefined {
-  if (cue === undefined) return undefined;
-  if (cue.samples.length === 0) throw new RangeError('sound cue must contain at least one sample');
-  const maxVoices = cue.maxVoices ?? 4;
-  if (!Number.isSafeInteger(maxVoices) || maxVoices <= 0) {
-    throw new RangeError('sound cue maxVoices must be a positive safe integer');
-  }
-  return Object.freeze({
-    samples: Object.freeze(cue.samples.map(copySample)),
-    maxVoices,
-  });
-}
-
-function copyMetadata(
-  metadata: Readonly<Record<string, DiceAssetMetadataValue>> | undefined,
-): Readonly<Record<string, DiceAssetMetadataValue>> | undefined {
-  if (metadata === undefined) return undefined;
-  const copy: Record<string, DiceAssetMetadataValue> = {};
-  for (const [key, value] of Object.entries(metadata)) {
-    if (key.length === 0) throw new RangeError('asset metadata keys must not be empty');
-    if (typeof value === 'number' && !Number.isFinite(value)) {
-      throw new RangeError('asset metadata numeric values must be finite');
-    }
-    copy[key] = value;
-  }
-  return Object.freeze(copy);
-}
-
-function copyTextures(textures: DiceSkinTextures | undefined): DiceSkinTextures | undefined {
-  if (textures === undefined) return undefined;
-  return Object.freeze({
-    ...(textures.body === undefined ? {} : { body: copyReference(textures.body) }),
-    ...(textures.labels === undefined ? {} : { labels: copyReference(textures.labels) }),
-    ...(textures.normal === undefined ? {} : { normal: copyReference(textures.normal) }),
-    ...(textures.emissive === undefined ? {} : { emissive: copyReference(textures.emissive) }),
-  });
-}
-
-export function createDiceSkinDefinition(source: DiceSkinDefinition): DiceSkinDefinition {
+function immutable<T extends { readonly id: string }>(source: T): T {
   assertId(source.id);
-  for (const [name, value] of [
-    ['roughness', source.roughness],
-    ['metalness', source.metalness],
-  ] as const) {
-    if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 1)) {
-      throw new RangeError(`${name} must be within [0, 1]`);
-    }
+  return deepFreeze(structuredClone(source));
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
   }
-  const textures = copyTextures(source.textures);
-  const metadata = copyMetadata(source.metadata);
-  return Object.freeze({
-    id: source.id,
-    ...(source.name === undefined ? {} : { name: source.name }),
-    material: source.material,
-    ...(source.bodyColor === undefined ? {} : { bodyColor: source.bodyColor }),
-    ...(source.labelColor === undefined ? {} : { labelColor: source.labelColor }),
-    ...(source.roughness === undefined ? {} : { roughness: source.roughness }),
-    ...(source.metalness === undefined ? {} : { metalness: source.metalness }),
-    ...(textures === undefined ? {} : { textures }),
-    ...(metadata === undefined ? {} : { metadata }),
-  });
+  return value;
 }
 
-export function createDiceSoundPackDefinition(
-  source: DiceSoundPackDefinition,
-): DiceSoundPackDefinition {
-  assertId(source.id);
-  const dieCollision = copyCue(source.dieCollision);
-  const trayCollision = copyCue(source.trayCollision);
-  const settle = copyCue(source.settle);
-  const metadata = copyMetadata(source.metadata);
-  return Object.freeze({
-    id: source.id,
-    ...(source.name === undefined ? {} : { name: source.name }),
-    ...(dieCollision === undefined ? {} : { dieCollision }),
-    ...(trayCollision === undefined ? {} : { trayCollision }),
-    ...(settle === undefined ? {} : { settle }),
-    ...(metadata === undefined ? {} : { metadata }),
-  });
-}
-
-export class DiceAssetRegistry {
-  readonly #skins = new Map<string, DiceSkinDefinition>();
-  readonly #soundPacks = new Map<string, DiceSoundPackDefinition>();
+export class AssetRegistry<T extends { readonly id: string }> {
+  readonly #assets = new Map<string, T>();
+  readonly #validate: (asset: T) => void;
   #revision = 0;
+
+  constructor(validate: (asset: T) => void = () => undefined) {
+    this.#validate = validate;
+  }
 
   get revision(): number {
     return this.#revision;
   }
 
-  registerSkin(
-    source: DiceSkinDefinition,
-    options: RegisterDiceAssetOptions = {},
-  ): DiceSkinDefinition {
-    const skin = createDiceSkinDefinition(source);
-    this.#set(this.#skins, skin, options);
-    return skin;
+  register(source: T, options: RegisterDiceAssetOptions = {}): T {
+    const asset = immutable(source);
+    this.#validate(asset);
+    if (this.#assets.has(asset.id) && options.replace !== true) {
+      throw new Error(`Dice asset "${asset.id}" is already registered`);
+    }
+    this.#assets.set(asset.id, asset);
+    this.#revision += 1;
+    return asset;
+  }
+
+  unregister(id: string): T | undefined {
+    const asset = this.#assets.get(id);
+    if (asset === undefined) return undefined;
+    this.#assets.delete(id);
+    this.#revision += 1;
+    return asset;
+  }
+
+  get(id: string): T | undefined {
+    return this.#assets.get(id);
+  }
+
+  has(id: string): boolean {
+    return this.#assets.has(id);
+  }
+
+  list(): readonly T[] {
+    return Object.freeze(Array.from(this.#assets.values()));
+  }
+}
+
+export class DiceAssetRegistry {
+  readonly audio = new AssetRegistry<AudioSpriteManifest>(validateAudioSprite);
+  readonly audioBanks = new AssetRegistry<AudioBankDefinition>(validateAudioBank);
+  readonly materials = new AssetRegistry<DiceMaterialDefinition>(validateMaterial);
+  readonly patterns = new AssetRegistry<DicePatternDefinition>(validatePattern);
+  readonly skins = new AssetRegistry<DiceSkinDefinition>(validateSkin);
+  readonly faces = new AssetRegistry<DiceFaceAtlasDefinition>(validateFaceAtlas);
+
+  get revision(): number {
+    return (
+      this.audio.revision +
+      this.audioBanks.revision +
+      this.materials.revision +
+      this.patterns.revision +
+      this.skins.revision +
+      this.faces.revision
+    );
+  }
+
+  registerCatalog(catalog: DiceAssetCatalogManifest): void {
+    if (catalog.schemaVersion !== 1) throw new RangeError('unsupported asset catalog schema');
+    for (const asset of catalog.audioSprites ?? []) this.audio.register(asset);
+    for (const asset of catalog.audioBanks ?? []) this.audioBanks.register(asset);
+    for (const asset of catalog.materials ?? []) this.materials.register(asset);
+    for (const asset of catalog.patterns ?? []) this.patterns.register(asset);
+    for (const asset of catalog.faces ?? []) this.faces.register(asset);
+    for (const asset of catalog.skins ?? []) this.skins.register(asset);
+    this.validateReferences();
+  }
+
+  validateReferences(): void {
+    for (const bank of this.audioBanks.list()) {
+      const sprite = this.audio.get(bank.spriteId);
+      if (sprite === undefined)
+        throw new Error(`Audio bank "${bank.id}" references missing sprite`);
+      for (const clipId of bank.clipIds) {
+        if (sprite.clips[clipId] === undefined) {
+          throw new Error(`Audio bank "${bank.id}" references missing clip "${clipId}"`);
+        }
+      }
+      assertRange(bank.forceRange, 'forceRange');
+      assertRange(bank.gainRange, 'gainRange');
+    }
+    for (const skin of this.skins.list()) {
+      if (!this.materials.has(skin.materialId)) {
+        throw new Error(`Skin "${skin.id}" references missing material`);
+      }
+      if (!this.patterns.has(skin.patternId)) {
+        throw new Error(`Skin "${skin.id}" references missing pattern`);
+      }
+      if (skin.faceAtlasId !== undefined && !this.faces.has(skin.faceAtlasId)) {
+        throw new Error(`Skin "${skin.id}" references missing face atlas`);
+      }
+    }
+  }
+
+  registerSkin(source: DiceSkinDefinition, options?: RegisterDiceAssetOptions): DiceSkinDefinition {
+    return this.skins.register(source, options);
   }
 
   unregisterSkin(id: string): DiceSkinDefinition | undefined {
-    return this.#delete(this.#skins, id);
+    return this.skins.unregister(id);
   }
-
   getSkin(id: string): DiceSkinDefinition | undefined {
-    return this.#skins.get(id);
+    return this.skins.get(id);
   }
-
   listSkins(): readonly DiceSkinDefinition[] {
-    return Object.freeze(Array.from(this.#skins.values()));
+    return this.skins.list();
   }
+}
 
-  registerSoundPack(
-    source: DiceSoundPackDefinition,
-    options: RegisterDiceAssetOptions = {},
-  ): DiceSoundPackDefinition {
-    const pack = createDiceSoundPackDefinition(source);
-    this.#set(this.#soundPacks, pack, options);
-    return pack;
+function assertRange(range: readonly [number, number], name: string): void {
+  if (!range.every(Number.isFinite) || range[0] < 0 || range[1] <= range[0]) {
+    throw new RangeError(`${name} must be a finite ascending non-negative range`);
   }
+}
 
-  unregisterSoundPack(id: string): DiceSoundPackDefinition | undefined {
-    return this.#delete(this.#soundPacks, id);
+function validateReference(reference: { readonly uri: string }, name: string): void {
+  if (reference.uri.trim().length === 0) throw new RangeError(`${name} uri must not be empty`);
+}
+
+function validateTexture(
+  texture: { readonly uri: string; readonly mediaType: string; readonly mipmaps: boolean },
+  name: string,
+): void {
+  validateReference(texture, name);
+  if (texture.mediaType !== 'image/ktx2' || !texture.mipmaps) {
+    throw new RangeError(`${name} must be a mipmapped KTX2 texture`);
   }
+}
 
-  getSoundPack(id: string): DiceSoundPackDefinition | undefined {
-    return this.#soundPacks.get(id);
-  }
-
-  listSoundPacks(): readonly DiceSoundPackDefinition[] {
-    return Object.freeze(Array.from(this.#soundPacks.values()));
-  }
-
-  #set<T extends { readonly id: string }>(
-    registry: Map<string, T>,
-    asset: T,
-    options: RegisterDiceAssetOptions,
-  ): void {
-    if (registry.has(asset.id) && options.replace !== true) {
-      throw new Error(`Dice asset "${asset.id}" is already registered`);
+function validateAudioSprite(sprite: AudioSpriteManifest): void {
+  validateReference(sprite.audio, 'audio sprite');
+  if (sprite.channels !== 1) throw new RangeError('runtime audio sprites must be mono');
+  if (Object.keys(sprite.clips).length === 0)
+    throw new RangeError('audio sprite must contain clips');
+  for (const [id, clip] of Object.entries(sprite.clips)) {
+    assertId(id);
+    if (
+      !Number.isFinite(clip.offsetSeconds) ||
+      clip.offsetSeconds < 0 ||
+      !Number.isFinite(clip.durationSeconds) ||
+      clip.durationSeconds <= 0
+    ) {
+      throw new RangeError('audio sprite clip timing must be finite and non-negative');
     }
-    registry.set(asset.id, asset);
-    this.#revision += 1;
   }
+}
 
-  #delete<T>(registry: Map<string, T>, id: string): T | undefined {
-    const asset = registry.get(id);
-    if (asset === undefined) return undefined;
-    registry.delete(id);
-    this.#revision += 1;
-    return asset;
+function validateAudioBank(bank: AudioBankDefinition): void {
+  assertId(bank.spriteId);
+  if (bank.clipIds.length === 0) throw new RangeError('audio bank must contain clip ids');
+  for (const id of bank.clipIds) assertId(id);
+  assertRange(bank.forceRange, 'forceRange');
+  assertRange(bank.gainRange, 'gainRange');
+  if ((bank.pitchVariationCents ?? 0) < 0 || (bank.gainVariation ?? 0) < 0) {
+    throw new RangeError('audio variation must not be negative');
+  }
+}
+
+function validateMaterial(material: DiceMaterialDefinition): void {
+  for (const [name, value] of [
+    ['roughness', material.roughness],
+    ['metalness', material.metalness],
+  ] as const) {
+    if (!Number.isFinite(value) || value < 0 || value > 1)
+      throw new RangeError(`${name} must be within [0, 1]`);
+  }
+}
+
+function validatePattern(pattern: DicePatternDefinition): void {
+  validateTexture(pattern.baseColor, 'baseColor');
+  if (pattern.normal !== undefined) validateTexture(pattern.normal, 'normal');
+  if (pattern.orm !== undefined) validateTexture(pattern.orm, 'orm');
+}
+
+function validateSkin(skin: DiceSkinDefinition): void {
+  assertId(skin.materialId);
+  assertId(skin.patternId);
+  if (skin.faceAtlasId !== undefined) assertId(skin.faceAtlasId);
+  if (skin.saturation !== undefined && (!Number.isFinite(skin.saturation) || skin.saturation < 0)) {
+    throw new RangeError('skin saturation must be a non-negative finite number');
+  }
+}
+
+function validateFaceAtlas(atlas: DiceFaceAtlasDefinition): void {
+  validateTexture(atlas.texture, 'face atlas');
+  if (
+    !Number.isSafeInteger(atlas.width) ||
+    atlas.width <= 0 ||
+    !Number.isSafeInteger(atlas.height) ||
+    atlas.height <= 0
+  ) {
+    throw new RangeError('face atlas dimensions must be positive integers');
   }
 }

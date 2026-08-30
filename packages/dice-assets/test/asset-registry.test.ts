@@ -1,69 +1,87 @@
 import { describe, expect, test } from 'bun:test';
 
-import { DiceAssetRegistry, type DiceSkinDefinition } from '../src/index.js';
+import { DiceAssetRegistry, type RuntimeTextureReference } from '../src/index.js';
+
+const texture = (uri: string, colorSpace: 'srgb' | 'linear' = 'srgb'): RuntimeTextureReference => ({
+  uri,
+  mediaType: 'image/ktx2',
+  colorSpace,
+  mipmaps: true,
+});
 
 describe('DiceAssetRegistry', () => {
-  test('stores immutable skins separately from visual presets', () => {
+  test('keeps materials, reusable patterns, face atlases and skins separate', () => {
     const registry = new DiceAssetRegistry();
+    registry.materials.register({ id: 'resin', roughness: 0.35, metalness: 0 });
+    registry.patterns.register({ id: 'speckle', baseColor: texture('./speckle.ktx2') });
+    registry.faces.register({
+      id: 'digits',
+      texture: texture('./digits.ktx2'),
+      width: 512,
+      height: 512,
+      faces: { '1': { x: 0, y: 0, width: 128, height: 128 } },
+    });
     const skin = registry.registerSkin({
       id: 'obsidian',
-      material: 'custom',
-      roughness: 0.4,
-      textures: { body: { uri: './obsidian.webp', mediaType: 'image/webp' } },
+      materialId: 'resin',
+      patternId: 'speckle',
+      faceAtlasId: 'digits',
+      tint: '#181828',
+      hueRotation: 0.2,
+      composite: 'multiply',
     });
 
+    registry.validateReferences();
     expect(registry.getSkin('obsidian')).toBe(skin);
-    expect(skin.textures?.body?.uri).toBe('./obsidian.webp');
-    expect(Object.isFrozen(skin.textures?.body)).toBeTrue();
+    expect(Object.isFrozen(registry.patterns.get('speckle')?.baseColor)).toBeTrue();
   });
 
-  test('stores weighted sound cues without loading audio', () => {
+  test('loads a catalog and validates audio-bank references', () => {
     const registry = new DiceAssetRegistry();
-    const pack = registry.registerSoundPack({
-      id: 'wooden-table',
-      dieCollision: {
-        samples: [
-          { uri: './hit-1.ogg', weight: 2 },
-          { uri: './hit-2.ogg', volume: 0.8 },
-        ],
-      },
+    registry.registerCatalog({
+      schemaVersion: 1,
+      audioSprites: [
+        {
+          id: 'resin-sprite',
+          channels: 1,
+          audio: { uri: './resin.webm', mediaType: 'audio/webm; codecs=opus' },
+          clips: { hit1: { offsetSeconds: 0, durationSeconds: 0.12 } },
+        },
+      ],
+      audioBanks: [
+        {
+          id: 'resin',
+          kind: 'die-material',
+          spriteId: 'resin-sprite',
+          clipIds: ['hit1'],
+          forceRange: [0.5, 120],
+          gainRange: [0.02, 0.8],
+        },
+      ],
     });
-
-    expect(pack.dieCollision?.samples.map(({ weight }) => weight)).toEqual([2, 1]);
-    expect(pack.dieCollision?.maxVoices).toBe(4);
-    expect(registry.listSoundPacks()).toEqual([pack]);
+    expect(registry.audioBanks.get('resin')?.kind).toBe('die-material');
   });
 
   test('handles replacement and removal explicitly', () => {
     const registry = new DiceAssetRegistry();
-    registry.registerSkin({ id: 'plain', material: 'plastic' });
-    expect(() => registry.registerSkin({ id: 'plain', material: 'matte' })).toThrow(
-      'already registered',
-    );
-    registry.registerSkin({ id: 'plain', material: 'matte' }, { replace: true });
-    expect(registry.unregisterSkin('plain')?.material).toBe('matte');
-    expect(registry.unregisterSkin('plain')).toBeUndefined();
+    registry.materials.register({ id: 'resin', roughness: 0.4, metalness: 0 });
+    expect(() =>
+      registry.materials.register({ id: 'resin', roughness: 0.2, metalness: 0 }),
+    ).toThrow('already registered');
+    registry.materials.register({ id: 'resin', roughness: 0.2, metalness: 0 }, { replace: true });
+    expect(registry.materials.unregister('resin')?.roughness).toBe(0.2);
     expect(registry.revision).toBe(3);
   });
 
-  test.each<readonly [DiceSkinDefinition]>([
-    [{ id: '', material: 'plastic' }],
-    [{ id: 'bad', material: 'plastic', roughness: 2 }],
-    [{ id: 'bad', material: 'custom', textures: { body: { uri: '' } } }],
-  ])('rejects invalid skin descriptors %#', (skin) => {
-    expect(() => new DiceAssetRegistry().registerSkin(skin)).toThrow(RangeError);
-  });
-
-  test('rejects empty and invalid sound cues', () => {
+  test('rejects invalid runtime assets and dangling references', () => {
     const registry = new DiceAssetRegistry();
-    expect(() =>
-      registry.registerSoundPack({ id: 'empty', dieCollision: { samples: [] } }),
-    ).toThrow('at least one sample');
-    expect(() =>
-      registry.registerSoundPack({
-        id: 'invalid',
-        settle: { samples: [{ uri: './settle.ogg', weight: 0 }] },
-      }),
-    ).toThrow('weight');
+    expect(() => registry.materials.register({ id: 'bad', roughness: 2, metalness: 0 })).toThrow(
+      RangeError,
+    );
+    expect(() => registry.patterns.register({ id: 'bad', baseColor: texture('') })).toThrow(
+      RangeError,
+    );
+    registry.skins.register({ id: 'missing', materialId: 'none', patternId: 'none' });
+    expect(() => registry.validateReferences()).toThrow('missing material');
   });
 });

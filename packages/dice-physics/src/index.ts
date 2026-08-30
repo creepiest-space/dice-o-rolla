@@ -14,6 +14,7 @@ export type {
   PhysicsDieHandle,
   PhysicsDieState,
   PhysicsCollisionEvent,
+  PhysicsImpactEvent,
   PhysicsProfile,
   PhysicsTransform,
   PhysicsWorld,

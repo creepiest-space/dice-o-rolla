@@ -1,0 +1,45 @@
+{
+  "textures": [
+    {
+      "input": "textures/speckle-base.png",
+      "output": "textures/speckle-base.ktx2",
+      "colorSpace": "srgb"
+    },
+    {
+      "input": "textures/speckle-normal.png",
+      "output": "textures/speckle-normal.ktx2",
+      "colorSpace": "linear"
+    },
+    {
+      "input": "textures/speckle-orm.png",
+      "output": "textures/speckle-orm.ktx2",
+      "colorSpace": "linear"
+    }
+  ],
+  "atlases": [
+    {
+      "input": "faces/digits.svg",
+      "intermediate": "faces/digits.png",
+      "output": "textures/digits.ktx2",
+      "width": 640
+    }
+  ],
+  "sprites": [
+    {
+      "id": "procedural-resin",
+      "output": "resin.webm",
+      "clips": [
+        { "id": "hit1", "input": "resin-1.wav", "durationSeconds": 0.18 },
+        { "id": "hit2", "input": "resin-2.wav", "durationSeconds": 0.18 }
+      ]
+    },
+    {
+      "id": "procedural-wood",
+      "output": "wood.webm",
+      "clips": [
+        { "id": "hit1", "input": "wood-1.wav", "durationSeconds": 0.2 },
+        { "id": "hit2", "input": "wood-2.wav", "durationSeconds": 0.2 }
+      ]
+    }
+  ]
+}

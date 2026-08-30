@@ -67,6 +67,11 @@ export interface DiceCollisionEvent extends DiceVisualEvent {
   readonly started: boolean;
 }
 
+export interface DiceImpactEvent extends DiceVisualEvent {
+  readonly otherDieId?: string;
+  readonly force: number;
+}
+
 export interface DiceCollisionEventOptions {
   readonly enabled: boolean;
   readonly maxEventsPerFrame: number;
@@ -78,6 +83,7 @@ export interface DiceEngineEvents {
   readonly 'die:settled': { readonly sessionId: string; readonly die: DieResult };
   readonly 'die:remove': DiceRemoveEvent;
   readonly 'die:collision': DiceCollisionEvent;
+  readonly 'die:impact': DiceImpactEvent;
   readonly 'roll:complete': RollResult;
   readonly 'roll:cancel': RollSession;
   readonly 'theme:change': DiceTheme;

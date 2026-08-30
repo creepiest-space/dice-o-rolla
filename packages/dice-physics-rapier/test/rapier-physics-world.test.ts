@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
 import { D6_DEFINITION, resolveFace } from '@dice-o-rolla/dice-geometry';
-import type { CreatePhysicsDieOptions, PhysicsCollisionEvent } from '@dice-o-rolla/dice-physics';
+import type {
+  CreatePhysicsDieOptions,
+  PhysicsCollisionEvent,
+  PhysicsImpactEvent,
+} from '@dice-o-rolla/dice-physics';
 
 import { RapierPhysics } from '../src/index.js';
 
@@ -94,11 +98,14 @@ describe('RapierPhysicsWorld', () => {
     enabled.setCollisionEventsEnabled(true);
     enabled.createDie(createD6Options('audible', 1.5));
     const collisions: PhysicsCollisionEvent[] = [];
+    const impacts: PhysicsImpactEvent[] = [];
     for (let step = 0; step < 120 && collisions.length === 0; step += 1) {
       enabled.step(1 / 60);
       collisions.push(...enabled.drainCollisionEvents());
+      impacts.push(...enabled.drainImpactEvents());
     }
     expect(collisions).toContainEqual({ dieId: 'audible', started: true });
+    expect(impacts.some((impact) => impact.dieId === 'audible' && impact.force > 0)).toBeTrue();
     enabled.destroy();
   });
 
