@@ -10,21 +10,32 @@ pattern scale, and shader compositing create variants without duplicating KTX2 d
 
 ```ts
 import catalog from '@dice-o-rolla/dice-assets/catalog.json' with { type: 'json' };
-import { DiceAssetRegistry, WebAudioSpritePlayer } from '@dice-o-rolla/dice-assets';
+import {
+  DiceAssetRegistry,
+  ImpactSoundGate,
+  WebAudioSpritePlayer,
+} from '@dice-o-rolla/dice-assets';
 
 const assets = new DiceAssetRegistry();
 assets.registerCatalog(catalog);
 
 const audio = new WebAudioSpritePlayer(assets, { context: new AudioContext() });
-engine.on('die:impact', ({ force, soundPackId }) => {
-  if (soundPackId !== undefined)
-    void audio.playImpact({
-      force,
-      dieMaterialBankId: soundPackId,
-      surfaceMaterialBankId: 'classic-wood-table',
-    });
+const impactGate = new ImpactSoundGate();
+engine.on('roll:start', () => impactGate.clear());
+engine.on('die:collision', (event) => impactGate.observeCollision(event));
+engine.on('die:impact', (event) => {
+  if (!impactGate.consumeImpact(event) || event.soundPackId === undefined) return;
+  void audio.playImpact({
+    force: event.force,
+    dieMaterialBankId: event.soundPackId,
+    ...(event.otherDieId === undefined ? { surfaceMaterialBankId: 'classic-wood-table' } : {}),
+  });
 });
 ```
+
+Rapier reports contact force on every simulation step while two colliders remain touching.
+`ImpactSoundGate` combines that stream with collision start/end events so each physical contact
+produces one sound instead of an overlapping retrigger on every fixed step.
 
 For Three.js, pass a `materialProvider` factory to `ThreeDiceRenderer`; the factory receives its
 active `WebGLRenderer` and can construct `ThreeAssetMaterialProvider`. Call `prepareSkin()` before

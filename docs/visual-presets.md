@@ -40,7 +40,7 @@ it. Core engine presets carry only opaque `skinId` and `soundPackId` strings; th
 connects those IDs to its renderer and audio adapters.
 
 ```ts
-import { DiceAssetRegistry } from '@dice-o-rolla/dice-assets';
+import { DiceAssetRegistry, ImpactSoundGate } from '@dice-o-rolla/dice-assets';
 
 const assets = new DiceAssetRegistry();
 assets.materials.register({ id: 'stone', roughness: 0.8, metalness: 0 });
@@ -75,16 +75,18 @@ const engine = new DiceEngine({
   collisionEvents: { enabled: true, maxEventsPerFrame: 16 },
 });
 
-engine.on('die:collision', (event) => {
-  if (!event.started || event.soundPackId === undefined) return;
-  // Resolve event.soundPackId through the application's DiceAssetRegistry.
-});
+const impactGate = new ImpactSoundGate();
+engine.on('roll:start', () => impactGate.clear());
+engine.on('die:collision', (event) => impactGate.observeCollision(event));
 
-engine.on('die:impact', ({ force, soundPackId }) => {
+engine.on('die:impact', (event) => {
+  if (!impactGate.consumeImpact(event)) return;
   // WebAudioSpritePlayer maps Rapier force to gain and applies small randomized pitch/gain.
 });
 ```
 
-The per-frame bound prevents a dense roll from producing an unbounded main-thread event burst.
-Effects are downstream consumers: they cannot alter random input, physics state, face resolution,
-or aggregation.
+Rapier produces contact-force data on every fixed step while a contact persists. `ImpactSoundGate`
+uses the collision lifecycle to consume only the first matching force event, preventing overlapping
+audio retriggers. The per-frame bound prevents a dense roll from producing an unbounded main-thread
+event burst. Effects are downstream consumers: they cannot alter random input, physics state, face
+resolution, or aggregation.

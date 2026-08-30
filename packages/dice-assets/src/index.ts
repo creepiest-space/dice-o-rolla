@@ -23,6 +23,11 @@ export {
   resolveCatalogReferences,
   type DiceAssetCatalogLoaderOptions,
 } from './catalog-loader.js';
+export {
+  ImpactSoundGate,
+  type SoundCollisionEvent,
+  type SoundImpactEvent,
+} from './impact-sound-gate.js';
 export type {
   AudioBankDefinition,
   AudioBankKind,

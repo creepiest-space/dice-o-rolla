@@ -1,6 +1,7 @@
 import {
   DiceAssetCatalogLoader,
   DiceAssetRegistry,
+  ImpactSoundGate,
   ThreeAssetMaterialProvider,
   WebAudioSpritePlayer,
 } from '@dice-o-rolla/dice-assets';
@@ -178,12 +179,18 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
     ]);
     registerAssetPresets(nextEngine);
     applyAssetSkin(nextEngine, toAssetSkin(assets.value));
+    const impactSoundGate = new ImpactSoundGate();
+    nextEngine.on('roll:start', () => impactSoundGate.clear());
+    nextEngine.on('die:collision', (event) => impactSoundGate.observeCollision(event));
     nextEngine.on('die:impact', (event) => {
+      if (!impactSoundGate.consumeImpact(event)) return;
       if (!audio.checked || audioPlayer === undefined || event.soundPackId === undefined) return;
       void audioPlayer.playImpact({
         force: event.force,
         dieMaterialBankId: event.soundPackId,
-        surfaceMaterialBankId: toAudioSurfaceBank(audioSurface.value),
+        ...(event.otherDieId === undefined
+          ? { surfaceMaterialBankId: toAudioSurfaceBank(audioSurface.value) }
+          : {}),
       });
     });
     if (generation !== engineGeneration) {
