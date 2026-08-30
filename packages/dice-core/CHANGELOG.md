@@ -1,5 +1,11 @@
 # @dice-o-rolla/dice-core
 
+## 0.2.0
+
+### Minor Changes
+
+- d97722f: Add keep/drop dice selection and per-face score maps to standard dice notation and roll results.
+
 ## 0.1.1
 
 ## 0.1.0

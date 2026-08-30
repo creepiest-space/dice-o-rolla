@@ -19,7 +19,9 @@ engine.destroy();
 ```
 
 The browser entry point initializes Rapier WASM, creates the Three.js renderer, uses Web Crypto for
-throw generation, and releases partially initialized resources if composition fails.
+throw generation, and releases partially initialized resources if composition fails. Concurrent
+`initialize()` calls coalesce, while every roll promise terminates by settlement, cancellation,
+timeout, or failure.
 
 ## Custom adapters
 
@@ -71,7 +73,11 @@ than eight pending rolls. Consumers may lower or explicitly raise these limits t
 
 Client-side results are not authoritative for rankings, prizes, or wagering. Call `destroy()` when
 the engine is no longer needed to release frame scheduling, observers, physics resources, WebGL
-resources, and the renderer canvas.
+resources, and the renderer canvas. `clear()` keeps the engine reusable; `destroy()` is idempotent
+and final. See the canonical
+[lifecycle and runtime contract](https://github.com/creepiest-space/dice-o-rolla/blob/main/docs/engine.md).
+Consumers upgrading from `0.1` should also review the
+[0.2 migration notes](https://github.com/creepiest-space/dice-o-rolla/blob/main/docs/migration-0.2.md).
 
 ## License
 

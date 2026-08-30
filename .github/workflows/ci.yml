@@ -104,6 +104,9 @@ jobs:
       - name: Package dice-engine library
         run: bun run pack:dice-engine
 
+      - name: Verify public TypeScript declarations
+        run: bun run test:public-api
+
       - name: Verify npm package contents
         run: bun ./scripts/verify-npm-packages.ts
 

@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "paths": {
+      "@dice-o-rolla/dice-core": ["../../packages/dice-core/dist/index.d.ts"],
+      "@dice-o-rolla/dice-engine": ["../../packages/dice-engine/dist/index.d.ts"],
+      "@dice-o-rolla/dice-engine/browser": ["../../packages/dice-engine/dist/browser.d.ts"],
+      "@dice-o-rolla/dice-geometry": ["../../packages/dice-geometry/dist/index.d.ts"],
+      "@dice-o-rolla/dice-physics": ["../../packages/dice-physics/dist/index.d.ts"],
+      "@dice-o-rolla/dice-physics-rapier": ["../../packages/dice-physics-rapier/dist/index.d.ts"],
+      "@dice-o-rolla/dice-renderer": ["../../packages/dice-renderer/dist/index.d.ts"],
+      "@dice-o-rolla/dice-renderer-three": ["../../packages/dice-renderer-three/dist/index.d.ts"]
+    },
+    "types": []
+  },
+  "include": ["./root.ts", "./browser.ts", "./runtime.ts"]
+}

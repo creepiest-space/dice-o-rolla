@@ -58,6 +58,26 @@ describe('DiceEngine', () => {
     );
   });
 
+  test('coalesces concurrent initialization and rejects it when destroyed in flight', async () => {
+    const { engine, physics, renderer } = createHarness();
+    let releaseInitialization!: () => void;
+    renderer.initializeTask = new Promise<void>((resolve) => {
+      releaseInitialization = resolve;
+    });
+
+    const first = engine.initialize();
+    const second = engine.initialize();
+    expect(renderer.initializeCalls).toBe(1);
+    expect(physics.configureTrayCalls).toBe(1);
+
+    engine.destroy();
+    releaseInitialization();
+    const outcomes = await Promise.all([rejectionOf(first), rejectionOf(second)]);
+    expect(outcomes.every((error) => String(error).includes('destroyed'))).toBeTrue();
+    expect(renderer.destroyCalls).toBe(1);
+    expect(physics.destroyCalls).toBe(1);
+  });
+
   test('runs queued rolls sequentially and keeps events session-scoped', async () => {
     const { engine, physics, renderer, scheduler } = createHarness();
     await engine.initialize();
@@ -371,6 +391,22 @@ describe('DiceEngine', () => {
     expect(renderer.dice.size).toBe(0);
   });
 
+  test('terminates cancellation even when both adapters fail to remove a die', async () => {
+    const { engine, physics, renderer } = createHarness(100);
+    await engine.initialize();
+    const cleanupErrors: unknown[] = [];
+    engine.on('error', ({ error }) => cleanupErrors.push(error));
+    const roll = engine.roll('1d6');
+    physics.errorOnRemove = new Error('physics remove failed');
+    renderer.errorOnRemove = new Error('renderer remove failed');
+
+    expect(engine.cancel()).toBeTrue();
+    expect(await rejectionOf(roll)).toBeInstanceOf(RollCancelledError);
+    expect(cleanupErrors).toHaveLength(1);
+    expect(cleanupErrors[0]).toBeInstanceOf(AggregateError);
+    expect((cleanupErrors[0] as AggregateError).errors).toHaveLength(2);
+  });
+
   test('rejects rolls that exceed notation and dice limits before allocating bodies', async () => {
     const { engine, physics } = createHarness();
     await engine.initialize();
@@ -489,6 +525,19 @@ describe('DiceEngine', () => {
     engine.destroy();
     expect(physics.destroyCalls).toBe(1);
     expect(renderer.destroyCalls).toBe(1);
+    expect(String(await rejectionOf(engine.roll('1d6')))).toContain('destroyed');
+  });
+
+  test('attempts every teardown action and stays destroyed after cleanup failures', async () => {
+    const { engine, physics, renderer } = createHarness();
+    await engine.initialize();
+    physics.errorOnDestroy = new Error('physics destroy failed');
+    renderer.errorOnDestroy = new Error('renderer destroy failed');
+
+    expect(() => engine.destroy()).toThrow(AggregateError);
+    expect(physics.destroyCalls).toBe(1);
+    expect(renderer.destroyCalls).toBe(1);
+    expect(() => engine.destroy()).not.toThrow();
     expect(String(await rejectionOf(engine.roll('1d6')))).toContain('destroyed');
   });
 });

@@ -6,9 +6,13 @@ in the separate `@dice-o-rolla/dice-engine/browser` entry point.
 
 ## Roll flow
 
-`initialize()` configures the tray and renderer once. `roll()` parses and validates notation before
-creating a session. The initial concurrency policy is FIFO queueing: a second immediate call remains
-pending until the first reaches a terminal state.
+`initialize()` configures the tray and renderer once. Concurrent calls share the same initialization
+operation. If initialization rejects, an engine assembled by `createDefaultDiceEngine()` releases
+the partially created renderer and physics world before it rejects. Consumers that construct
+`DiceEngine` with custom adapters must call `destroy()` after an initialization failure.
+
+`roll()` parses and validates notation before creating a session. The initial concurrency policy is
+FIFO queueing: a second immediate call remains pending until the first reaches a terminal state.
 
 During a roll, frame deltas feed an accumulator. Physics advances only in fixed `1 / 60` second
 steps; rendering receives the remaining fraction as interpolation alpha. A die result comes from the
@@ -21,8 +25,32 @@ impulses random. The default six-unit walls contain the complete spawn range; th
 that deterministic `20d6` and `50d6` profiles settle before the hard timeout.
 
 Every promise terminates through completion, cancellation, timeout, or failure. `AbortSignal` can
-cancel an individual queued or active call. `clear()` cancels all work and removes dice. `destroy()`
-also releases renderer and physics resources and is idempotent.
+cancel an individual queued or active call. `clear()` cancels all work and removes dice while
+keeping the engine reusable. `destroy()` also releases renderer and physics resources, removes all
+engine listeners, and is idempotent.
+
+Cleanup attempts every owned operation even when an adapter throws. `clear()` or the first
+`destroy()` call can throw an `AggregateError` describing cleanup failures; affected roll promises
+are already terminal, and a failed `destroy()` still leaves the engine permanently destroyed.
+Cleanup failures encountered by `cancel()` are reported through the typed `error` event without
+changing the roll's `RollCancelledError` outcome.
+
+## Lifecycle obligations
+
+| Operation      | Allowed state               | Effect                                                                    |
+| -------------- | --------------------------- | ------------------------------------------------------------------------- |
+| `initialize()` | constructed or initializing | Configures adapters once; concurrent calls coalesce.                      |
+| `roll()`       | initialized                 | Starts or queues one bounded session.                                     |
+| `cancel()`     | initialized                 | Cancels one active or queued session.                                     |
+| `clear()`      | initialized                 | Cancels every session and removes dice; adapters remain usable.           |
+| `destroy()`    | any non-destroyed state     | Cancels work and releases all owned resources; repeated calls do nothing. |
+
+After `destroy()`, roll, layout, theme mutation, cancellation, clearing, and preset operations reject
+or throw `DiceEngineDestroyedError`; repeated `destroy()` calls do nothing. Applications must retain
+and invoke listener unsubscribe functions for listeners they want to remove before teardown;
+`destroy()` removes any remaining engine listeners. The browser renderer owns its canvas,
+`ResizeObserver`, WebGL context, scene resources, and optional material provider. The Rapier adapter
+owns its bodies, colliders, event queue, tray, and world.
 
 ## Events
 
@@ -47,3 +75,17 @@ returned dice retain component group, role, and raw settled face metadata.
 
 Applications that need custom adapters can instantiate `DiceEngine` from the default entry point
 and inject any implementations of `PhysicsWorld` and `DiceRenderer`.
+
+## Supported environments
+
+The backend-neutral root entry is declaration-tested with TypeScript 7 and targets modern ESM
+runtimes. Repository tooling supports Bun 1.3 or newer and Node.js 20 or newer. The `/browser` entry
+requires WebAssembly, WebGL 2, Web Crypto, `AbortController`, `ResizeObserver`, and
+`requestAnimationFrame`; sound consumers additionally require the Web Audio API and WebM/Opus
+decoding.
+
+The automated browser lifecycle and roll suite runs against the current Playwright Chromium build.
+Current stable Chrome and Edge are the guaranteed browser family for `0.2`. Current Firefox and
+Safari are compatibility targets, but are not release-gated until their Playwright projects are
+enabled. Server-side rendering must not call the `/browser` factory; use the root entry with custom
+headless adapters instead.

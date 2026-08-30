@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-assets",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Optional Web Audio and KTX2/PBR asset system for Dice O Rolla.",
   "keywords": [
     "assets",
@@ -51,11 +51,11 @@
   },
   "dependencies": {
     "@dice-o-rolla/dice-renderer-three": "workspace:*",
+    "@types/three": "^0.185.0",
     "three": "^0.185.0"
   },
   "devDependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "@types/three": "^0.185.0"
+    "@resvg/resvg-js": "^2.6.2"
   },
   "engines": {
     "node": ">=20.0.0"

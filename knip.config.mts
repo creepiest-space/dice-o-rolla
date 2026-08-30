@@ -2,6 +2,9 @@ import type { KnipConfig } from 'knip';
 
 export default {
   workspaces: {
+    '.': {
+      entry: ['tests/public-api/*.ts'],
+    },
     'apps/*': {},
     'packages/*': {},
     'packages/dice-engine': {

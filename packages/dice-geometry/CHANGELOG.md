@@ -1,5 +1,12 @@
 # @dice-o-rolla/dice-geometry
 
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [d97722f]
+  - @dice-o-rolla/dice-core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

@@ -129,6 +129,35 @@ test('loads KTX2 skin variants and Web Audio sprite banks from dice-assets', asy
   await expect(status).toHaveText('Roll settled');
 });
 
+test('releases browser resources across repeated mount, clear, and unmount cycles', async ({
+  page,
+}) => {
+  await installLifecycleCounters(page);
+  await page.goto('/');
+  const status = page.locator('#status');
+  await expect(status).toHaveText('Classic throw ready');
+  await expectLifecycleCounts(page, { canvases: 1, observers: 1, scheduledFrames: 0 });
+
+  await ['calm', 'lively', 'classic'].reduce(
+    (previous, preset) =>
+      previous.then(async () => {
+        await page.locator('#preset').selectOption(preset);
+        await expect(status).toHaveText(`${capitalize(preset)} throw ready`);
+        await expectLifecycleCounts(page, { canvases: 1, observers: 1, scheduledFrames: 0 });
+      }),
+    Promise.resolve(),
+  );
+
+  await page.locator('.shortcuts [data-notation="d20"]').click();
+  await expect(status).toHaveText('Roll settled');
+  await page.locator('#clear').click();
+  await expect(status).toHaveText('Tray cleared');
+  await expectLifecycleCounts(page, { canvases: 1, observers: 1, scheduledFrames: 0 });
+
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
+  await expectLifecycleCounts(page, { canvases: 0, observers: 0, scheduledFrames: 0 });
+});
+
 async function verifyResponsiveLayout(
   page: Page,
   size: { readonly width: number; readonly height: number },
@@ -157,6 +186,99 @@ async function verifyResponsiveLayout(
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(size.width);
   }
+}
+
+interface LifecycleCounts {
+  readonly canvases: number;
+  readonly observers: number;
+  readonly scheduledFrames: number;
+}
+
+async function installLifecycleCounters(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const lifecycleWindow = window as Window & {
+      diceLifecycleCounts?: () => LifecycleCounts;
+    };
+    const scheduledFrames = new Set<number>();
+    const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
+    const nativeCancelAnimationFrame = window.cancelAnimationFrame.bind(window);
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: (callback: FrameRequestCallback): number => {
+        let handle = 0;
+        handle = nativeRequestAnimationFrame((timestamp) => {
+          scheduledFrames.delete(handle);
+          callback(timestamp);
+        });
+        scheduledFrames.add(handle);
+        return handle;
+      },
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: (handle: number): void => {
+        scheduledFrames.delete(handle);
+        nativeCancelAnimationFrame(handle);
+      },
+    });
+
+    const NativeResizeObserver = window.ResizeObserver;
+    let observedTargets = 0;
+    class TrackedResizeObserver implements ResizeObserver {
+      readonly targets: Set<Element>;
+      readonly observer: ResizeObserver;
+
+      constructor(callback: ResizeObserverCallback) {
+        this.targets = new Set<Element>();
+        this.observer = new NativeResizeObserver(callback);
+      }
+
+      observe(target: Element, options?: ResizeObserverOptions): void {
+        if (!this.targets.has(target)) {
+          this.targets.add(target);
+          observedTargets += 1;
+        }
+        this.observer.observe(target, options);
+      }
+
+      unobserve(target: Element): void {
+        if (this.targets.delete(target)) observedTargets -= 1;
+        this.observer.unobserve(target);
+      }
+
+      disconnect(): void {
+        observedTargets -= this.targets.size;
+        this.targets.clear();
+        this.observer.disconnect();
+      }
+    }
+    Object.defineProperty(window, 'ResizeObserver', {
+      configurable: true,
+      value: TrackedResizeObserver,
+    });
+    lifecycleWindow.diceLifecycleCounts = () => ({
+      canvases: document.querySelectorAll('#tray canvas').length,
+      observers: observedTargets,
+      scheduledFrames: scheduledFrames.size,
+    });
+  });
+}
+
+async function expectLifecycleCounts(page: Page, expected: LifecycleCounts): Promise<void> {
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const lifecycleWindow = window as Window & {
+          diceLifecycleCounts?: () => LifecycleCounts;
+        };
+        return lifecycleWindow.diceLifecycleCounts?.();
+      }),
+    )
+    .toEqual(expected);
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 async function verifyRoll(page: Page, testInfo: TestInfo, rollCase: RollCase): Promise<void> {

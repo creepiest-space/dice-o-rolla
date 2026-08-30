@@ -113,7 +113,8 @@ See the [user documentation](docs/README.md), [visual presets and assets](docs/v
 [engine lifecycle](docs/engine.md),
 [Three.js renderers](docs/three-renderer.md), [physics](docs/physics.md),
 [Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md), and
-[security guidance](docs/security.md).
+[security guidance](docs/security.md). Consumers upgrading from `0.1` should read the
+[0.2 migration notes](docs/migration-0.2.md).
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
 integration bundle in `artifacts/` with `bun run pack:dice-engine`. See

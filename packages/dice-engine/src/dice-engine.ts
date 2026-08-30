@@ -243,6 +243,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   #lastFrameMs = 0;
   #accumulatorSeconds = 0;
   #nextSessionId = 1;
+  #initialization: Promise<void> | undefined;
   #initialized = false;
   #destroyed = false;
   #theme: DiceTheme;
@@ -295,12 +296,15 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   async initialize(): Promise<void> {
     this.#assertAlive();
     if (this.#initialized) return;
-    this.#physics.configureTray(this.#tray);
-    this.#physics.setCollisionEventsEnabled(this.#collisionEvents.enabled);
-    await this.#renderer.initialize();
-    for (const preset of this.#visualPresets.list()) this.#renderer.registerPreset(preset);
-    this.#renderer.setTheme(this.#theme);
-    this.#initialized = true;
+    if (this.#initialization !== undefined) return this.#initialization;
+
+    const initialization = this.#performInitialization();
+    this.#initialization = initialization;
+    try {
+      await initialization;
+    } finally {
+      if (this.#initialization === initialization) this.#initialization = undefined;
+    }
   }
 
   roll(notation: string, options: RollOptions = {}): Promise<RollResult> {
@@ -368,8 +372,8 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#rejectCancelled(task);
     }
     for (const task of this.#queue.splice(0)) this.#rejectCancelled(task);
-    this.#clearRenderedDice('cleared');
     this.#accumulatorSeconds = 0;
+    this.#clearRenderedDice('cleared');
   }
 
   resize(viewport: RendererViewport): void {
@@ -458,6 +462,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
 
   destroy(): void {
     if (this.#destroyed) return;
+    this.#destroyed = true;
     this.#frameToken?.cancel();
     this.#frameToken = undefined;
     if (this.#active !== undefined) {
@@ -466,12 +471,27 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#rejectCancelled(task);
     }
     for (const task of this.#queue.splice(0)) this.#rejectCancelled(task);
-    this.#clearRenderedDice('destroyed');
-    this.#renderer.destroy();
-    this.#physics.destroy();
+    this.#forgetRenderedDice('destroyed');
+    const cleanupErrors = this.#runCleanup([
+      () => this.#renderer.destroy(),
+      () => this.#physics.destroy(),
+    ]);
     super.clear();
+    this.#initialization = undefined;
     this.#initialized = false;
-    this.#destroyed = true;
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, 'DiceEngine teardown failed');
+    }
+  }
+
+  async #performInitialization(): Promise<void> {
+    this.#physics.configureTray(this.#tray);
+    this.#physics.setCollisionEventsEnabled(this.#collisionEvents.enabled);
+    await this.#renderer.initialize();
+    this.#assertAlive();
+    for (const preset of this.#visualPresets.list()) this.#renderer.registerPreset(preset);
+    this.#renderer.setTheme(this.#theme);
+    this.#initialized = true;
   }
 
   #createTask(notation: string, parsed: RollNotation, signal?: AbortSignal): RollTask {
@@ -583,10 +603,11 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       }
       return dice;
     } catch (error) {
-      for (const die of dice) {
-        this.#removeDie(die.id, 'failed');
-      }
-      throw error;
+      const cleanupErrors = this.#removeDiceSafely(dice, 'failed');
+      if (cleanupErrors.length === 0) throw error;
+      throw new AggregateError([error, ...cleanupErrors], 'Failed to create dice', {
+        cause: error,
+      });
     }
   }
 
@@ -850,8 +871,15 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#frameToken = undefined;
     const active = this.#active;
     this.#active = undefined;
-    if (active !== undefined) this.#removeDice(active.dice, 'cancelled');
+    const cleanupErrors =
+      active === undefined ? [] : this.#removeDiceSafely(active.dice, 'cancelled');
     this.#rejectCancelled(task);
+    if (cleanupErrors.length > 0) {
+      this.emit('error', {
+        session: snapshotSession(task.session),
+        error: new AggregateError(cleanupErrors, `Failed to clean up ${task.session.id}`),
+      });
+    }
     this.#startNext();
   }
 
@@ -865,8 +893,15 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
 
   #failActive(active: ActiveRoll, error: unknown): void {
     this.#active = undefined;
-    this.#removeDice(active.dice, 'failed');
-    this.#failTask(active.task, error);
+    const cleanupErrors = this.#removeDiceSafely(active.dice, 'failed');
+    this.#failTask(
+      active.task,
+      cleanupErrors.length === 0
+        ? error
+        : new AggregateError([error, ...cleanupErrors], `Roll ${active.task.session.id} failed`, {
+            cause: error,
+          }),
+    );
   }
 
   #failTask(task: RollTask, error: unknown): void {
@@ -878,36 +913,79 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#startNext();
   }
 
-  #removeDice(dice: readonly ActiveDie[], reason: DiceRemovalReason): void {
+  #removeDiceSafely(dice: readonly ActiveDie[], reason: DiceRemovalReason): unknown[] {
+    const errors: unknown[] = [];
     for (const die of dice) {
-      this.#removeDie(die.id, reason);
+      try {
+        this.#removeDie(die.id, reason);
+      } catch (error) {
+        if (error instanceof AggregateError) errors.push(...error.errors);
+        else errors.push(error);
+      }
     }
+    return errors;
   }
 
   #removeDisplayedDice(): void {
+    const cleanupErrors: unknown[] = [];
     for (const id of this.#displayedDieIds) {
-      this.#removeDie(id, 'replaced');
+      try {
+        this.#removeDie(id, 'replaced');
+      } catch (error) {
+        if (error instanceof AggregateError) cleanupErrors.push(...error.errors);
+        else cleanupErrors.push(error);
+      }
     }
     this.#displayedDieIds.clear();
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, 'Failed to remove displayed dice');
+    }
   }
 
   #removeDie(id: string, reason: DiceRemovalReason): void {
-    this.#physics.removeDie(id);
-    this.#renderer.removeDie(id);
+    const cleanupErrors = this.#runCleanup([
+      () => this.#physics.removeDie(id),
+      () => this.#renderer.removeDie(id),
+    ]);
     const event = this.#dieEvents.get(id);
-    if (event === undefined) return;
-    this.#dieEvents.delete(id);
-    this.emit('die:remove', Object.freeze({ ...event, reason }));
+    if (event !== undefined) {
+      this.#dieEvents.delete(id);
+      this.emit('die:remove', Object.freeze({ ...event, reason }));
+    }
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, `Failed to remove die ${id}`);
+    }
   }
 
   #clearRenderedDice(reason: DiceRemovalReason): void {
-    this.#physics.clear();
-    this.#renderer.clear();
+    const cleanupErrors = this.#runCleanup([
+      () => this.#physics.clear(),
+      () => this.#renderer.clear(),
+    ]);
+    this.#forgetRenderedDice(reason);
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, 'Failed to clear rendered dice');
+    }
+  }
+
+  #forgetRenderedDice(reason: DiceRemovalReason): void {
     for (const event of this.#dieEvents.values()) {
       this.emit('die:remove', Object.freeze({ ...event, reason }));
     }
     this.#dieEvents.clear();
     this.#displayedDieIds.clear();
+  }
+
+  #runCleanup(actions: readonly (() => void)[]): unknown[] {
+    const errors: unknown[] = [];
+    for (const action of actions) {
+      try {
+        action();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    return errors;
   }
 
   #detachAbort(task: RollTask): void {

@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-renderer-three",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Three.js WebGL renderers for animated physical dice.",
   "keywords": [
     "dice",
@@ -47,10 +47,8 @@
   "dependencies": {
     "@dice-o-rolla/dice-geometry": "workspace:*",
     "@dice-o-rolla/dice-renderer": "workspace:*",
+    "@types/three": "^0.185.0",
     "three": "^0.185.0"
-  },
-  "devDependencies": {
-    "@types/three": "^0.185.0"
   },
   "engines": {
     "node": ">=20.0.0"

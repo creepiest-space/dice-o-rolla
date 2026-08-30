@@ -64,6 +64,9 @@ export class FakePhysics implements PhysicsWorld {
   clearCalls = 0;
   destroyCalls = 0;
   errorOnStep: unknown;
+  errorOnRemove: unknown;
+  errorOnClear: unknown;
+  errorOnDestroy: unknown;
   collisionEventsEnabled = false;
   collisionEvents: PhysicsCollisionEvent[] = [];
   impactEvents: PhysicsImpactEvent[] = [];
@@ -106,16 +109,19 @@ export class FakePhysics implements PhysicsWorld {
   }
 
   removeDie(id: string): void {
+    if (this.errorOnRemove !== undefined) throw this.errorOnRemove;
     if (this.bodies.delete(id)) this.removedIds.push(id);
   }
 
   clear(): void {
     this.clearCalls += 1;
+    if (this.errorOnClear !== undefined) throw this.errorOnClear;
     this.bodies.clear();
   }
 
   destroy(): void {
     this.destroyCalls += 1;
+    if (this.errorOnDestroy !== undefined) throw this.errorOnDestroy;
   }
 }
 
@@ -131,10 +137,15 @@ export class FakeRenderer implements DiceRenderer {
   lastViewport: RendererViewport | undefined;
   theme: RendererTheme | undefined;
   errorOnInitialize: unknown;
+  errorOnRemove: unknown;
+  errorOnClear: unknown;
+  errorOnDestroy: unknown;
+  initializeTask: Promise<void> | undefined;
 
-  initialize(): void {
+  async initialize(): Promise<void> {
     this.initializeCalls += 1;
     if (this.errorOnInitialize !== undefined) throw this.errorOnInitialize;
+    await this.initializeTask;
   }
 
   registerPreset(preset: VisualPresetDescriptor): void {
@@ -155,6 +166,7 @@ export class FakeRenderer implements DiceRenderer {
   }
 
   removeDie(id: string): void {
+    if (this.errorOnRemove !== undefined) throw this.errorOnRemove;
     if (this.dice.delete(id)) this.removedIds.push(id);
   }
 
@@ -172,11 +184,13 @@ export class FakeRenderer implements DiceRenderer {
 
   clear(): void {
     this.clearCalls += 1;
+    if (this.errorOnClear !== undefined) throw this.errorOnClear;
     this.dice.clear();
   }
 
   destroy(): void {
     this.destroyCalls += 1;
+    if (this.errorOnDestroy !== undefined) throw this.errorOnDestroy;
   }
 }
 
