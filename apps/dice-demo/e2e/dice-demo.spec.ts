@@ -62,6 +62,15 @@ test('resizes, changes presentation settings, and clears safely', async ({ page 
   expect(canvasBounds).not.toBeNull();
   expect(canvasBounds!.width).toBeLessThanOrEqual(viewport!.width);
 
+  await [
+    { width: 320, height: 700 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 },
+  ].reduce(
+    (previous, size) => previous.then(() => verifyResponsiveLayout(page, size)),
+    Promise.resolve(),
+  );
+
   await page.locator('#theme').selectOption('matte');
   await expect(page.locator('#theme')).toHaveValue('matte');
   await page.locator('#preset').selectOption('calm');
@@ -119,6 +128,36 @@ test('loads KTX2 skin variants and Web Audio sprite banks from dice-assets', asy
   await expect(page.locator('#audio-surface')).toHaveValue('wood-table');
   await expect(status).toHaveText('Roll settled');
 });
+
+async function verifyResponsiveLayout(
+  page: Page,
+  size: { readonly width: number; readonly height: number },
+): Promise<void> {
+  await page.setViewportSize(size);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+  const layout = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
+  const selectors = ['#tray', '#roll-form', '.shortcuts', '.settings', '.asset-cases'] as const;
+  const boundsBySelector = await Promise.all(
+    selectors.map(async (selector) => ({
+      bounds: await page.locator(selector).boundingBox(),
+      selector,
+    })),
+  );
+  for (const { bounds, selector } of boundsBySelector) {
+    expect(bounds, `${selector} must be laid out at ${size.width}px`).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(size.width);
+  }
+}
 
 async function verifyRoll(page: Page, testInfo: TestInfo, rollCase: RollCase): Promise<void> {
   const result = page.locator('#result');
