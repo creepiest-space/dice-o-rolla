@@ -1,12 +1,13 @@
 import type { Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
+  PhysicsCollisionEvent,
   PhysicsDieHandle,
   PhysicsWorld,
   TrayOptions,
 } from '@dice-o-rolla/dice-physics';
 import type RAPIER from '@dimforge/rapier3d-compat';
-import type { RigidBody, World } from '@dimforge/rapier3d-compat';
+import type { EventQueue, RigidBody, World } from '@dimforge/rapier3d-compat';
 
 import { createConvexHullCollider } from './collider-factory.js';
 import { RapierDieBody } from './rapier-die-body.js';
@@ -22,14 +23,19 @@ const DEFAULT_GRAVITY: Vector3Like = { x: 0, y: -9.81, z: 0 };
 export class RapierPhysicsWorld implements PhysicsWorld {
   readonly #rapier: typeof RAPIER;
   readonly #world: World;
+  readonly #eventQueue: EventQueue;
   readonly #dice = new Map<string, RapierDieBody>();
+  readonly #colliderDice = new Map<number, string>();
+  readonly #dieColliders = new Map<string, number>();
   #trayBody: RigidBody | undefined;
+  #collisionEventsEnabled = false;
   #destroyed = false;
 
   private constructor(rapier: typeof RAPIER, gravity: Vector3Like) {
     assertVector(gravity, 'gravity');
     this.#rapier = rapier;
     this.#world = new rapier.World(gravity);
+    this.#eventQueue = new rapier.EventQueue(true);
   }
 
   static async create(options: RapierPhysicsWorldOptions = {}): Promise<RapierPhysicsWorld> {
@@ -63,10 +69,17 @@ export class RapierPhysicsWorld implements PhysicsWorld {
       options.mass,
       options.material,
     );
+    colliderDescriptor.setActiveEvents(
+      this.#collisionEventsEnabled
+        ? this.#rapier.ActiveEvents.COLLISION_EVENTS
+        : this.#rapier.ActiveEvents.NONE,
+    );
     const body = this.#world.createRigidBody(bodyDescriptor);
 
     try {
-      this.#world.createCollider(colliderDescriptor, body);
+      const collider = this.#world.createCollider(colliderDescriptor, body);
+      this.#colliderDice.set(collider.handle, options.id);
+      this.#dieColliders.set(options.id, collider.handle);
     } catch (error) {
       this.#world.removeRigidBody(body);
       throw error;
@@ -156,17 +169,54 @@ export class RapierPhysicsWorld implements PhysicsWorld {
     this.#world.gravity = { x: gravity.x, y: gravity.y, z: gravity.z };
   }
 
+  setCollisionEventsEnabled(enabled: boolean): void {
+    this.#assertAlive();
+    this.#collisionEventsEnabled = enabled;
+    const activeEvents = enabled
+      ? this.#rapier.ActiveEvents.COLLISION_EVENTS
+      : this.#rapier.ActiveEvents.NONE;
+    for (const die of this.#dice.values()) {
+      for (let index = 0; index < die.body.numColliders(); index += 1) {
+        die.body.collider(index).setActiveEvents(activeEvents);
+      }
+    }
+    this.#eventQueue.clear();
+  }
+
+  drainCollisionEvents(): readonly PhysicsCollisionEvent[] {
+    this.#assertAlive();
+    const events: PhysicsCollisionEvent[] = [];
+    this.#eventQueue.drainCollisionEvents((firstHandle, secondHandle, started) => {
+      const first = this.#colliderDice.get(firstHandle);
+      const second = this.#colliderDice.get(secondHandle);
+      const dieId = first ?? second;
+      if (dieId === undefined) return;
+      const otherDieId = first === undefined || second === undefined ? undefined : second;
+      events.push(
+        Object.freeze({
+          dieId,
+          ...(otherDieId === undefined ? {} : { otherDieId }),
+          started,
+        }),
+      );
+    });
+    return Object.freeze(events);
+  }
+
   step(dtSeconds: number): void {
     this.#assertAlive();
     assertPositive(dtSeconds, 'dtSeconds');
     this.#world.timestep = dtSeconds;
-    this.#world.step();
+    this.#world.step(this.#collisionEventsEnabled ? this.#eventQueue : undefined);
   }
 
   removeDie(id: string): void {
     this.#assertAlive();
     const die = this.#dice.get(id);
     if (die === undefined) return;
+    const colliderHandle = this.#dieColliders.get(id);
+    if (colliderHandle !== undefined) this.#colliderDice.delete(colliderHandle);
+    this.#dieColliders.delete(id);
     this.#world.removeRigidBody(die.body);
     die.invalidate();
     this.#dice.delete(id);
@@ -179,12 +229,16 @@ export class RapierPhysicsWorld implements PhysicsWorld {
       die.invalidate();
     }
     this.#dice.clear();
+    this.#colliderDice.clear();
+    this.#dieColliders.clear();
+    this.#eventQueue.clear();
   }
 
   destroy(): void {
     if (this.#destroyed) return;
     this.clear();
     this.#removeTray();
+    this.#eventQueue.free();
     this.#world.free();
     this.#destroyed = true;
   }

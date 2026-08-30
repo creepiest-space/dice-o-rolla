@@ -1,6 +1,7 @@
 import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 import type {
   CreatePhysicsDieOptions,
+  PhysicsCollisionEvent,
   PhysicsDieHandle,
   PhysicsDieState,
   PhysicsWorld,
@@ -11,6 +12,7 @@ import type {
   RenderDieState,
   RendererTheme,
   RendererViewport,
+  VisualPresetDescriptor,
 } from '@dice-o-rolla/dice-renderer';
 
 import type { FrameScheduler, FrameToken } from '../src/index.js';
@@ -52,6 +54,7 @@ class FakeDie implements PhysicsDieHandle {
 
 export class FakePhysics implements PhysicsWorld {
   readonly createdIds: string[] = [];
+  readonly createdOptions: CreatePhysicsDieOptions[] = [];
   readonly removedIds: string[] = [];
   readonly bodies = new Map<string, FakeDie>();
   readonly settleAfterSteps: number;
@@ -60,6 +63,8 @@ export class FakePhysics implements PhysicsWorld {
   clearCalls = 0;
   destroyCalls = 0;
   errorOnStep: unknown;
+  collisionEventsEnabled = false;
+  collisionEvents: PhysicsCollisionEvent[] = [];
 
   constructor(settleAfterSteps = 2) {
     this.settleAfterSteps = settleAfterSteps;
@@ -68,6 +73,7 @@ export class FakePhysics implements PhysicsWorld {
   createDie(options: CreatePhysicsDieOptions): PhysicsDieHandle {
     const die = new FakeDie(options, this.settleAfterSteps);
     this.createdIds.push(options.id);
+    this.createdOptions.push(options);
     this.bodies.set(options.id, die);
     return die;
   }
@@ -77,6 +83,15 @@ export class FakePhysics implements PhysicsWorld {
   }
 
   setGravity(): void {}
+
+  setCollisionEventsEnabled(enabled: boolean): void {
+    this.collisionEventsEnabled = enabled;
+  }
+
+  drainCollisionEvents(): readonly PhysicsCollisionEvent[] {
+    const events = this.collisionEvents.splice(0);
+    return events;
+  }
 
   step(): void {
     this.stepCalls += 1;
@@ -103,6 +118,7 @@ export class FakeRenderer implements DiceRenderer {
   readonly createdIds: string[] = [];
   readonly removedIds: string[] = [];
   readonly renderAlphas: number[] = [];
+  readonly presets = new Map<string, VisualPresetDescriptor>();
   initializeCalls = 0;
   clearCalls = 0;
   destroyCalls = 0;
@@ -113,6 +129,14 @@ export class FakeRenderer implements DiceRenderer {
   initialize(): void {
     this.initializeCalls += 1;
     if (this.errorOnInitialize !== undefined) throw this.errorOnInitialize;
+  }
+
+  registerPreset(preset: VisualPresetDescriptor): void {
+    this.presets.set(preset.id, preset);
+  }
+
+  unregisterPreset(id: string): void {
+    this.presets.delete(id);
   }
 
   createDie(state: RenderDieState): void {

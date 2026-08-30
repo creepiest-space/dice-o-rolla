@@ -170,6 +170,150 @@ describe('DiceEngine', () => {
     }
   });
 
+  test('registers visual presets and applies scale, labels, and asset identifiers', async () => {
+    const { engine, physics, renderer, scheduler } = createHarness();
+    const preset = engine.registerVisualPreset(
+      {
+        id: 'custom:runic-d6',
+        dieType: 'd6',
+        geometryId: 'd6',
+        scale: 1.2,
+        faceLabels: { 1: 'I', 6: 'VI' },
+        skinId: 'runic-stone',
+        soundPackId: 'stone-table',
+      },
+      { makeDefault: true },
+    );
+    const spawned: unknown[] = [];
+    const removed: unknown[] = [];
+    engine.on('die:spawn', (event) => spawned.push(event));
+    engine.on('die:remove', (event) => removed.push(event));
+    await engine.initialize();
+
+    expect(renderer.presets.get(preset.id)).toEqual(preset);
+    const roll = engine.roll('1d6');
+    scheduler.flush();
+    await roll;
+    const state = renderer.dice.get('roll-1:die-0');
+    expect(state?.presetId).toBe('custom:runic-d6');
+    expect(state?.geometryId).toBe('d6');
+    expect(state?.scale).toBe(1.2);
+    expect(state?.faceLabels).toEqual({ 1: 'I', 6: 'VI' });
+    expect(physics.createdOptions[0]?.scale).toBe(1.2);
+    expect(spawned).toEqual([
+      {
+        sessionId: 'roll-1',
+        dieId: 'roll-1:die-0',
+        dieType: 'd6',
+        presetId: 'custom:runic-d6',
+        skinId: 'runic-stone',
+        soundPackId: 'stone-table',
+      },
+    ]);
+
+    expect(engine.unregisterVisualPreset(preset.id)).toBeTrue();
+    expect(engine.getVisualPreset('d6').id).toBe('standard:d6');
+    expect(renderer.presets.has(preset.id)).toBeFalse();
+    expect(() => engine.registerVisualPreset(preset)).toThrow('currently in use');
+    engine.clear();
+    expect(removed).toEqual([
+      expect.objectContaining({ dieId: 'roll-1:die-0', reason: 'cleared' }),
+    ]);
+    expect(engine.registerVisualPreset(preset).id).toBe(preset.id);
+  });
+
+  test('maps resolved physical faces through a complete visual preset value map', async () => {
+    const standardHarness = createHarness();
+    await standardHarness.engine.initialize();
+    const standardRoll = standardHarness.engine.roll('1d6');
+    standardHarness.scheduler.flush();
+    const standardValue = (await standardRoll).dice[0]!.value;
+
+    const mappedHarness = createHarness();
+    mappedHarness.engine.registerVisualPreset(
+      {
+        id: 'custom:reverse-d6',
+        dieType: 'd6',
+        geometryId: 'd6',
+        valueMap: { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 },
+      },
+      { makeDefault: true },
+    );
+    await mappedHarness.engine.initialize();
+    const mappedRoll = mappedHarness.engine.roll('1d6');
+    mappedHarness.scheduler.flush();
+    expect((await mappedRoll).dice[0]!.value).toBe(7 - standardValue);
+  });
+
+  test('validates preset geometry, maps, selection, and built-in lifecycle', () => {
+    const { engine } = createHarness();
+    expect(() =>
+      engine.registerVisualPreset({ id: 'bad:geometry', dieType: 'd6', geometryId: 'd2' }),
+    ).toThrow('not registered');
+    expect(() =>
+      engine.registerVisualPreset({
+        id: 'bad:map',
+        dieType: 'd6',
+        geometryId: 'd6',
+        valueMap: { 1: 1 },
+      }),
+    ).toThrow('every geometry face');
+    engine.registerVisualPreset({ id: 'custom:d20', dieType: 'd20', geometryId: 'd20' });
+    expect(() => engine.setVisualPreset('d6', 'custom:d20')).toThrow('for d20');
+    expect(() => engine.unregisterVisualPreset('standard:d6')).toThrow('cannot be unregistered');
+    expect(engine.unregisterVisualPreset('missing')).toBeFalse();
+  });
+
+  test('keeps collision events opt-in and bounded per rendered frame', async () => {
+    const disabled = createHarness(100);
+    await disabled.engine.initialize();
+    expect(disabled.physics.collisionEventsEnabled).toBeFalse();
+
+    const physics = new FakePhysics(100);
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const engine = new DiceEngine({
+      physics,
+      renderer,
+      scheduler,
+      now: () => scheduler.now,
+      random: new SeededRandomSource(42),
+      fixedStepSeconds: 0.01,
+      collisionEvents: { enabled: true, maxEventsPerFrame: 1 },
+    });
+    engine.registerVisualPreset(
+      {
+        id: 'custom:sounding-d6',
+        dieType: 'd6',
+        geometryId: 'd6',
+        soundPackId: 'wooden-table',
+      },
+      { makeDefault: true },
+    );
+    const collisions: unknown[] = [];
+    engine.on('die:collision', (event) => collisions.push(event));
+    await engine.initialize();
+    const roll = engine.roll('1d6');
+    const outcome = roll.catch((error: unknown) => error);
+    physics.collisionEvents.push(
+      { dieId: 'roll-1:die-0', started: true },
+      { dieId: 'roll-1:die-0', started: false },
+    );
+    scheduler.advance(10);
+
+    expect(physics.collisionEventsEnabled).toBeTrue();
+    expect(collisions).toEqual([
+      expect.objectContaining({
+        dieId: 'roll-1:die-0',
+        presetId: 'custom:sounding-d6',
+        soundPackId: 'wooden-table',
+        started: true,
+      }),
+    ]);
+    engine.cancel();
+    expect(await outcome).toBeInstanceOf(RollCancelledError);
+  });
+
   test('cancels active and queued sessions without orphaning promises', async () => {
     const { engine, renderer } = createHarness(100);
     await engine.initialize();

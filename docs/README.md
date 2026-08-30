@@ -4,6 +4,7 @@ This directory contains documentation for consumers of the Dice O Rolla packages
 
 - [DiceEngine lifecycle and browser composition](engine.md)
 - [Dice notation, keep/drop, and score maps](notation.md)
+- [Visual presets, skins, sounds, and collision events](visual-presets.md)
 - [Three.js renderers](three-renderer.md)
 - [Dice definitions and percentile semantics](dice-definitions.md)
 - [Physics defaults and tuning](physics.md)

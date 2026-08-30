@@ -32,6 +32,7 @@ interface PackResult {
 }
 
 const packageDirectories = [
+  'dice-assets',
   'dice-core',
   'dice-geometry',
   'dice-physics',

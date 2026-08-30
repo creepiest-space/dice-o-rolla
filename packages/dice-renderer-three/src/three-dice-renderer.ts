@@ -4,6 +4,7 @@ import type {
   RenderDieState,
   RendererTheme,
   RendererViewport,
+  VisualPresetDescriptor,
 } from '@dice-o-rolla/dice-renderer';
 import { PCFShadowMap, WebGLRenderer } from 'three';
 
@@ -33,7 +34,9 @@ interface RenderEntry {
 function copyState(state: RenderDieState): RenderDieState {
   return {
     id: state.id,
+    presetId: state.presetId,
     geometryId: state.geometryId,
+    scale: state.scale,
     ...(state.faceLabels === undefined ? {} : { faceLabels: { ...state.faceLabels } }),
     previous: {
       position: { ...state.previous.position },
@@ -51,6 +54,8 @@ export class ThreeDiceRenderer implements DiceRenderer {
   readonly #options: ThreeDiceRendererOptions;
   readonly #meshFactory = new ThreeDiceMeshFactory();
   readonly #entries = new Map<string, RenderEntry>();
+  readonly #presets = new Map<string, VisualPresetDescriptor>();
+  readonly #pendingPresetRemovals = new Set<string>();
   readonly #viewportLimits: ViewportLimits;
   #theme: RendererTheme;
   #scene: ThreeScene | undefined;
@@ -96,11 +101,26 @@ export class ThreeDiceRenderer implements DiceRenderer {
     }
   }
 
+  registerPreset(preset: VisualPresetDescriptor): void {
+    this.#assertAlive();
+    this.#pendingPresetRemovals.delete(preset.id);
+    this.#presets.set(preset.id, preset);
+  }
+
+  unregisterPreset(id: string): void {
+    this.#assertAlive();
+    if ([...this.#entries.values()].some((entry) => entry.state.presetId === id)) {
+      this.#pendingPresetRemovals.add(id);
+      return;
+    }
+    this.#presets.delete(id);
+  }
+
   createDie(state: RenderDieState): void {
     this.#assertInitialized();
     if (this.#entries.has(state.id))
       throw new Error(`A render die with id "${state.id}" already exists`);
-    const resource = this.#createResource(state.geometryId, state.faceLabels);
+    const resource = this.#createResource(state);
     const ownedState = copyState(state);
     applyInterpolatedTransform(resource.mesh, ownedState, 1);
     this.#scene?.value.add(resource.mesh);
@@ -113,6 +133,9 @@ export class ThreeDiceRenderer implements DiceRenderer {
     if (entry === undefined) throw new Error(`Unknown render die: ${state.id}`);
     if (state.geometryId !== entry.state.geometryId) {
       throw new Error('A die geometry cannot be changed after creation');
+    }
+    if (state.presetId !== entry.state.presetId || state.scale !== entry.state.scale) {
+      throw new Error('A die visual preset cannot be changed after creation');
     }
     if (!haveEqualFaceLabels(state.faceLabels, entry.state.faceLabels)) {
       throw new Error('Die face labels cannot be changed after creation');
@@ -127,6 +150,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#scene?.value.remove(entry.resource.mesh);
     entry.resource.dispose();
     this.#entries.delete(id);
+    this.#releasePendingPreset(entry.state.presetId);
   }
 
   render(alpha: number): void {
@@ -149,7 +173,7 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#assertAlive();
     this.#theme = { ...theme };
     for (const entry of this.#entries.values()) {
-      const replacement = this.#createResource(entry.state.geometryId, entry.state.faceLabels);
+      const replacement = this.#createResource(entry.state);
       applyInterpolatedTransform(replacement.mesh, entry.state, 1);
       this.#scene?.value.remove(entry.resource.mesh);
       entry.resource.dispose();
@@ -176,6 +200,8 @@ export class ThreeDiceRenderer implements DiceRenderer {
     this.#scene = undefined;
     this.#camera = undefined;
     this.#renderer = undefined;
+    this.#presets.clear();
+    this.#pendingPresetRemovals.clear();
     this.#destroyed = true;
   }
 
@@ -194,13 +220,27 @@ export class ThreeDiceRenderer implements DiceRenderer {
     );
   }
 
-  #createResource(
-    geometryId: string,
-    faceLabels?: Readonly<Record<number, string | number>>,
-  ): ThreeDiceMesh {
-    const type = getRegisteredDieTypes().find((registered) => registered === geometryId);
-    if (type === undefined) throw new Error(`Unsupported geometry: ${geometryId}`);
-    return this.#meshFactory.create(getDieGeometry(type), this.#theme, 1, faceLabels);
+  #createResource(state: RenderDieState): ThreeDiceMesh {
+    const preset = this.#presets.get(state.presetId);
+    if (preset === undefined) throw new Error(`Unknown visual preset: ${state.presetId}`);
+    if (preset.geometryId !== state.geometryId || (preset.scale ?? 1) !== state.scale) {
+      throw new Error(`Render state does not match visual preset "${state.presetId}"`);
+    }
+    const type = getRegisteredDieTypes().find((registered) => registered === state.geometryId);
+    if (type === undefined) throw new Error(`Unsupported geometry: ${state.geometryId}`);
+    return this.#meshFactory.create(
+      getDieGeometry(type),
+      this.#theme,
+      state.scale,
+      state.faceLabels,
+    );
+  }
+
+  #releasePendingPreset(presetId: string): void {
+    if (!this.#pendingPresetRemovals.has(presetId)) return;
+    if ([...this.#entries.values()].some((entry) => entry.state.presetId === presetId)) return;
+    this.#pendingPresetRemovals.delete(presetId);
+    this.#presets.delete(presetId);
   }
 
   #assertAlive(): void {

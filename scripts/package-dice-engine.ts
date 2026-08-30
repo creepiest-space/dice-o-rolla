@@ -26,6 +26,7 @@ interface PackagedWorkspace {
 }
 
 const workspacePackages: readonly WorkspacePackage[] = [
+  { directory: 'dice-assets' },
   { directory: 'dice-core' },
   { directory: 'dice-geometry' },
   { directory: 'dice-physics' },
@@ -200,10 +201,12 @@ import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 For an overhead application surface, import \`TopDownDiceRenderer\` from
 \`@dice-o-rolla/dice-renderer-three\` and inject it into the backend-neutral engine.
 
-All seven local tarballs must remain direct application dependencies. Their package manifests omit
-workspace-only dependency edges so npm and Bun do not query a registry for unpublished packages. The
-package manager resolves the remaining public runtime dependencies, \`@dimforge/rapier3d-compat\` and
-\`three\`, from the configured registry. Verify the copied archives with
+The seven runtime tarballs must remain direct application dependencies. The independent
+\`@dice-o-rolla/dice-assets\` tarball is optional and may be removed when the application does not
+use skin or sound catalogs. Package manifests omit workspace-only dependency edges so npm and Bun do
+not query a registry for unpublished packages. The package manager resolves the remaining public
+runtime dependencies, \`@dimforge/rapier3d-compat\` and \`three\`, from the configured registry. Verify
+the copied archives with
 \`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
 
 This bundle contains coordinated package version \`${coordinatedVersion}\`. Machine-readable package

@@ -13,6 +13,7 @@ export type {
   DicePhysicsMaterial,
   PhysicsDieHandle,
   PhysicsDieState,
+  PhysicsCollisionEvent,
   PhysicsProfile,
   PhysicsTransform,
   PhysicsWorld,

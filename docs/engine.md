@@ -26,8 +26,10 @@ also releases renderer and physics resources and is idempotent.
 
 ## Events
 
-The facade exposes typed `roll:start`, `die:settled`, `roll:complete`, `roll:cancel`, `theme:change`,
-and `error` events. Payloads carry their session identity; there is no singleton pending resolver.
+The facade exposes typed `roll:start`, `die:spawn`, `die:settled`, `die:remove`, `roll:complete`,
+`roll:cancel`, `theme:change`, and `error` events. Payloads carry their session identity; there is no
+singleton pending resolver. Optional `die:collision` reporting is disabled by default and bounded
+per rendered frame when enabled.
 
 ## Browser composition
 

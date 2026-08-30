@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "build:dice-engine": "turbo build --filter=@dice-o-rolla/dice-engine...",
+    "build:dice-engine": "turbo build --filter=@dice-o-rolla/dice-engine... --filter=@dice-o-rolla/dice-assets",
     "pack:dice-engine": "bun ./scripts/package-dice-engine.ts",
     "changeset": "changeset",
     "version:status": "changeset status",

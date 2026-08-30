@@ -29,13 +29,17 @@
         "@dice-o-rolla/dice-engine": "workspace:*",
       },
     },
+    "packages/dice-assets": {
+      "name": "@dice-o-rolla/dice-assets",
+      "version": "0.1.1",
+    },
     "packages/dice-core": {
       "name": "@dice-o-rolla/dice-core",
-      "version": "0.1.0",
+      "version": "0.1.1",
     },
     "packages/dice-engine": {
       "name": "@dice-o-rolla/dice-engine",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-geometry": "workspace:*",
@@ -47,21 +51,21 @@
     },
     "packages/dice-geometry": {
       "name": "@dice-o-rolla/dice-geometry",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics": {
       "name": "@dice-o-rolla/dice-physics",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics-rapier": {
       "name": "@dice-o-rolla/dice-physics-rapier",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-physics": "workspace:*",
@@ -73,14 +77,14 @@
     },
     "packages/dice-renderer": {
       "name": "@dice-o-rolla/dice-renderer",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-renderer-three": {
       "name": "@dice-o-rolla/dice-renderer-three",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@dice-o-rolla/dice-geometry": "workspace:*",
         "@dice-o-rolla/dice-renderer": "workspace:*",
@@ -167,6 +171,8 @@
     "@conventional-changelog/git-client": ["@conventional-changelog/git-client@3.1.2", "", { "dependencies": { "@simple-libs/child-process-utils": "^2.0.0", "@simple-libs/stream-utils": "^2.0.0", "semver": "^7.5.2" }, "peerDependencies": { "conventional-commits-filter": "^6.0.1", "conventional-commits-parser": "^7.1.2" }, "optionalPeers": ["conventional-commits-filter", "conventional-commits-parser"] }, "sha512-jZqwnJwf7nboIlAcw/mkOjVa6DexCcUOgT2oOQgkoi3z9vR8tGFkcMy2BFcYwjhL9sYcDDXkRQDayiDieCoW7A=="],
 
     "@conventional-changelog/template": ["@conventional-changelog/template@1.4.0", "", {}, "sha512-aalGyl7dbB5PArRebDIX43ZvBlXrYm9uWzGJ26t+4SzJVPsOuvfILGGbw5X4yX7i50YEmJ8zvbiWnqH/AAnZqg=="],
+
+    "@dice-o-rolla/dice-assets": ["@dice-o-rolla/dice-assets@workspace:packages/dice-assets"],
 
     "@dice-o-rolla/dice-core": ["@dice-o-rolla/dice-core@workspace:packages/dice-core"],
 

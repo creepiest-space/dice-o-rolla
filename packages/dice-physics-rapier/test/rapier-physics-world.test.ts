@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { D6_DEFINITION, resolveFace } from '@dice-o-rolla/dice-geometry';
-import type { CreatePhysicsDieOptions } from '@dice-o-rolla/dice-physics';
+import type { CreatePhysicsDieOptions, PhysicsCollisionEvent } from '@dice-o-rolla/dice-physics';
 
 import { RapierPhysics } from '../src/index.js';
 
@@ -79,6 +79,27 @@ describe('RapierPhysicsWorld', () => {
     expect([1, 2, 3, 4, 5, 6]).toContain(resolveFace(D6_DEFINITION, state.quaternion));
 
     world.destroy();
+  });
+
+  test('collects collision events only when explicitly enabled', async () => {
+    const disabled = await RapierPhysics.create();
+    configureTray(disabled);
+    disabled.createDie(createD6Options('silent', 1.5));
+    for (let step = 0; step < 120; step += 1) disabled.step(1 / 60);
+    expect(disabled.drainCollisionEvents()).toEqual([]);
+    disabled.destroy();
+
+    const enabled = await RapierPhysics.create();
+    configureTray(enabled);
+    enabled.setCollisionEventsEnabled(true);
+    enabled.createDie(createD6Options('audible', 1.5));
+    const collisions: PhysicsCollisionEvent[] = [];
+    for (let step = 0; step < 120 && collisions.length === 0; step += 1) {
+      enabled.step(1 / 60);
+      collisions.push(...enabled.drainCollisionEvents());
+    }
+    expect(collisions).toContainEqual({ dieId: 'audible', started: true });
+    enabled.destroy();
   });
 
   test('replaces a tray and invalidates removed handles', async () => {

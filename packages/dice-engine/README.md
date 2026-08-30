@@ -32,6 +32,17 @@ await engine.initialize();
 
 The main entry point depends on domain contracts rather than concrete Rapier or Three.js types.
 
+## Visual presets and optional effects
+
+`registerVisualPreset()` associates a logical die with a validated physical geometry, scale, face
+labels, and optional value map. `skinId` and `soundPackId` are opaque application-owned references;
+the engine does not load assets. Skins and sound definitions belong in the optional
+`@dice-o-rolla/dice-assets` package, which is not a dependency of the engine.
+
+The engine emits `die:spawn` and `die:remove` lifecycle events. Collision events are opt-in through
+`DiceEngineOptions.collisionEvents`, bounded by `maxEventsPerFrame`, and suitable for an external
+sound or effects adapter.
+
 ## Supported notation
 
 The initial grammar supports standard polyhedral expressions and integer modifiers, including:

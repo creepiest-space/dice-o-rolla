@@ -9,8 +9,8 @@ package and all of its workspace dependencies with:
 bun run build:dice-engine
 ```
 
-Turbo selects `dice-engine` plus its dependency graph and emits JavaScript and TypeScript declarations
-into each package's ignored `dist` directory.
+Turbo selects `dice-engine` plus its dependency graph and the independent `dice-assets` workspace,
+then emits JavaScript and TypeScript declarations into each package's ignored `dist` directory.
 
 ## Local integration bundle
 
@@ -24,7 +24,8 @@ The command:
 
 1. removes previous archives and the artifact staging directory;
 2. rebuilds `dice-engine` and its workspace dependencies;
-3. stages the `dist` output and distribution metadata for all seven runtime packages;
+3. stages the `dist` output and distribution metadata for seven runtime packages plus the optional
+   `dice-assets` package;
 4. removes workspace-only dependency edges from the local-only package manifests;
 5. verifies every package's public entry point, declarations, license files, and absence of source
    imports;
@@ -36,6 +37,7 @@ The bundle contains:
 
 ```text
 artifacts/
+├─ dice-assets-<version>.tgz
 ├─ dice-core-<version>.tgz
 ├─ dice-engine-<version>.tgz
 ├─ dice-geometry-<version>.tgz
@@ -66,11 +68,13 @@ bun install
 # or: npm install
 ```
 
-All seven `@dice-o-rolla/*` packages must remain direct `file:` dependencies. Internal dependency
-edges are intentionally omitted only from these local-only manifests because npm and Bun resolve
-relative tarballs differently. The application's complete dependency list makes the packages
-available from its root `node_modules` without registry lookups. The package manager obtains the
-public runtime dependencies `@dimforge/rapier3d-compat` and `three` from the configured registry.
+All seven runtime `@dice-o-rolla/*` packages must remain direct `file:` dependencies. The
+independent `dice-assets` entry may be removed if the consumer does not use skin or sound catalogs.
+Internal dependency edges are intentionally omitted only from these local-only manifests because
+npm and Bun resolve relative tarballs differently. The application's complete dependency list makes
+the packages available from its root `node_modules` without registry lookups. The package manager
+obtains the public runtime dependencies `@dimforge/rapier3d-compat` and `three` from the configured
+registry.
 
 The generated bundle is a local integration artifact, not a registry publication. The packaging
 command never publishes packages or mutates a registry.

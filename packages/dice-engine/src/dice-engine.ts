@@ -21,7 +21,13 @@ import type {
 import { getDieGeometry, hasDieGeometry, resolveFace } from '@dice-o-rolla/dice-geometry';
 import { SettlingDetector, ThrowGenerator } from '@dice-o-rolla/dice-physics';
 import type { PhysicsDieHandle, PhysicsDieState } from '@dice-o-rolla/dice-physics';
-import type { RenderDieState, RendererViewport } from '@dice-o-rolla/dice-renderer';
+import {
+  createVisualPresetDescriptor,
+  VisualPresetRegistry,
+  type RenderDieState,
+  type RendererViewport,
+  type VisualPresetDescriptor,
+} from '@dice-o-rolla/dice-renderer';
 
 import { DEFAULT_THEME, defaultFrameScheduler } from './defaults.js';
 import {
@@ -35,10 +41,20 @@ import type {
   DiceEngineFacade,
   DiceEngineLimits,
   DiceEngineOptions,
+  DiceRemovalReason,
   DiceTheme,
+  DiceVisualEvent,
   FrameToken,
+  RegisterEngineVisualPresetOptions,
   RollOptions,
 } from './types.js';
+import {
+  getStandardVisualPresetId,
+  isPhysicalDieType,
+  PHYSICAL_DIE_TYPES,
+  STANDARD_VISUAL_PRESETS,
+  type PhysicalDieType,
+} from './visual-presets.js';
 
 interface MutableSession {
   readonly id: string;
@@ -63,6 +79,7 @@ interface ActiveDie {
   readonly id: string;
   readonly type: DieType;
   readonly geometryType: DieType;
+  readonly preset: VisualPresetDescriptor;
   readonly expressionIndex: number;
   readonly selection?: DiceSelection;
   readonly scoreRules?: readonly DiceScoreRule[];
@@ -82,6 +99,7 @@ interface ActiveDie {
 interface PhysicalDieSpec {
   readonly type: DieType;
   readonly geometryType: DieType;
+  readonly preset: VisualPresetDescriptor;
   readonly expressionIndex: number;
   readonly selection?: DiceSelection;
   readonly scoreRules?: readonly DiceScoreRule[];
@@ -141,6 +159,8 @@ const DEFAULT_LIMITS: DiceEngineLimits = Object.freeze({
   maxQueuedRolls: 8,
 });
 
+const DEFAULT_COLLISION_EVENTS = Object.freeze({ enabled: false, maxEventsPerFrame: 32 });
+
 const D100_TENS_LABELS = Object.freeze({
   1: 10,
   2: 20,
@@ -170,11 +190,22 @@ function snapshotSession(session: MutableSession): RollSession {
 function toRenderState(die: ActiveDie): RenderDieState {
   return {
     id: die.id,
+    presetId: die.preset.id,
     geometryId: die.geometryType,
+    scale: die.preset.scale ?? 1,
     ...(die.faceLabels === undefined ? {} : { faceLabels: die.faceLabels }),
     previous: die.previous,
     current: die.current,
   };
+}
+
+function mergeFaceLabels(
+  preset: Readonly<Record<number, string | number>> | undefined,
+  roll: Readonly<Record<number, string | number>> | undefined,
+): Readonly<Record<number, string | number>> | undefined {
+  if (preset === undefined) return roll;
+  if (roll === undefined) return preset;
+  return Object.freeze({ ...preset, ...roll });
 }
 
 function assertPositive(value: number, name: string): void {
@@ -201,8 +232,12 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   readonly #tray: NonNullable<DiceEngineOptions['tray']>;
   readonly #diceMaterial: NonNullable<DiceEngineOptions['diceMaterial']>;
   readonly #limits: DiceEngineLimits;
+  readonly #collisionEvents: Readonly<{ enabled: boolean; maxEventsPerFrame: number }>;
+  readonly #visualPresets = new VisualPresetRegistry(STANDARD_VISUAL_PRESETS);
+  readonly #visualPresetIds = new Map<PhysicalDieType, string>();
   readonly #queue: RollTask[] = [];
   readonly #displayedDieIds = new Set<string>();
+  readonly #dieEvents = new Map<string, DiceVisualEvent>();
   #active: ActiveRoll | undefined;
   #frameToken: FrameToken | undefined;
   #lastFrameMs = 0;
@@ -230,6 +265,14 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#tray = options.tray ?? DEFAULT_TRAY;
     this.#diceMaterial = options.diceMaterial ?? DEFAULT_DICE_MATERIAL;
     this.#limits = Object.freeze({ ...DEFAULT_LIMITS, ...options.limits });
+    this.#collisionEvents = Object.freeze({
+      ...DEFAULT_COLLISION_EVENTS,
+      ...options.collisionEvents,
+    });
+    assertPositiveSafeInteger(
+      this.#collisionEvents.maxEventsPerFrame,
+      'collisionEvents.maxEventsPerFrame',
+    );
     for (const [name, value] of [
       ['maxNotationLength', this.#limits.maxNotationLength],
       ['maxLogicalDice', this.#limits.maxLogicalDice],
@@ -238,6 +281,14 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     ] as const) {
       assertPositiveSafeInteger(value, `limits.${name}`);
     }
+    for (const type of PHYSICAL_DIE_TYPES) {
+      this.#visualPresetIds.set(type, getStandardVisualPresetId(type));
+    }
+    for (const preset of options.visualPresets ?? []) this.registerVisualPreset(preset);
+    for (const type of PHYSICAL_DIE_TYPES) {
+      const presetId = options.visualPresetIds?.[type];
+      if (presetId !== undefined) this.setVisualPreset(type, presetId);
+    }
     this.#theme = this.#mergeTheme(options.theme ?? {});
   }
 
@@ -245,7 +296,9 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#assertAlive();
     if (this.#initialized) return;
     this.#physics.configureTray(this.#tray);
+    this.#physics.setCollisionEventsEnabled(this.#collisionEvents.enabled);
     await this.#renderer.initialize();
+    for (const preset of this.#visualPresets.list()) this.#renderer.registerPreset(preset);
     this.#renderer.setTheme(this.#theme);
     this.#initialized = true;
   }
@@ -315,9 +368,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#rejectCancelled(task);
     }
     for (const task of this.#queue.splice(0)) this.#rejectCancelled(task);
-    this.#physics.clear();
-    this.#renderer.clear();
-    this.#displayedDieIds.clear();
+    this.#clearRenderedDice('cleared');
     this.#accumulatorSeconds = 0;
   }
 
@@ -338,9 +389,84 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     return this.#theme;
   }
 
+  registerVisualPreset(
+    source: VisualPresetDescriptor,
+    options: RegisterEngineVisualPresetOptions = {},
+  ): VisualPresetDescriptor {
+    this.#assertAlive();
+    const preset = createVisualPresetDescriptor(source);
+    this.#assertValidVisualPreset(preset);
+    if ([...this.#dieEvents.values()].some((event) => event.presetId === preset.id)) {
+      throw new Error(`Visual preset "${preset.id}" is currently in use`);
+    }
+    const existing = this.#visualPresets.get(preset.id);
+    if (existing !== undefined && options.replace !== true) {
+      throw new Error(`Visual preset "${preset.id}" is already registered`);
+    }
+    if (this.#initialized) this.#renderer.registerPreset(preset);
+    this.#visualPresets.register(
+      preset,
+      options.replace === undefined ? {} : { replace: options.replace },
+    );
+    if (options.makeDefault === true) {
+      if (!isPhysicalDieType(preset.dieType)) {
+        throw new Error(`Visual preset has an invalid physical die type: ${preset.dieType}`);
+      }
+      this.#visualPresetIds.set(preset.dieType, preset.id);
+    }
+    return preset;
+  }
+
+  unregisterVisualPreset(id: string): boolean {
+    this.#assertAlive();
+    if (STANDARD_VISUAL_PRESETS.some((preset) => preset.id === id)) {
+      throw new Error(`Built-in visual preset "${id}" cannot be unregistered`);
+    }
+    const preset = this.#visualPresets.unregister(id);
+    if (preset === undefined) return false;
+    if (!isPhysicalDieType(preset.dieType)) {
+      throw new Error(`Visual preset has an invalid physical die type: ${preset.dieType}`);
+    }
+    const type = preset.dieType;
+    if (this.#visualPresetIds.get(type) === id) {
+      this.#visualPresetIds.set(type, getStandardVisualPresetId(type));
+    }
+    if (this.#initialized) this.#renderer.unregisterPreset(id);
+    return true;
+  }
+
+  setVisualPreset(dieType: PhysicalDieType, presetId: string): void {
+    this.#assertAlive();
+    if (!PHYSICAL_DIE_TYPES.includes(dieType)) {
+      throw new RangeError(`${dieType} is not a physical die type`);
+    }
+    const preset = this.#visualPresets.get(presetId);
+    if (preset === undefined) throw new RangeError(`Unknown visual preset: ${presetId}`);
+    if (preset.dieType !== dieType) {
+      throw new RangeError(`Visual preset "${presetId}" is for ${preset.dieType}, not ${dieType}`);
+    }
+    this.#visualPresetIds.set(dieType, presetId);
+  }
+
+  getVisualPreset(dieType: PhysicalDieType): VisualPresetDescriptor {
+    this.#assertAlive();
+    const id = this.#visualPresetIds.get(dieType);
+    const preset = id === undefined ? undefined : this.#visualPresets.get(id);
+    if (preset === undefined) throw new Error(`No visual preset is selected for ${dieType}`);
+    return preset;
+  }
+
   destroy(): void {
     if (this.#destroyed) return;
-    this.clear();
+    this.#frameToken?.cancel();
+    this.#frameToken = undefined;
+    if (this.#active !== undefined) {
+      const task = this.#active.task;
+      this.#active = undefined;
+      this.#rejectCancelled(task);
+    }
+    for (const task of this.#queue.splice(0)) this.#rejectCancelled(task);
+    this.#clearRenderedDice('destroyed');
     this.#renderer.destroy();
     this.#physics.destroy();
     super.clear();
@@ -406,6 +532,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     try {
       for (const spec of specs) {
         const geometry = getDieGeometry(spec.geometryType);
+        const faceLabels = mergeFaceLabels(spec.preset.faceLabels, spec.faceLabels);
         const id = `${task.session.id}:die-${index++}`;
         const generated = this.#throwGenerator.generate();
         const position = this.#placeDie(generated.position, index - 1, totalDice);
@@ -416,7 +543,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
             kind: 'convex-hull',
             vertices: geometry.vertices.map(([x, y, z]) => ({ x, y, z })),
           },
-          scale: 1,
+          scale: spec.preset.scale ?? 1,
           mass: 1,
           material: this.#diceMaterial,
           position,
@@ -427,11 +554,12 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
           id,
           type: spec.type,
           geometryType: spec.geometryType,
+          preset: spec.preset,
           expressionIndex: spec.expressionIndex,
           ...(spec.selection === undefined ? {} : { selection: spec.selection }),
           ...(spec.scoreRules === undefined ? {} : { scoreRules: spec.scoreRules }),
           ...(spec.component === undefined ? {} : { component: spec.component }),
-          ...(spec.faceLabels === undefined ? {} : { faceLabels: spec.faceLabels }),
+          ...(faceLabels === undefined ? {} : { faceLabels }),
           body,
           detector: new SettlingDetector(this.#settling),
           previous: state,
@@ -440,12 +568,23 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
         dice.push(die);
         this.#renderer.createDie(toRenderState(die));
         body.applyImpulse(generated.impulse, generated.torqueImpulse);
+        const event: DiceVisualEvent = Object.freeze({
+          sessionId: task.session.id,
+          dieId: id,
+          dieType: spec.type,
+          presetId: spec.preset.id,
+          ...(spec.preset.skinId === undefined ? {} : { skinId: spec.preset.skinId }),
+          ...(spec.preset.soundPackId === undefined
+            ? {}
+            : { soundPackId: spec.preset.soundPackId }),
+        });
+        this.#dieEvents.set(id, event);
+        this.emit('die:spawn', event);
       }
       return dice;
     } catch (error) {
       for (const die of dice) {
-        this.#physics.removeDie(die.id);
-        this.#renderer.removeDie(die.id);
+        this.#removeDie(die.id, 'failed');
       }
       throw error;
     }
@@ -459,10 +598,13 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       if (expression.kind === 'dice') {
         const type = `d${expression.sides}`;
         if (!isDieType(type)) throw new RangeError(`${type} is not a standard die type`);
+        if (!isPhysicalDieType(type)) throw new RangeError(`${type} is not a physical die type`);
+        const preset = this.getVisualPreset(type);
         for (let count = 0; count < expression.count; count += 1) {
           specs.push({
             type,
-            geometryType: type,
+            geometryType: this.#getPresetGeometryType(preset),
+            preset,
             expressionIndex,
             ...(expression.selection === undefined ? {} : { selection: expression.selection }),
             ...(expression.score === undefined ? {} : { scoreRules: expression.score }),
@@ -474,31 +616,37 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       for (let count = 0; count < expression.count; count += 1) {
         const groupId = `${task.session.id}:group-${groupIndex++}`;
         if (expression.type === 'd100') {
+          const preset = this.getVisualPreset('d10');
           specs.push({
             type: 'd100',
-            geometryType: 'd10',
+            geometryType: this.#getPresetGeometryType(preset),
+            preset,
             expressionIndex,
             component: { groupId, groupType: 'd100', role: 'tens' },
             faceLabels: D100_TENS_LABELS,
           });
           specs.push({
             type: 'd10',
-            geometryType: 'd10',
+            geometryType: this.#getPresetGeometryType(preset),
+            preset,
             expressionIndex,
             component: { groupId, groupType: 'd100', role: 'units' },
           });
           continue;
         }
+        const preset = this.getVisualPreset('d6');
         specs.push({
           type: 'd6',
-          geometryType: 'd6',
+          geometryType: this.#getPresetGeometryType(preset),
+          preset,
           expressionIndex,
           component: { groupId, groupType: 'd66', role: 'tens' },
           faceLabels: D66_TENS_LABELS,
         });
         specs.push({
           type: 'd6',
-          geometryType: 'd6',
+          geometryType: this.#getPresetGeometryType(preset),
+          preset,
           expressionIndex,
           component: { groupId, groupType: 'd66', role: 'units' },
         });
@@ -545,9 +693,26 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#lastFrameMs = timestampMs;
       this.#accumulatorSeconds += frameDelta;
 
+      let emittedCollisionEvents = 0;
       while (this.#accumulatorSeconds >= this.#fixedStepSeconds) {
         for (const die of active.dice) die.previous = die.current;
         this.#physics.step(this.#fixedStepSeconds);
+        if (this.#collisionEvents.enabled) {
+          for (const collision of this.#physics.drainCollisionEvents()) {
+            if (emittedCollisionEvents >= this.#collisionEvents.maxEventsPerFrame) continue;
+            const event = this.#dieEvents.get(collision.dieId);
+            if (event === undefined) continue;
+            this.emit(
+              'die:collision',
+              Object.freeze({
+                ...event,
+                ...(collision.otherDieId === undefined ? {} : { otherDieId: collision.otherDieId }),
+                started: collision.started,
+              }),
+            );
+            emittedCollisionEvents += 1;
+          }
+        }
         this.#accumulatorSeconds -= this.#fixedStepSeconds;
         for (const die of active.dice) {
           die.current = die.body.getState();
@@ -577,17 +742,18 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   }
 
   #createDieResult(die: ActiveDie, faceValue: number): DieResult {
+    const mappedValue = die.preset.valueMap?.[faceValue] ?? faceValue;
     if (die.component === undefined) {
       if (die.type === 'd100') throw new Error('A d100 result requires percentile component data');
-      return Object.freeze({ id: die.id, type: die.type, value: faceValue });
+      return Object.freeze({ id: die.id, type: die.type, value: mappedValue });
     }
     const { groupId, groupType, role } = die.component;
-    const digit = groupType === 'd100' ? faceValue % 10 : faceValue;
+    const digit = groupType === 'd100' ? mappedValue % 10 : mappedValue;
     return Object.freeze({
       id: die.id,
       type: die.type,
       value: role === 'tens' ? digit * 10 : digit,
-      component: Object.freeze({ groupId, groupType, role, faceValue }),
+      component: Object.freeze({ groupId, groupType, role, faceValue: mappedValue }),
     });
   }
 
@@ -670,7 +836,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#frameToken = undefined;
     const active = this.#active;
     this.#active = undefined;
-    if (active !== undefined) this.#removeDice(active.dice);
+    if (active !== undefined) this.#removeDice(active.dice, 'cancelled');
     this.#rejectCancelled(task);
     this.#startNext();
   }
@@ -685,7 +851,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
 
   #failActive(active: ActiveRoll, error: unknown): void {
     this.#active = undefined;
-    this.#removeDice(active.dice);
+    this.#removeDice(active.dice, 'failed');
     this.#failTask(active.task, error);
   }
 
@@ -698,18 +864,35 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#startNext();
   }
 
-  #removeDice(dice: readonly ActiveDie[]): void {
+  #removeDice(dice: readonly ActiveDie[], reason: DiceRemovalReason): void {
     for (const die of dice) {
-      this.#physics.removeDie(die.id);
-      this.#renderer.removeDie(die.id);
+      this.#removeDie(die.id, reason);
     }
   }
 
   #removeDisplayedDice(): void {
     for (const id of this.#displayedDieIds) {
-      this.#physics.removeDie(id);
-      this.#renderer.removeDie(id);
+      this.#removeDie(id, 'replaced');
     }
+    this.#displayedDieIds.clear();
+  }
+
+  #removeDie(id: string, reason: DiceRemovalReason): void {
+    this.#physics.removeDie(id);
+    this.#renderer.removeDie(id);
+    const event = this.#dieEvents.get(id);
+    if (event === undefined) return;
+    this.#dieEvents.delete(id);
+    this.emit('die:remove', Object.freeze({ ...event, reason }));
+  }
+
+  #clearRenderedDice(reason: DiceRemovalReason): void {
+    this.#physics.clear();
+    this.#renderer.clear();
+    for (const event of this.#dieEvents.values()) {
+      this.emit('die:remove', Object.freeze({ ...event, reason }));
+    }
+    this.#dieEvents.clear();
     this.#displayedDieIds.clear();
   }
 
@@ -786,6 +969,46 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       }
     }
     return merged;
+  }
+
+  #assertValidVisualPreset(preset: VisualPresetDescriptor): void {
+    if (!isDieType(preset.dieType) || !isPhysicalDieType(preset.dieType)) {
+      throw new RangeError(`Visual preset die type is not supported: ${preset.dieType}`);
+    }
+    if (!isDieType(preset.geometryId) || !hasDieGeometry(preset.geometryId)) {
+      throw new RangeError(`Visual preset geometry is not registered: ${preset.geometryId}`);
+    }
+    const geometry = getDieGeometry(preset.geometryId);
+    const faceValues = new Set(geometry.faces.map((face) => face.value));
+    const logicalSides = Number(preset.dieType.slice(1));
+    if (preset.valueMap !== undefined) {
+      const mappedFaces = Object.keys(preset.valueMap).map(Number);
+      if (
+        mappedFaces.length !== faceValues.size ||
+        mappedFaces.some((face) => !faceValues.has(face))
+      ) {
+        throw new RangeError('Visual preset valueMap must map every geometry face exactly once');
+      }
+    }
+    for (const face of faceValues) {
+      const value = preset.valueMap?.[face] ?? face;
+      if (!Number.isSafeInteger(value) || value < 1 || value > logicalSides) {
+        throw new RangeError(`Visual preset maps geometry face ${face} outside ${preset.dieType}`);
+      }
+    }
+    if (
+      preset.faceLabels !== undefined &&
+      Object.keys(preset.faceLabels).some((face) => !faceValues.has(Number(face)))
+    ) {
+      throw new RangeError('Visual preset faceLabels contain a face absent from its geometry');
+    }
+  }
+
+  #getPresetGeometryType(preset: VisualPresetDescriptor): DieType {
+    if (!isDieType(preset.geometryId) || !hasDieGeometry(preset.geometryId)) {
+      throw new RangeError(`Visual preset geometry is not registered: ${preset.geometryId}`);
+    }
+    return preset.geometryId;
   }
 
   #assertReady(): void {

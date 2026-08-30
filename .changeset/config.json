@@ -4,6 +4,7 @@
   "commit": false,
   "fixed": [
     [
+      "@dice-o-rolla/dice-assets",
       "@dice-o-rolla/dice-core",
       "@dice-o-rolla/dice-geometry",
       "@dice-o-rolla/dice-physics",

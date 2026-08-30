@@ -97,6 +97,7 @@ keep/drop or score suffixes. See the [notation reference](docs/notation.md) for 
 
 | Workspace                           | Responsibility                                         |
 | ----------------------------------- | ------------------------------------------------------ |
+| `@dice-o-rolla/dice-assets`         | optional skin and sound-pack catalogs                  |
 | `@dice-o-rolla/dice-core`           | notation, results, events, random source, domain types |
 | `@dice-o-rolla/dice-geometry`       | immutable polyhedra and face resolution                |
 | `@dice-o-rolla/dice-physics`        | backend contracts, throw generation, settling policy   |
@@ -106,7 +107,8 @@ keep/drop or score suffixes. See the [notation reference](docs/notation.md) for 
 | `@dice-o-rolla/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
 | `@dice-o-rolla/dice-demo`           | thin browser UI                                        |
 
-See the [user documentation](docs/README.md), [engine lifecycle](docs/engine.md),
+See the [user documentation](docs/README.md), [visual presets and assets](docs/visual-presets.md),
+[engine lifecycle](docs/engine.md),
 [Three.js renderers](docs/three-renderer.md), [physics](docs/physics.md),
 [Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md), and
 [security guidance](docs/security.md).

@@ -58,10 +58,18 @@ export interface PhysicsDieHandle {
   wakeUp(): void;
 }
 
+export interface PhysicsCollisionEvent {
+  readonly dieId: string;
+  readonly otherDieId?: string;
+  readonly started: boolean;
+}
+
 export interface PhysicsWorld {
   createDie(options: CreatePhysicsDieOptions): PhysicsDieHandle;
   configureTray(options: TrayOptions): void;
   setGravity(gravity: Vector3Like): void;
+  setCollisionEventsEnabled(enabled: boolean): void;
+  drainCollisionEvents(): readonly PhysicsCollisionEvent[];
   step(dtSeconds: number): void;
   removeDie(id: string): void;
   clear(): void;
