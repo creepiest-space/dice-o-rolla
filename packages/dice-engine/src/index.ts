@@ -11,9 +11,22 @@ export type {
   DiceEngineFacade,
   DiceEngineLimits,
   DiceEngineOptions,
+  DiceCollisionEvent,
+  DiceImpactEvent,
+  DiceCollisionEventOptions,
   DiceMaterialType,
+  DiceRemovalReason,
+  DiceRemoveEvent,
   DiceTheme,
+  DiceVisualEvent,
   FrameScheduler,
   FrameToken,
+  RegisterEngineVisualPresetOptions,
   RollOptions,
 } from './types.js';
+export {
+  getStandardVisualPresetId,
+  PHYSICAL_DIE_TYPES,
+  STANDARD_VISUAL_PRESETS,
+  type PhysicalDieType,
+} from './visual-presets.js';

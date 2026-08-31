@@ -22,7 +22,9 @@ bun run dev
 ```
 
 Turbo starts `apps/dice-demo`; open the URL printed by Bun. The demo supports notation input,
-quick-roll buttons, clearing, plastic/matte themes, throw presets, and responsive resizing.
+quick-roll buttons, clearing, plastic/matte themes, throw presets, and responsive resizing. Its
+asset cases demonstrate shared KTX2 PBR skins with shader recoloring and force-driven Web Audio
+sprite banks from the optional `dice-assets` package.
 
 Create a production bundle with:
 
@@ -74,6 +76,9 @@ d20
 2d6
 4d6+5
 1d8 + 2d6 - 1
+4d6kh3
+2d20kl1
+5d20s{1=-2,17..19=1,20=2}
 d%
 d100
 d66
@@ -83,10 +88,18 @@ d66
 d6 dice and produces values from 11 through 66. Percentile and d66 results retain both physical dice
 and their component roles.
 
+`kh`, `kl`, `dh`, and `dl` keep or drop the requested number of highest or lowest dice. Every die is
+still physically rolled and retained in the result; selected dice have `included: true` and dropped
+dice have `included: false`. A score map such as `s{1=-2,17..19=1,20=2}` replaces raw face values
+with per-die score contributions, with unlisted faces scoring zero. Keep/drop runs before scoring,
+and integer modifiers are applied last. Paired `d%`, `d100`, and `d66` terms do not currently accept
+keep/drop or score suffixes. See the [notation reference](docs/notation.md) for the complete grammar.
+
 ## Packages
 
 | Workspace                           | Responsibility                                         |
 | ----------------------------------- | ------------------------------------------------------ |
+| `@dice-o-rolla/dice-assets`         | optional KTX2 skins and Web Audio sprite banks         |
 | `@dice-o-rolla/dice-core`           | notation, results, events, random source, domain types |
 | `@dice-o-rolla/dice-geometry`       | immutable polyhedra and face resolution                |
 | `@dice-o-rolla/dice-physics`        | backend contracts, throw generation, settling policy   |
@@ -96,10 +109,12 @@ and their component roles.
 | `@dice-o-rolla/dice-engine`         | sessions, queue, fixed-step orchestration, facade      |
 | `@dice-o-rolla/dice-demo`           | thin browser UI                                        |
 
-See the [user documentation](docs/README.md), [engine lifecycle](docs/engine.md),
+See the [user documentation](docs/README.md), [visual presets and assets](docs/visual-presets.md),
+[engine lifecycle](docs/engine.md),
 [Three.js renderers](docs/three-renderer.md), [physics](docs/physics.md),
 [Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md), and
-[security guidance](docs/security.md).
+[security guidance](docs/security.md). Consumers upgrading from `0.1` should read the
+[0.2 migration notes](docs/migration-0.2.md).
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
 integration bundle in `artifacts/` with `bun run pack:dice-engine`. See

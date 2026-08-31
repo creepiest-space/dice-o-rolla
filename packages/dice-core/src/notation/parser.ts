@@ -1,5 +1,8 @@
 import type {
   DiceExpression,
+  DiceScoreRule,
+  DiceSelection,
+  DiceSelectionOperator,
   ModifierExpression,
   PairedDiceExpression,
   RollExpression,
@@ -89,6 +92,7 @@ class NotationParser {
 
       if (this.#current() === '%') {
         this.#index += 1;
+        this.#assertNoPairedDiceOperations();
         return {
           kind: 'paired-dice',
           count,
@@ -108,6 +112,7 @@ class NotationParser {
       }
 
       if (sides === 100 || sides === 66) {
+        this.#assertNoPairedDiceOperations();
         return {
           kind: 'paired-dice',
           count,
@@ -115,11 +120,11 @@ class NotationParser {
         } satisfies PairedDiceExpression;
       }
 
-      return {
+      return this.#readDiceOperations({
         kind: 'dice',
         count,
         sides,
-      } satisfies DiceExpression;
+      });
     }
 
     if (integerStart === integerEnd) {
@@ -135,6 +140,167 @@ class NotationParser {
       kind: 'modifier',
       value,
     } satisfies ModifierExpression;
+  }
+
+  #readDiceOperations(expression: DiceExpression): DiceExpression {
+    this.#skipWhitespace();
+    const selection = this.#startsSelection() ? this.#readSelection(expression.count) : undefined;
+    this.#skipWhitespace();
+    const score =
+      this.#current()?.toLowerCase() === 's' ? this.#readScoreRules(expression.sides) : undefined;
+    this.#skipWhitespace();
+
+    if (this.#startsSelection() || this.#current()?.toLowerCase() === 's') {
+      this.#fail(
+        'INVALID_DICE_OPERATION',
+        'Dice operations must contain at most one keep/drop operator followed by one score map',
+      );
+    }
+
+    return {
+      ...expression,
+      ...(selection === undefined ? {} : { selection }),
+      ...(score === undefined ? {} : { score }),
+    };
+  }
+
+  #readSelection(diceCount: number): DiceSelection {
+    const start = this.#index;
+    const first = this.#current()?.toLowerCase();
+    const second = this.#peek(1)?.toLowerCase();
+    if ((first !== 'k' && first !== 'd') || (second !== 'h' && second !== 'l')) {
+      return this.#failAt('INVALID_SELECTION', 'Expected kh, kl, dh, or dl', start);
+    }
+    const operator: DiceSelectionOperator = `${first}${second}`;
+    this.#index += 2;
+    this.#skipWhitespace();
+
+    const countStart = this.#index;
+    this.#consumeDigits();
+    if (countStart === this.#index) {
+      this.#failAt('INVALID_SELECTION', `Selection ${operator} requires a count`, start);
+    }
+    const count = this.#readInteger(countStart, this.#index, 'selection count');
+    if (count < 1) {
+      this.#failAt('INVALID_SELECTION', 'Selection count must be at least one', countStart);
+    }
+    const keepsDice = operator === 'kh' || operator === 'kl';
+    if ((keepsDice && count > diceCount) || (!keepsDice && count >= diceCount)) {
+      this.#failAt(
+        'INVALID_SELECTION',
+        keepsDice
+          ? 'Cannot keep more dice than the term rolls'
+          : 'Drop count must leave at least one die',
+        countStart,
+      );
+    }
+    return { operator, count };
+  }
+
+  #readScoreRules(sides: number): readonly DiceScoreRule[] {
+    const operationStart = this.#index;
+    this.#index += 1;
+    this.#skipWhitespace();
+    if (this.#current() !== '{') {
+      this.#failAt('INVALID_SCORE_RULE', 'Score notation requires "{" after "s"', operationStart);
+    }
+    this.#index += 1;
+    this.#skipWhitespace();
+    if (this.#current() === '}') {
+      this.#fail('INVALID_SCORE_RULE', 'Score map must contain at least one rule');
+    }
+
+    const rules: DiceScoreRule[] = [];
+    while (true) {
+      const ruleStart = this.#index;
+      const minimum = this.#readScoreFace();
+      this.#skipWhitespace();
+      let maximum = minimum;
+      if (this.#current() === '.') {
+        if (this.#peek(1) !== '.') {
+          this.#fail('INVALID_SCORE_RULE', 'Score ranges must use ".."');
+        }
+        this.#index += 2;
+        this.#skipWhitespace();
+        maximum = this.#readScoreFace();
+      }
+      if (minimum > maximum) {
+        this.#failAt(
+          'INVALID_SCORE_RULE',
+          'Score range minimum must not exceed its maximum',
+          ruleStart,
+        );
+      }
+      if (minimum < 1 || maximum > sides) {
+        this.#failAt(
+          'INVALID_SCORE_RULE',
+          `Score rule faces must be within [1, ${sides}]`,
+          ruleStart,
+        );
+      }
+      this.#skipWhitespace();
+      if (this.#current() !== '=') {
+        this.#fail('INVALID_SCORE_RULE', 'Score rule requires "=" before its score');
+      }
+      this.#index += 1;
+      this.#skipWhitespace();
+      const score = this.#readSignedScore();
+
+      if (rules.some((rule) => minimum <= rule.maximum && maximum >= rule.minimum)) {
+        this.#failAt('OVERLAPPING_SCORE_RULE', 'Score rule ranges must not overlap', ruleStart);
+      }
+      rules.push({ minimum, maximum, score });
+
+      this.#skipWhitespace();
+      if (this.#current() === '}') {
+        this.#index += 1;
+        return Object.freeze(rules.map((rule) => Object.freeze(rule)));
+      }
+      if (this.#current() !== ',') {
+        this.#fail('INVALID_SCORE_RULE', 'Score rules must be separated by commas');
+      }
+      this.#index += 1;
+      this.#skipWhitespace();
+      if (this.#current() === '}') {
+        this.#fail('INVALID_SCORE_RULE', 'Score map must not have a trailing comma');
+      }
+    }
+  }
+
+  #readScoreFace(): number {
+    const start = this.#index;
+    this.#consumeDigits();
+    if (start === this.#index) {
+      this.#fail('INVALID_SCORE_RULE', 'Score rule requires a face value');
+    }
+    return this.#readInteger(start, this.#index, 'score rule face');
+  }
+
+  #readSignedScore(): number {
+    const sign = this.#current() === '-' ? -1 : 1;
+    if (this.#current() === '-' || this.#current() === '+') this.#index += 1;
+    const start = this.#index;
+    this.#consumeDigits();
+    if (start === this.#index) {
+      this.#fail('INVALID_SCORE_RULE', 'Score rule requires an integer score');
+    }
+    return this.#readInteger(start, this.#index, 'score') * sign;
+  }
+
+  #assertNoPairedDiceOperations(): void {
+    this.#skipWhitespace();
+    if (this.#startsSelection() || this.#current()?.toLowerCase() === 's') {
+      this.#fail(
+        'INVALID_DICE_OPERATION',
+        'Keep/drop and score operations are not supported for paired dice',
+      );
+    }
+  }
+
+  #startsSelection(): boolean {
+    const first = this.#current()?.toLowerCase();
+    const second = this.#peek(1)?.toLowerCase();
+    return (first === 'k' || first === 'd') && (second === 'h' || second === 'l');
   }
 
   #readInteger(start: number, end: number, description: string): number {
@@ -159,6 +325,10 @@ class NotationParser {
 
   #current(): string | undefined {
     return this.#input[this.#index];
+  }
+
+  #peek(offset: number): string | undefined {
+    return this.#input[this.#index + offset];
   }
 
   #isAtEnd(): boolean {

@@ -11,6 +11,9 @@ export {
   getFaceLabel,
   ThreeDiceMeshFactory,
   type ThreeDiceMesh,
+  type FaceMaterialContext,
+  type FaceMaterialResource,
+  type ThreeFaceMaterialProvider,
 } from './mesh-factory.js';
 export { ThreeCamera, ThreeLighting, ThreeScene } from './scene.js';
 export { TopDownCamera, type TopDownCameraOptions } from './top-down-camera.js';

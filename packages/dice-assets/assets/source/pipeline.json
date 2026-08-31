@@ -1,0 +1,364 @@
+{
+  "textures": [
+    {
+      "input": "textures/speckle-base.png",
+      "output": "textures/speckle-base.ktx2",
+      "colorSpace": "srgb"
+    },
+    {
+      "input": "textures/speckle-normal.png",
+      "output": "textures/speckle-normal.ktx2",
+      "colorSpace": "linear"
+    },
+    {
+      "input": "textures/speckle-orm.png",
+      "output": "textures/speckle-orm.ktx2",
+      "colorSpace": "linear"
+    }
+  ],
+  "atlases": [
+    {
+      "input": "faces/digits.svg",
+      "intermediate": "faces/digits.png",
+      "output": "textures/digits.ktx2",
+      "width": 640
+    }
+  ],
+  "sprites": [
+    {
+      "id": "procedural-resin",
+      "output": "resin.webm",
+      "clips": [
+        { "id": "hit1", "input": "resin-1.wav", "durationSeconds": 0.18 },
+        { "id": "hit2", "input": "resin-2.wav", "durationSeconds": 0.18 }
+      ]
+    },
+    {
+      "id": "procedural-wood",
+      "output": "wood.webm",
+      "clips": [
+        { "id": "hit1", "input": "wood-1.wav", "durationSeconds": 0.2 },
+        { "id": "hit2", "input": "wood-2.wav", "durationSeconds": 0.2 }
+      ]
+    },
+    {
+      "id": "classic-dice",
+      "output": "classic-dice.webm",
+      "clips": [
+        { "id": "hit1", "input": "community-impact/dicehit1.wav", "durationSeconds": 0.031406 },
+        { "id": "hit2", "input": "community-impact/dicehit2.wav", "durationSeconds": 0.020136 },
+        { "id": "hit3", "input": "community-impact/dicehit3.wav", "durationSeconds": 0.024989 },
+        { "id": "hit4", "input": "community-impact/dicehit4.wav", "durationSeconds": 0.021247 },
+        { "id": "hit5", "input": "community-impact/dicehit5.wav", "durationSeconds": 0.024943 },
+        { "id": "hit6", "input": "community-impact/dicehit6.wav", "durationSeconds": 0.019955 },
+        { "id": "hit7", "input": "community-impact/dicehit7.wav", "durationSeconds": 0.020998 },
+        { "id": "hit8", "input": "community-impact/dicehit8.wav", "durationSeconds": 0.144286 },
+        { "id": "hit9", "input": "community-impact/dicehit9.wav", "durationSeconds": 0.121633 },
+        { "id": "hit10", "input": "community-impact/dicehit10.wav", "durationSeconds": 0.09576 },
+        { "id": "hit11", "input": "community-impact/dicehit11.wav", "durationSeconds": 0.107234 },
+        { "id": "hit12", "input": "community-impact/dicehit12.wav", "durationSeconds": 0.068889 },
+        { "id": "hit13", "input": "community-impact/dicehit13.wav", "durationSeconds": 0.049569 },
+        { "id": "hit14", "input": "community-impact/dicehit14.wav", "durationSeconds": 0.037664 },
+        { "id": "hit15", "input": "community-impact/dicehit15.wav", "durationSeconds": 0.0278 }
+      ]
+    },
+    {
+      "id": "classic-coin",
+      "output": "classic-coin.webm",
+      "clips": [
+        { "id": "hit1", "input": "community-impact/coinhit1.wav", "durationSeconds": 0.114649 },
+        { "id": "hit2", "input": "community-impact/coinhit2.wav", "durationSeconds": 0.10449 },
+        { "id": "hit3", "input": "community-impact/coinhit3.wav", "durationSeconds": 0.10449 },
+        { "id": "hit4", "input": "community-impact/coinhit4.wav", "durationSeconds": 0.114649 },
+        { "id": "hit5", "input": "community-impact/coinhit5.wav", "durationSeconds": 0.10449 },
+        { "id": "hit6", "input": "community-impact/coinhit6.wav", "durationSeconds": 0.10449 }
+      ]
+    },
+    {
+      "id": "classic-felt",
+      "output": "classic-felt.webm",
+      "clips": [
+        {
+          "id": "hit1",
+          "input": "community-impact/felt/surface_felt1.wav",
+          "durationSeconds": 0.070136
+        },
+        {
+          "id": "hit2",
+          "input": "community-impact/felt/surface_felt2.wav",
+          "durationSeconds": 0.039955
+        },
+        {
+          "id": "hit3",
+          "input": "community-impact/felt/surface_felt3.wav",
+          "durationSeconds": 0.0539
+        },
+        {
+          "id": "hit4",
+          "input": "community-impact/felt/surface_felt4.wav",
+          "durationSeconds": 0.044853
+        },
+        {
+          "id": "hit5",
+          "input": "community-impact/felt/surface_felt5.wav",
+          "durationSeconds": 0.110907
+        },
+        {
+          "id": "hit6",
+          "input": "community-impact/felt/surface_felt6.wav",
+          "durationSeconds": 0.067846
+        },
+        {
+          "id": "hit7",
+          "input": "community-impact/felt/surface_felt7.wav",
+          "durationSeconds": 0.065283
+        }
+      ]
+    },
+    {
+      "id": "classic-metal",
+      "output": "classic-metal.webm",
+      "clips": [
+        {
+          "id": "hit1",
+          "input": "community-impact/metal/surface_metal1.wav",
+          "durationSeconds": 0.548571
+        },
+        {
+          "id": "hit2",
+          "input": "community-impact/metal/surface_metal2.wav",
+          "durationSeconds": 0.600816
+        },
+        {
+          "id": "hit3",
+          "input": "community-impact/metal/surface_metal3.wav",
+          "durationSeconds": 0.444082
+        },
+        {
+          "id": "hit4",
+          "input": "community-impact/metal/surface_metal4.wav",
+          "durationSeconds": 0.417959
+        },
+        {
+          "id": "hit5",
+          "input": "community-impact/metal/surface_metal5.wav",
+          "durationSeconds": 0.313469
+        },
+        {
+          "id": "hit6",
+          "input": "community-impact/metal/surface_metal6.wav",
+          "durationSeconds": 0.235102
+        },
+        {
+          "id": "hit7",
+          "input": "community-impact/metal/surface_metal7.wav",
+          "durationSeconds": 0.522449
+        },
+        {
+          "id": "hit8",
+          "input": "community-impact/metal/surface_metal8.wav",
+          "durationSeconds": 0.470204
+        },
+        {
+          "id": "hit9",
+          "input": "community-impact/metal/surface_metal9.wav",
+          "durationSeconds": 0.313469
+        }
+      ]
+    },
+    {
+      "id": "classic-wood-table",
+      "output": "classic-wood-table.webm",
+      "clips": [
+        {
+          "id": "hit1",
+          "input": "community-impact/wood_table/surface_wood_table1.wav",
+          "durationSeconds": 0.074785
+        },
+        {
+          "id": "hit2",
+          "input": "community-impact/wood_table/surface_wood_table2.wav",
+          "durationSeconds": 0.050975
+        },
+        {
+          "id": "hit3",
+          "input": "community-impact/wood_table/surface_wood_table3.wav",
+          "durationSeconds": 0.035873
+        },
+        {
+          "id": "hit4",
+          "input": "community-impact/wood_table/surface_wood_table4.wav",
+          "durationSeconds": 0.042585
+        },
+        {
+          "id": "hit5",
+          "input": "community-impact/wood_table/surface_wood_table5.wav",
+          "durationSeconds": 0.047914
+        },
+        {
+          "id": "hit6",
+          "input": "community-impact/wood_table/surface_wood_table6.wav",
+          "durationSeconds": 0.05093
+        },
+        {
+          "id": "hit7",
+          "input": "community-impact/wood_table/surface_wood_table7.wav",
+          "durationSeconds": 0.040975
+        }
+      ]
+    },
+    {
+      "id": "classic-wood-tray",
+      "output": "classic-wood-tray.webm",
+      "clips": [
+        {
+          "id": "hit1",
+          "input": "community-impact/wood_tray/surface_wood_tray1.wav",
+          "durationSeconds": 0.094172
+        },
+        {
+          "id": "hit2",
+          "input": "community-impact/wood_tray/surface_wood_tray2.wav",
+          "durationSeconds": 0.164966
+        },
+        {
+          "id": "hit3",
+          "input": "community-impact/wood_tray/surface_wood_tray3.wav",
+          "durationSeconds": 0.143764
+        },
+        {
+          "id": "hit4",
+          "input": "community-impact/wood_tray/surface_wood_tray4.wav",
+          "durationSeconds": 0.105941
+        },
+        {
+          "id": "hit5",
+          "input": "community-impact/wood_tray/surface_wood_tray5.wav",
+          "durationSeconds": 0.033764
+        },
+        {
+          "id": "hit6",
+          "input": "community-impact/wood_tray/surface_wood_tray6.wav",
+          "durationSeconds": 0.044898
+        },
+        {
+          "id": "hit7",
+          "input": "community-impact/wood_tray/surface_wood_tray7.wav",
+          "durationSeconds": 0.036848
+        }
+      ]
+    }
+  ],
+  "banks": [
+    {
+      "id": "procedural-resin",
+      "kind": "die-material",
+      "spriteId": "procedural-resin",
+      "clipIds": ["hit1", "hit2"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.025, 0.85],
+      "pitchVariationCents": 28,
+      "gainVariation": 0.05,
+      "maxVoices": 8
+    },
+    {
+      "id": "procedural-wood",
+      "kind": "surface-material",
+      "spriteId": "procedural-wood",
+      "clipIds": ["hit1", "hit2"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.015, 0.55],
+      "pitchVariationCents": 22,
+      "gainVariation": 0.04,
+      "maxVoices": 8
+    },
+    {
+      "id": "classic-dice",
+      "kind": "die-material",
+      "spriteId": "classic-dice",
+      "clipIds": [
+        "hit1",
+        "hit2",
+        "hit3",
+        "hit4",
+        "hit5",
+        "hit6",
+        "hit7",
+        "hit8",
+        "hit9",
+        "hit10",
+        "hit11",
+        "hit12",
+        "hit13",
+        "hit14",
+        "hit15"
+      ],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.02, 0.82],
+      "pitchVariationCents": 24,
+      "gainVariation": 0.05,
+      "maxVoices": 12,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    },
+    {
+      "id": "classic-coin",
+      "kind": "die-material",
+      "spriteId": "classic-coin",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.018, 0.74],
+      "pitchVariationCents": 18,
+      "gainVariation": 0.04,
+      "maxVoices": 10,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    },
+    {
+      "id": "classic-felt",
+      "kind": "surface-material",
+      "spriteId": "classic-felt",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.01, 0.38],
+      "pitchVariationCents": 16,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    },
+    {
+      "id": "classic-metal",
+      "kind": "surface-material",
+      "spriteId": "classic-metal",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7", "hit8", "hit9"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.48],
+      "pitchVariationCents": 14,
+      "gainVariation": 0.035,
+      "maxVoices": 10,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    },
+    {
+      "id": "classic-wood-table",
+      "kind": "surface-material",
+      "spriteId": "classic-wood-table",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.5],
+      "pitchVariationCents": 20,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    },
+    {
+      "id": "classic-wood-tray",
+      "kind": "surface-material",
+      "spriteId": "classic-wood-tray",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.52],
+      "pitchVariationCents": 20,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": { "source": "3DDiceRoller", "license": "Unlicense" }
+    }
+  ]
+}

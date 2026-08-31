@@ -42,7 +42,7 @@
             <button class="primary" id="roll" type="submit" disabled>Roll</button>
             <button class="secondary" id="clear" type="button" disabled>Clear</button>
           </div>
-          <small id="notation-help">Try 4d6+2, d%, d100, or d66.</small>
+          <small id="notation-help"> Try 4d6kh3, 3d20s{1=-2,17..19=1,20=2}, d%, or d66. </small>
         </form>
 
         <div class="shortcuts" aria-label="Quick rolls">
@@ -55,6 +55,8 @@
           <button type="button" data-notation="d%">d%</button>
           <button type="button" data-notation="d100">d100</button>
           <button type="button" data-notation="d66">d66</button>
+          <button type="button" data-notation="4d6kh3">4d6 kh3</button>
+          <button type="button" data-notation="3d20s{1=-2,17..19=1,20=2}">d20 score</button>
         </div>
 
         <div class="settings">
@@ -73,6 +75,42 @@
               <option value="lively">Lively</option>
             </select>
           </label>
+          <label>
+            Assets
+            <select id="assets">
+              <option value="classic">Classic</option>
+              <option value="amethyst">Amethyst PBR</option>
+              <option value="emerald">Emerald recolor</option>
+            </select>
+          </label>
+          <label class="audio-toggle">
+            Impact audio
+            <input id="audio" type="checkbox" />
+          </label>
+          <label>
+            Impact surface
+            <select id="audio-surface">
+              <option value="wood-table">Wood table</option>
+              <option value="wood-tray">Wood tray</option>
+              <option value="felt">Felt</option>
+              <option value="metal">Metal</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="asset-cases" aria-label="Asset examples">
+          <span>Asset cases</span>
+          <button type="button" data-asset-skin="amethyst" data-notation="d20">Amethyst d20</button>
+          <button type="button" data-asset-skin="emerald" data-notation="2d6">Recolored 2d6</button>
+          <button
+            type="button"
+            data-asset-skin="amethyst"
+            data-notation="4d6"
+            data-audio="true"
+            data-audio-surface="wood-table"
+          >
+            Classic impact audio
+          </button>
         </div>
       </section>
     </main>

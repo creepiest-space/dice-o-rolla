@@ -14,6 +14,7 @@ interface PackageManifest {
 interface WorkspacePackage {
   readonly directory: string;
   readonly includeReadme?: boolean;
+  readonly includeRuntimeAssets?: boolean;
 }
 
 interface VersionedWorkspacePackage extends WorkspacePackage {
@@ -26,6 +27,7 @@ interface PackagedWorkspace {
 }
 
 const workspacePackages: readonly WorkspacePackage[] = [
+  { directory: 'dice-assets', includeRuntimeAssets: true },
   { directory: 'dice-core' },
   { directory: 'dice-geometry' },
   { directory: 'dice-physics' },
@@ -100,12 +102,18 @@ async function packageWorkspace(
   if (workspacePackage.includeReadme === true) {
     distributionFiles.push([resolve(sourceDirectory, 'README.md'), 'README.md']);
   }
+  if (workspacePackage.includeRuntimeAssets === true) {
+    distributionFiles.push([resolve(sourceDirectory, 'assets', 'runtime'), 'assets/runtime']);
+  }
   await Promise.all(
-    distributionFiles.map(([source, filename]) => cp(source, resolve(stagingDirectory, filename))),
+    distributionFiles.map(([source, filename]) =>
+      cp(source, resolve(stagingDirectory, filename), { recursive: true }),
+    ),
   );
 
   const files = ['dist', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'];
   if (workspacePackage.includeReadme === true) files.push('README.md');
+  if (workspacePackage.includeRuntimeAssets === true) files.push('assets/runtime');
   const packageManifest: PackageManifest = {
     ...sourceManifest,
     files,
@@ -121,7 +129,12 @@ async function packageWorkspace(
     resolve(stagingDirectory, 'package.json'),
     `${JSON.stringify(packageManifest, null, 2)}\n`,
   );
-  await verifyStagingPackage(stagingDirectory, packageManifest, workspacePackage.includeReadme);
+  await verifyStagingPackage(
+    stagingDirectory,
+    packageManifest,
+    workspacePackage.includeReadme,
+    workspacePackage.includeRuntimeAssets,
+  );
   await run(
     ['bun', 'pm', 'pack', '--filename', workspacePackage.archive, '--quiet'],
     stagingDirectory,
@@ -200,10 +213,12 @@ import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 For an overhead application surface, import \`TopDownDiceRenderer\` from
 \`@dice-o-rolla/dice-renderer-three\` and inject it into the backend-neutral engine.
 
-All seven local tarballs must remain direct application dependencies. Their package manifests omit
-workspace-only dependency edges so npm and Bun do not query a registry for unpublished packages. The
-package manager resolves the remaining public runtime dependencies, \`@dimforge/rapier3d-compat\` and
-\`three\`, from the configured registry. Verify the copied archives with
+The seven runtime tarballs must remain direct application dependencies. The independent
+\`@dice-o-rolla/dice-assets\` tarball is optional and may be removed when the application does not
+use skin or sound catalogs. Package manifests omit workspace-only dependency edges so npm and Bun do
+not query a registry for unpublished packages. The package manager resolves the remaining public
+runtime dependencies, \`@dimforge/rapier3d-compat\` and \`three\`, from the configured registry. Verify
+the copied archives with
 \`shasum -a 256 -c artifacts/SHA256SUMS\` before installation.
 
 This bundle contains coordinated package version \`${coordinatedVersion}\`. Machine-readable package
@@ -270,6 +285,7 @@ async function verifyStagingPackage(
   stagingDirectory: string,
   manifest: PackageManifest,
   includeReadme = false,
+  includeRuntimeAssets = false,
 ): Promise<void> {
   const requiredFiles = [
     'LICENSE',
@@ -279,6 +295,13 @@ async function verifyStagingPackage(
     'dist/index.d.ts',
   ];
   if (includeReadme) requiredFiles.push('README.md', 'dist/browser.js', 'dist/browser.d.ts');
+  if (includeRuntimeAssets) {
+    requiredFiles.push(
+      'assets/runtime/catalog.json',
+      'assets/runtime/audio/classic-dice.webm',
+      'assets/runtime/audio/classic-wood-table.webm',
+    );
+  }
   await Promise.all(
     requiredFiles.map(async (path) => {
       if (!(await Bun.file(resolve(stagingDirectory, path)).exists())) {

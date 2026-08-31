@@ -7,7 +7,9 @@ import { applyInterpolatedTransform } from '../src/index.js';
 
 const state: RenderDieState = {
   id: 'die-1',
+  presetId: 'standard:d6',
   geometryId: 'd6',
+  scale: 1,
   previous: {
     position: { x: 0, y: 2, z: 4 },
     quaternion: { x: 0, y: 0, z: 0, w: 1 },

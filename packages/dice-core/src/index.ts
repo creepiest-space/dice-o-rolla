@@ -12,6 +12,9 @@ export { TypedEventEmitter } from './events/typed-event-emitter.js';
 export type { QuaternionLike, Vector3Like } from './math/types.js';
 export type {
   DiceExpression,
+  DiceScoreRule,
+  DiceSelection,
+  DiceSelectionOperator,
   ModifierExpression,
   PairedDiceExpression,
   PairedDiceType,

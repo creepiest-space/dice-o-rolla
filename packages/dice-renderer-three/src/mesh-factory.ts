@@ -1,6 +1,6 @@
 import { D6_DEFINITION } from '@dice-o-rolla/dice-geometry';
 import type { PolygonDefinition, PolyhedronDefinition } from '@dice-o-rolla/dice-geometry';
-import type { RendererTheme } from '@dice-o-rolla/dice-renderer';
+import type { RendererTheme, VisualPresetDescriptor } from '@dice-o-rolla/dice-renderer';
 import { BufferGeometry, Float32BufferAttribute, Mesh, type MeshStandardMaterial } from 'three';
 
 import { ThreeMaterialFactory } from './material-factory.js';
@@ -22,6 +22,24 @@ export const DEFAULT_THREE_THEME: RendererTheme = Object.freeze({
 export interface ThreeDiceMesh {
   readonly mesh: Mesh<BufferGeometry, MeshStandardMaterial[]>;
   dispose(): void;
+}
+
+export interface FaceMaterialContext {
+  readonly label: string | number | readonly number[];
+  readonly faceValue: number;
+  readonly theme: RendererTheme;
+  readonly preset?: VisualPresetDescriptor;
+  readonly labelScale?: number;
+}
+
+export interface FaceMaterialResource {
+  readonly material: MeshStandardMaterial;
+  dispose(): void;
+}
+
+export interface ThreeFaceMaterialProvider {
+  createFace(context: FaceMaterialContext): FaceMaterialResource;
+  dispose?(): void;
 }
 
 export function createPolyhedronGeometry(
@@ -63,9 +81,9 @@ export function createPolyhedronGeometry(
 }
 
 export class ThreeDiceMeshFactory {
-  readonly #materials: ThreeMaterialFactory;
+  readonly #materials: ThreeFaceMaterialProvider;
 
-  constructor(materials = new ThreeMaterialFactory()) {
+  constructor(materials: ThreeFaceMaterialProvider = defaultMaterialProvider()) {
     this.#materials = materials;
   }
 
@@ -74,15 +92,19 @@ export class ThreeDiceMeshFactory {
     theme: RendererTheme = DEFAULT_THREE_THEME,
     scale = 1,
     faceLabels?: Readonly<Record<number, string | number>>,
+    preset?: VisualPresetDescriptor,
   ): ThreeDiceMesh {
     const geometry = createPolyhedronGeometry(definition, scale);
-    const materials = definition.faces.map((face) =>
-      this.#materials.createFace(
-        getFaceLabel(definition, face, faceLabels),
+    const resources = definition.faces.map((face) =>
+      this.#materials.createFace({
+        label: getFaceLabel(definition, face, faceLabels),
+        faceValue: face.value,
         theme,
-        definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : undefined,
-      ),
+        ...(preset === undefined ? {} : { preset }),
+        ...(definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : {}),
+      }),
     );
+    const materials = resources.map(({ material }) => material);
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -91,10 +113,7 @@ export class ThreeDiceMeshFactory {
       mesh,
       dispose(): void {
         geometry.dispose();
-        for (const material of materials) {
-          material.map?.dispose();
-          material.dispose();
-        }
+        for (const resource of resources) resource.dispose();
       },
     };
   }
@@ -102,6 +121,26 @@ export class ThreeDiceMeshFactory {
   createD6(theme: RendererTheme = DEFAULT_THREE_THEME, scale = 1): ThreeDiceMesh {
     return this.create(D6_DEFINITION, theme, scale);
   }
+}
+
+function defaultMaterialProvider(): ThreeFaceMaterialProvider {
+  const factory = new ThreeMaterialFactory();
+  return {
+    createFace(context): FaceMaterialResource {
+      const material = factory.createFace(
+        context.label,
+        context.theme,
+        context.labelScale === undefined ? {} : { labelScale: context.labelScale },
+      );
+      return {
+        material,
+        dispose(): void {
+          material.map?.dispose();
+          material.dispose();
+        },
+      };
+    },
+  };
 }
 
 export function createFaceUvs(

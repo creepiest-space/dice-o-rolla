@@ -32,6 +32,7 @@ interface PackResult {
 }
 
 const packageDirectories = [
+  'dice-assets',
   'dice-core',
   'dice-geometry',
   'dice-physics',
@@ -48,6 +49,15 @@ const requiredPackFiles = [
   'dist/index.d.ts',
   'dist/index.js',
   'package.json',
+] as const;
+const requiredDiceAssetFiles = [
+  'assets/runtime/catalog.json',
+  'assets/runtime/audio/classic-coin.webm',
+  'assets/runtime/audio/classic-dice.webm',
+  'assets/runtime/audio/classic-felt.webm',
+  'assets/runtime/audio/classic-metal.webm',
+  'assets/runtime/audio/classic-wood-table.webm',
+  'assets/runtime/audio/classic-wood-tray.webm',
 ] as const;
 
 const rootDirectory = resolve(import.meta.dir, '..');
@@ -157,8 +167,20 @@ function validatePackResult(
       throw new Error(`${sourceManifest.name} tarball is missing ${requiredFile}`);
     }
   }
+  if (sourceManifest.name === '@dice-o-rolla/dice-assets') {
+    for (const requiredFile of requiredDiceAssetFiles) {
+      if (!files.has(requiredFile)) {
+        throw new Error(`${sourceManifest.name} tarball is missing ${requiredFile}`);
+      }
+    }
+  }
   for (const path of files) {
-    if (path.startsWith('src/') || path.includes('/__tests__/') || path.startsWith('tsconfig.')) {
+    if (
+      path.startsWith('src/') ||
+      path.includes('/__tests__/') ||
+      path.startsWith('tsconfig.') ||
+      path.endsWith('.wav')
+    ) {
       throw new Error(`${sourceManifest.name} tarball contains development file ${path}`);
     }
   }
@@ -185,8 +207,15 @@ async function packWorkspace(
   const sourceDirectory = resolve(packagesDirectory, directory);
   const packageDirectory = resolve(stagingDirectory, directory);
   await mkdir(packageDirectory, { recursive: true });
+  const distributionFiles = manifest.files ?? [
+    'dist',
+    'LICENSE',
+    'NOTICE',
+    'README.md',
+    'THIRD_PARTY_NOTICES.md',
+  ];
   await Promise.all(
-    ['dist', 'LICENSE', 'NOTICE', 'README.md', 'THIRD_PARTY_NOTICES.md'].map((path) =>
+    distributionFiles.map((path) =>
       cp(resolve(sourceDirectory, path), resolve(packageDirectory, path), { recursive: true }),
     ),
   );

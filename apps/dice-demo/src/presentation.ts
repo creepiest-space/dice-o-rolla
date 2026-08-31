@@ -4,6 +4,8 @@ export interface PresentableRollResult {
   readonly dice: readonly {
     readonly type: string;
     readonly value: number;
+    readonly included?: boolean;
+    readonly score?: number;
   }[];
 }
 
@@ -17,6 +19,12 @@ export function presentRollResult(result: PresentableRollResult): RollPresentati
   return {
     notation: result.notation,
     total: String(result.total),
-    dice: result.dice.map((die) => `${die.type}: ${die.value}`).join(' · '),
+    dice: result.dice.map(presentDie).join(' · '),
   };
+}
+
+function presentDie(die: PresentableRollResult['dice'][number]): string {
+  const score = die.score === undefined ? '' : ` → ${die.score > 0 ? '+' : ''}${die.score}`;
+  const dropped = die.included === false ? ' (dropped)' : '';
+  return `${die.type}: ${die.value}${score}${dropped}`;
 }

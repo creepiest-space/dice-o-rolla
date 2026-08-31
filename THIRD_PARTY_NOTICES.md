@@ -2,8 +2,9 @@
 
 ## 3DDiceRoller
 
-The geometry model and physical dice behavior were informed by 3DDiceRoller by MajorVictory,
-released under The Unlicense.
+The geometry model and physical dice behavior were informed by 3DDiceRoller by MajorVictory. The
+`@dice-o-rolla/dice-assets` package also includes its impact WAV recordings and derived mono
+WebM/Opus sprites. 3DDiceRoller is released under The Unlicense.
 
 - Source: <https://github.com/MajorVictory/3DDiceRoller>
 - License: <https://unlicense.org/>

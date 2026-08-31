@@ -1,5 +1,7 @@
 import type { QuaternionLike, Vector3Like } from '@dice-o-rolla/dice-core';
 
+import type { VisualPresetDescriptor } from './visual-preset-registry.js';
+
 export interface RenderTransform {
   readonly position: Vector3Like;
   readonly quaternion: QuaternionLike;
@@ -7,7 +9,9 @@ export interface RenderTransform {
 
 export interface RenderDieState {
   readonly id: string;
+  readonly presetId: string;
   readonly geometryId: string;
+  readonly scale: number;
   readonly faceLabels?: Readonly<Record<number, string | number>>;
   readonly previous: RenderTransform;
   readonly current: RenderTransform;
@@ -29,6 +33,8 @@ export interface RendererTheme {
 
 export interface DiceRenderer {
   initialize(): Promise<void> | void;
+  registerPreset(preset: VisualPresetDescriptor): void;
+  unregisterPreset(id: string): void;
   createDie(state: RenderDieState): void;
   updateDie(state: RenderDieState): void;
   removeDie(id: string): void;

@@ -1,0 +1,616 @@
+{
+  "schemaVersion": 1,
+  "audioSprites": [
+    {
+      "id": "procedural-resin",
+      "audio": {
+        "uri": "./audio/resin.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.18
+        },
+        "hit2": {
+          "offsetSeconds": 0.18,
+          "durationSeconds": 0.18
+        }
+      }
+    },
+    {
+      "id": "procedural-wood",
+      "audio": {
+        "uri": "./audio/wood.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.2
+        },
+        "hit2": {
+          "offsetSeconds": 0.2,
+          "durationSeconds": 0.2
+        }
+      }
+    },
+    {
+      "id": "classic-dice",
+      "audio": {
+        "uri": "./audio/classic-dice.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.031406
+        },
+        "hit2": {
+          "offsetSeconds": 0.031406,
+          "durationSeconds": 0.020136
+        },
+        "hit3": {
+          "offsetSeconds": 0.051542000000000004,
+          "durationSeconds": 0.024989
+        },
+        "hit4": {
+          "offsetSeconds": 0.076531,
+          "durationSeconds": 0.021247
+        },
+        "hit5": {
+          "offsetSeconds": 0.097778,
+          "durationSeconds": 0.024943
+        },
+        "hit6": {
+          "offsetSeconds": 0.122721,
+          "durationSeconds": 0.019955
+        },
+        "hit7": {
+          "offsetSeconds": 0.142676,
+          "durationSeconds": 0.020998
+        },
+        "hit8": {
+          "offsetSeconds": 0.163674,
+          "durationSeconds": 0.144286
+        },
+        "hit9": {
+          "offsetSeconds": 0.30796,
+          "durationSeconds": 0.121633
+        },
+        "hit10": {
+          "offsetSeconds": 0.429593,
+          "durationSeconds": 0.09576
+        },
+        "hit11": {
+          "offsetSeconds": 0.525353,
+          "durationSeconds": 0.107234
+        },
+        "hit12": {
+          "offsetSeconds": 0.632587,
+          "durationSeconds": 0.068889
+        },
+        "hit13": {
+          "offsetSeconds": 0.701476,
+          "durationSeconds": 0.049569
+        },
+        "hit14": {
+          "offsetSeconds": 0.751045,
+          "durationSeconds": 0.037664
+        },
+        "hit15": {
+          "offsetSeconds": 0.788709,
+          "durationSeconds": 0.0278
+        }
+      }
+    },
+    {
+      "id": "classic-coin",
+      "audio": {
+        "uri": "./audio/classic-coin.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.114649
+        },
+        "hit2": {
+          "offsetSeconds": 0.114649,
+          "durationSeconds": 0.10449
+        },
+        "hit3": {
+          "offsetSeconds": 0.219139,
+          "durationSeconds": 0.10449
+        },
+        "hit4": {
+          "offsetSeconds": 0.323629,
+          "durationSeconds": 0.114649
+        },
+        "hit5": {
+          "offsetSeconds": 0.438278,
+          "durationSeconds": 0.10449
+        },
+        "hit6": {
+          "offsetSeconds": 0.542768,
+          "durationSeconds": 0.10449
+        }
+      }
+    },
+    {
+      "id": "classic-felt",
+      "audio": {
+        "uri": "./audio/classic-felt.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.070136
+        },
+        "hit2": {
+          "offsetSeconds": 0.070136,
+          "durationSeconds": 0.039955
+        },
+        "hit3": {
+          "offsetSeconds": 0.110091,
+          "durationSeconds": 0.0539
+        },
+        "hit4": {
+          "offsetSeconds": 0.163991,
+          "durationSeconds": 0.044853
+        },
+        "hit5": {
+          "offsetSeconds": 0.208844,
+          "durationSeconds": 0.110907
+        },
+        "hit6": {
+          "offsetSeconds": 0.319751,
+          "durationSeconds": 0.067846
+        },
+        "hit7": {
+          "offsetSeconds": 0.387597,
+          "durationSeconds": 0.065283
+        }
+      }
+    },
+    {
+      "id": "classic-metal",
+      "audio": {
+        "uri": "./audio/classic-metal.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.548571
+        },
+        "hit2": {
+          "offsetSeconds": 0.548571,
+          "durationSeconds": 0.600816
+        },
+        "hit3": {
+          "offsetSeconds": 1.149387,
+          "durationSeconds": 0.444082
+        },
+        "hit4": {
+          "offsetSeconds": 1.5934689999999998,
+          "durationSeconds": 0.417959
+        },
+        "hit5": {
+          "offsetSeconds": 2.011428,
+          "durationSeconds": 0.313469
+        },
+        "hit6": {
+          "offsetSeconds": 2.324897,
+          "durationSeconds": 0.235102
+        },
+        "hit7": {
+          "offsetSeconds": 2.559999,
+          "durationSeconds": 0.522449
+        },
+        "hit8": {
+          "offsetSeconds": 3.082448,
+          "durationSeconds": 0.470204
+        },
+        "hit9": {
+          "offsetSeconds": 3.5526519999999997,
+          "durationSeconds": 0.313469
+        }
+      }
+    },
+    {
+      "id": "classic-wood-table",
+      "audio": {
+        "uri": "./audio/classic-wood-table.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.074785
+        },
+        "hit2": {
+          "offsetSeconds": 0.074785,
+          "durationSeconds": 0.050975
+        },
+        "hit3": {
+          "offsetSeconds": 0.12576,
+          "durationSeconds": 0.035873
+        },
+        "hit4": {
+          "offsetSeconds": 0.16163300000000003,
+          "durationSeconds": 0.042585
+        },
+        "hit5": {
+          "offsetSeconds": 0.204218,
+          "durationSeconds": 0.047914
+        },
+        "hit6": {
+          "offsetSeconds": 0.252132,
+          "durationSeconds": 0.05093
+        },
+        "hit7": {
+          "offsetSeconds": 0.30306200000000005,
+          "durationSeconds": 0.040975
+        }
+      }
+    },
+    {
+      "id": "classic-wood-tray",
+      "audio": {
+        "uri": "./audio/classic-wood-tray.webm",
+        "mediaType": "audio/webm; codecs=opus"
+      },
+      "channels": 1,
+      "clips": {
+        "hit1": {
+          "offsetSeconds": 0,
+          "durationSeconds": 0.094172
+        },
+        "hit2": {
+          "offsetSeconds": 0.094172,
+          "durationSeconds": 0.164966
+        },
+        "hit3": {
+          "offsetSeconds": 0.259138,
+          "durationSeconds": 0.143764
+        },
+        "hit4": {
+          "offsetSeconds": 0.402902,
+          "durationSeconds": 0.105941
+        },
+        "hit5": {
+          "offsetSeconds": 0.5088429999999999,
+          "durationSeconds": 0.033764
+        },
+        "hit6": {
+          "offsetSeconds": 0.542607,
+          "durationSeconds": 0.044898
+        },
+        "hit7": {
+          "offsetSeconds": 0.5875049999999999,
+          "durationSeconds": 0.036848
+        }
+      }
+    }
+  ],
+  "audioBanks": [
+    {
+      "id": "procedural-resin",
+      "kind": "die-material",
+      "spriteId": "procedural-resin",
+      "clipIds": ["hit1", "hit2"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.025, 0.85],
+      "pitchVariationCents": 28,
+      "gainVariation": 0.05,
+      "maxVoices": 8
+    },
+    {
+      "id": "procedural-wood",
+      "kind": "surface-material",
+      "spriteId": "procedural-wood",
+      "clipIds": ["hit1", "hit2"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.015, 0.55],
+      "pitchVariationCents": 22,
+      "gainVariation": 0.04,
+      "maxVoices": 8
+    },
+    {
+      "id": "classic-dice",
+      "kind": "die-material",
+      "spriteId": "classic-dice",
+      "clipIds": [
+        "hit1",
+        "hit2",
+        "hit3",
+        "hit4",
+        "hit5",
+        "hit6",
+        "hit7",
+        "hit8",
+        "hit9",
+        "hit10",
+        "hit11",
+        "hit12",
+        "hit13",
+        "hit14",
+        "hit15"
+      ],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.02, 0.82],
+      "pitchVariationCents": 24,
+      "gainVariation": 0.05,
+      "maxVoices": 12,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    },
+    {
+      "id": "classic-coin",
+      "kind": "die-material",
+      "spriteId": "classic-coin",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.018, 0.74],
+      "pitchVariationCents": 18,
+      "gainVariation": 0.04,
+      "maxVoices": 10,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    },
+    {
+      "id": "classic-felt",
+      "kind": "surface-material",
+      "spriteId": "classic-felt",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.01, 0.38],
+      "pitchVariationCents": 16,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    },
+    {
+      "id": "classic-metal",
+      "kind": "surface-material",
+      "spriteId": "classic-metal",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7", "hit8", "hit9"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.48],
+      "pitchVariationCents": 14,
+      "gainVariation": 0.035,
+      "maxVoices": 10,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    },
+    {
+      "id": "classic-wood-table",
+      "kind": "surface-material",
+      "spriteId": "classic-wood-table",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.5],
+      "pitchVariationCents": 20,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    },
+    {
+      "id": "classic-wood-tray",
+      "kind": "surface-material",
+      "spriteId": "classic-wood-tray",
+      "clipIds": ["hit1", "hit2", "hit3", "hit4", "hit5", "hit6", "hit7"],
+      "forceRange": [0.5, 140],
+      "gainRange": [0.012, 0.52],
+      "pitchVariationCents": 20,
+      "gainVariation": 0.04,
+      "maxVoices": 12,
+      "metadata": {
+        "source": "3DDiceRoller",
+        "license": "Unlicense"
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "procedural-resin",
+      "roughness": 0.34,
+      "metalness": 0.04,
+      "normalScale": 0.6,
+      "clearcoat": 0.18,
+      "clearcoatRoughness": 0.2
+    }
+  ],
+  "patterns": [
+    {
+      "id": "procedural-speckle",
+      "baseColor": {
+        "uri": "./textures/speckle-base.ktx2",
+        "mediaType": "image/ktx2",
+        "colorSpace": "srgb",
+        "mipmaps": true
+      },
+      "normal": {
+        "uri": "./textures/speckle-normal.ktx2",
+        "mediaType": "image/ktx2",
+        "colorSpace": "linear",
+        "mipmaps": true
+      },
+      "orm": {
+        "uri": "./textures/speckle-orm.ktx2",
+        "mediaType": "image/ktx2",
+        "colorSpace": "linear",
+        "mipmaps": true
+      }
+    }
+  ],
+  "faces": [
+    {
+      "id": "procedural-digits",
+      "texture": {
+        "uri": "./textures/digits.ktx2",
+        "mediaType": "image/ktx2",
+        "colorSpace": "srgb",
+        "mipmaps": true
+      },
+      "width": 640,
+      "height": 512,
+      "faces": {
+        "1": {
+          "x": 0,
+          "y": 0,
+          "width": 128,
+          "height": 128
+        },
+        "2": {
+          "x": 128,
+          "y": 0,
+          "width": 128,
+          "height": 128
+        },
+        "3": {
+          "x": 256,
+          "y": 0,
+          "width": 128,
+          "height": 128
+        },
+        "4": {
+          "x": 384,
+          "y": 0,
+          "width": 128,
+          "height": 128
+        },
+        "5": {
+          "x": 512,
+          "y": 0,
+          "width": 128,
+          "height": 128
+        },
+        "6": {
+          "x": 0,
+          "y": 128,
+          "width": 128,
+          "height": 128
+        },
+        "7": {
+          "x": 128,
+          "y": 128,
+          "width": 128,
+          "height": 128
+        },
+        "8": {
+          "x": 256,
+          "y": 128,
+          "width": 128,
+          "height": 128
+        },
+        "9": {
+          "x": 384,
+          "y": 128,
+          "width": 128,
+          "height": 128
+        },
+        "10": {
+          "x": 512,
+          "y": 128,
+          "width": 128,
+          "height": 128
+        },
+        "11": {
+          "x": 0,
+          "y": 256,
+          "width": 128,
+          "height": 128
+        },
+        "12": {
+          "x": 128,
+          "y": 256,
+          "width": 128,
+          "height": 128
+        },
+        "13": {
+          "x": 256,
+          "y": 256,
+          "width": 128,
+          "height": 128
+        },
+        "14": {
+          "x": 384,
+          "y": 256,
+          "width": 128,
+          "height": 128
+        },
+        "15": {
+          "x": 512,
+          "y": 256,
+          "width": 128,
+          "height": 128
+        },
+        "16": {
+          "x": 0,
+          "y": 384,
+          "width": 128,
+          "height": 128
+        },
+        "17": {
+          "x": 128,
+          "y": 384,
+          "width": 128,
+          "height": 128
+        },
+        "18": {
+          "x": 256,
+          "y": 384,
+          "width": 128,
+          "height": 128
+        },
+        "19": {
+          "x": 384,
+          "y": 384,
+          "width": 128,
+          "height": 128
+        },
+        "20": {
+          "x": 512,
+          "y": 384,
+          "width": 128,
+          "height": 128
+        }
+      }
+    }
+  ],
+  "skins": [
+    {
+      "id": "procedural-amethyst",
+      "materialId": "procedural-resin",
+      "patternId": "procedural-speckle",
+      "faceAtlasId": "procedural-digits",
+      "tint": "#d8bcff",
+      "labelColor": "#fff8dc",
+      "hueRotation": 0.04,
+      "saturation": 1.08,
+      "composite": "multiply"
+    }
+  ]
+}

@@ -24,11 +24,15 @@ export interface DiceComponentResult {
 export interface StandardDieResult extends BaseDieResult {
   readonly type: Exclude<DieType, 'd100'>;
   readonly component?: never;
+  readonly included?: boolean;
+  readonly score?: number;
 }
 
 export interface ComponentDieResult extends BaseDieResult {
   readonly type: DieType;
   readonly component: DiceComponentResult;
+  readonly included?: never;
+  readonly score?: never;
 }
 
 export type DieResult = StandardDieResult | ComponentDieResult;

@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
 
       - name: Install
@@ -104,6 +106,9 @@ jobs:
       - name: Package dice-engine library
         run: bun run pack:dice-engine
 
+      - name: Verify public TypeScript declarations
+        run: bun run test:public-api
+
       - name: Verify npm package contents
         run: bun ./scripts/verify-npm-packages.ts
 
@@ -112,8 +117,8 @@ jobs:
           test -f artifacts/release-manifest.json
           version="$(jq -r '.version' artifacts/release-manifest.json)"
           test "$version" != "null"
-          test "$(jq '.packages | length' artifacts/release-manifest.json)" -eq 7
-          for archive in dice-core dice-engine dice-geometry dice-physics dice-physics-rapier dice-renderer dice-renderer-three; do
+          test "$(jq '.packages | length' artifacts/release-manifest.json)" -eq 8
+          for archive in dice-assets dice-core dice-engine dice-geometry dice-physics dice-physics-rapier dice-renderer dice-renderer-three; do
             archive_path="artifacts/$archive-$version.tgz"
             test -f "$archive_path"
             tar -tzf "$archive_path" | grep -Fx package/LICENSE
@@ -121,17 +126,21 @@ jobs:
             tar -tzf "$archive_path" | grep -Fx package/THIRD_PARTY_NOTICES.md
             tar -tzf "$archive_path" | grep -Fx package/dist/index.js
             tar -tzf "$archive_path" | grep -Fx package/dist/index.d.ts
-            ! tar -tzf "$archive_path" | grep -F '/src/'
+            if tar -tzf "$archive_path" | grep -F '/src/'; then
+              exit 1
+            fi
             tar -xOzf "$archive_path" package/package.json | jq -e --arg version "$version" '.version == $version and .license == "Apache-2.0" and .scripts == null and .devDependencies == null'
             tar -xOzf "$archive_path" package/package.json | jq -e '[(.dependencies // {} | keys[]) | startswith("@dice-o-rolla/")] | any | not'
-            ! tar -xOzf "$archive_path" package/package.json | grep -F 'workspace:'
+            if tar -xOzf "$archive_path" package/package.json | grep -F 'workspace:'; then
+              exit 1
+            fi
           done
           tar -tzf "artifacts/dice-engine-$version.tgz" | grep -Fx package/LICENSE
           tar -tzf "artifacts/dice-engine-$version.tgz" | grep -Fx package/dist/browser.js
           tar -tzf "artifacts/dice-engine-$version.tgz" | grep -Fx package/dist/browser.d.ts
           test -f artifacts/local-dependencies.json
           test -f artifacts/README.md
-          jq -e '(.dependencies | length) == 7 and ([.dependencies[] | startswith("file:./artifacts/")] | all)' artifacts/local-dependencies.json
+          jq -e '(.dependencies | length) == 8 and ([.dependencies[] | startswith("file:./artifacts/")] | all)' artifacts/local-dependencies.json
           jq -e --arg version "$version" '([.packages[].version == $version] | all) and ([.packages[].archive | endswith("-" + $version + ".tgz")] | all)' artifacts/release-manifest.json
           shasum -a 256 -c artifacts/SHA256SUMS
 

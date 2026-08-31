@@ -1,0 +1,63 @@
+{
+  "name": "@dice-o-rolla/dice-assets",
+  "version": "0.2.0",
+  "description": "Optional Web Audio and KTX2/PBR asset system for Dice O Rolla.",
+  "keywords": [
+    "assets",
+    "dice",
+    "skins",
+    "sounds",
+    "typescript"
+  ],
+  "homepage": "https://github.com/creepiest-space/dice-o-rolla#readme",
+  "bugs": {
+    "url": "https://github.com/creepiest-space/dice-o-rolla/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creepiest-space/dice-o-rolla.git",
+    "directory": "packages/dice-assets"
+  },
+  "files": [
+    "dist",
+    "assets/runtime",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./catalog.json": "./assets/runtime/catalog.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "assets:generate": "bun ./scripts/generate-procedural-assets.ts",
+    "assets:build": "bun run assets:generate && bun ./scripts/build-assets.ts && oxfmt ./assets/runtime/catalog.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "bun test --pass-with-no-tests",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dice-o-rolla/dice-renderer-three": "workspace:*",
+    "@types/three": "^0.185.0",
+    "three": "^0.185.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

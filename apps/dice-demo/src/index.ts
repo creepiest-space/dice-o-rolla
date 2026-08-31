@@ -1,3 +1,11 @@
+import {
+  DiceAssetCatalogLoader,
+  DiceAssetRegistry,
+  ImpactSoundGate,
+  ThreeAssetMaterialProvider,
+  WebAudioSpritePlayer,
+} from '@dice-o-rolla/dice-assets';
+import { getStandardVisualPresetId } from '@dice-o-rolla/dice-engine';
 import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 import type { DefaultDiceEngineOptions } from '@dice-o-rolla/dice-engine/browser';
 
@@ -5,6 +13,8 @@ import { presentRollResult } from './presentation.js';
 
 type Engine = Awaited<ReturnType<typeof createDefaultDiceEngine>>;
 type PhysicsPreset = 'calm' | 'classic' | 'lively';
+type AssetSkin = 'amethyst' | 'classic' | 'emerald';
+type AudioSurface = 'felt' | 'metal' | 'wood-table' | 'wood-tray';
 
 const tray = element('tray', HTMLDivElement);
 const form = element('roll-form', HTMLFormElement);
@@ -15,7 +25,14 @@ const result = element('result', HTMLOutputElement);
 const status = element('status', HTMLParagraphElement);
 const theme = element('theme', HTMLSelectElement);
 const preset = element('preset', HTMLSelectElement);
-const shortcuts = document.querySelectorAll<HTMLButtonElement>('[data-notation]');
+const assets = element('assets', HTMLSelectElement);
+const audio = element('audio', HTMLInputElement);
+const audioSurface = element('audio-surface', HTMLSelectElement);
+const shortcuts = document.querySelectorAll<HTMLButtonElement>('.shortcuts [data-notation]');
+const assetCases = document.querySelectorAll<HTMLButtonElement>('[data-asset-skin]');
+
+const assetRegistry = new DiceAssetRegistry();
+const assetsReady = loadAssets();
 
 const PRESETS = {
   classic: {},
@@ -74,6 +91,8 @@ const PRESETS = {
 let engine: Engine | undefined;
 let engineGeneration = 0;
 let rolling = false;
+let audioContext: AudioContext | undefined;
+let audioPlayer: WebAudioSpritePlayer | undefined;
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -103,7 +122,26 @@ theme.addEventListener('change', () => {
 });
 
 preset.addEventListener('change', () => void initializeEngine(toPreset(preset.value)));
-window.addEventListener('beforeunload', () => engine?.destroy(), { once: true });
+assets.addEventListener('change', () => {
+  const activeEngine = engine;
+  if (activeEngine === undefined) return;
+  applyAssetSkin(activeEngine, toAssetSkin(assets.value));
+  setStatus(`${capitalize(assets.value)} assets ready`);
+});
+audio.addEventListener('change', () => {
+  if (audio.checked) void enableAudio();
+});
+for (const assetCase of assetCases) {
+  assetCase.addEventListener('click', () => void runAssetCase(assetCase));
+}
+window.addEventListener(
+  'beforeunload',
+  () => {
+    engine?.destroy();
+    void audioContext?.close();
+  },
+  { once: true },
+);
 
 void initializeEngine('classic');
 
@@ -116,9 +154,44 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
   engine = undefined;
 
   try {
+    await assetsReady;
+    let materialProvider: ThreeAssetMaterialProvider | undefined;
     const nextEngine = await createDefaultDiceEngine({
       container: tray,
-      engine: PRESETS[selectedPreset],
+      renderer: {
+        materialProvider: (renderer) => {
+          materialProvider = new ThreeAssetMaterialProvider(assetRegistry, {
+            renderer,
+            transcoderPath: './assets/basis/',
+          });
+          return materialProvider;
+        },
+      },
+      engine: {
+        ...PRESETS[selectedPreset],
+        collisionEvents: { enabled: true, maxEventsPerFrame: 24 },
+      },
+    });
+    if (materialProvider === undefined) throw new Error('Asset material provider was not created');
+    await Promise.all([
+      materialProvider.prepareSkin('procedural-amethyst'),
+      materialProvider.prepareSkin('procedural-emerald'),
+    ]);
+    registerAssetPresets(nextEngine);
+    applyAssetSkin(nextEngine, toAssetSkin(assets.value));
+    const impactSoundGate = new ImpactSoundGate();
+    nextEngine.on('roll:start', () => impactSoundGate.clear());
+    nextEngine.on('die:collision', (event) => impactSoundGate.observeCollision(event));
+    nextEngine.on('die:impact', (event) => {
+      if (!impactSoundGate.consumeImpact(event)) return;
+      if (!audio.checked || audioPlayer === undefined || event.soundPackId === undefined) return;
+      void audioPlayer.playImpact({
+        force: event.force,
+        dieMaterialBankId: event.soundPackId,
+        ...(event.otherDieId === undefined
+          ? { surfaceMaterialBankId: toAudioSurfaceBank(audioSurface.value) }
+          : {}),
+      });
     });
     if (generation !== engineGeneration) {
       nextEngine.destroy();
@@ -186,13 +259,18 @@ function setEnabled(enabled: boolean): void {
   clearButton.disabled = !enabled;
   theme.disabled = !enabled;
   preset.disabled = !enabled;
+  assets.disabled = !enabled;
+  audio.disabled = !enabled;
   for (const shortcut of shortcuts) shortcut.disabled = !enabled;
+  for (const assetCase of assetCases) assetCase.disabled = !enabled;
 }
 
 function setRolling(active: boolean): void {
   rollButton.disabled = active;
   preset.disabled = active;
+  assets.disabled = active;
   for (const shortcut of shortcuts) shortcut.disabled = active;
+  for (const assetCase of assetCases) assetCase.disabled = active;
 }
 
 function text(tag: 'span' | 'strong', className: string, value: string): HTMLElement {
@@ -210,6 +288,94 @@ function element<T extends HTMLElement>(id: string, constructor: new () => T): T
 
 function toPreset(value: string): PhysicsPreset {
   return value === 'calm' || value === 'lively' ? value : 'classic';
+}
+
+function toAssetSkin(value: string): AssetSkin {
+  return value === 'amethyst' || value === 'emerald' ? value : 'classic';
+}
+
+async function loadAssets(): Promise<void> {
+  const loader = new DiceAssetCatalogLoader(assetRegistry);
+  await loader.load('./assets/dice/catalog.json');
+  const amethyst = assetRegistry.skins.get('procedural-amethyst');
+  if (amethyst === undefined) throw new Error('Procedural skin is missing from the asset catalog');
+  assetRegistry.skins.register({
+    ...amethyst,
+    id: 'procedural-emerald',
+    name: 'Procedural emerald',
+    tint: '#72e0b5',
+    hueRotation: 0.38,
+    saturation: 1.16,
+    composite: 'overlay',
+  });
+}
+
+function registerAssetPresets(activeEngine: Engine): void {
+  for (const dieType of ['d6', 'd20'] as const) {
+    for (const skin of ['amethyst', 'emerald'] as const) {
+      activeEngine.registerVisualPreset({
+        id: `assets:${skin}:${dieType}`,
+        dieType,
+        geometryId: dieType,
+        skinId: `procedural-${skin}`,
+        soundPackId: 'classic-dice',
+      });
+    }
+  }
+}
+
+function applyAssetSkin(activeEngine: Engine, skin: AssetSkin): void {
+  for (const dieType of ['d6', 'd20'] as const) {
+    activeEngine.setVisualPreset(
+      dieType,
+      skin === 'classic' ? getStandardVisualPresetId(dieType) : `assets:${skin}:${dieType}`,
+    );
+  }
+}
+
+async function enableAudio(): Promise<void> {
+  try {
+    if (audioContext === undefined) {
+      audioContext = new AudioContext();
+      audioPlayer = new WebAudioSpritePlayer(assetRegistry, { context: audioContext });
+      await Promise.all([
+        audioPlayer.preloadBank('classic-dice'),
+        audioPlayer.preloadBank('classic-felt'),
+        audioPlayer.preloadBank('classic-metal'),
+        audioPlayer.preloadBank('classic-wood-table'),
+        audioPlayer.preloadBank('classic-wood-tray'),
+      ]);
+    }
+    await audioContext.resume();
+    setStatus('Impact audio ready');
+  } catch (error) {
+    audio.checked = false;
+    showError(error);
+  }
+}
+
+async function runAssetCase(button: HTMLButtonElement): Promise<void> {
+  const skin = toAssetSkin(button.dataset.assetSkin ?? 'classic');
+  const source = button.dataset.notation;
+  if (source === undefined) return;
+  assets.value = skin;
+  if (engine !== undefined) applyAssetSkin(engine, skin);
+  if (button.dataset.audio === 'true') {
+    audioSurface.value = toAudioSurface(button.dataset.audioSurface ?? 'wood-table');
+    audio.checked = true;
+    await enableAudio();
+  }
+  notation.value = source;
+  await roll(source);
+}
+
+function toAudioSurface(value: string): AudioSurface {
+  if (value === 'felt' || value === 'metal' || value === 'wood-tray') return value;
+  return 'wood-table';
+}
+
+function toAudioSurfaceBank(value: string): string {
+  return `classic-${toAudioSurface(value)}`;
 }
 
 function capitalize(value: string): string {
