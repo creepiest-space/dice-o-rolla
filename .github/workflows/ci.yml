@@ -20,6 +20,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Prepare Changesets base reference
+        if: github.event_name == 'pull_request'
+        run: git branch --force main origin/main
+
       - uses: oven-sh/setup-bun@v2
 
       - name: Install
