@@ -140,7 +140,7 @@ jobs:
           tar -tzf "artifacts/dice-engine-$version.tgz" | grep -Fx package/dist/browser.d.ts
           test -f artifacts/local-dependencies.json
           test -f artifacts/README.md
-          jq -e '(.dependencies | length) == 7 and ([.dependencies[] | startswith("file:./artifacts/")] | all)' artifacts/local-dependencies.json
+          jq -e '(.dependencies | length) == 8 and ([.dependencies[] | startswith("file:./artifacts/")] | all)' artifacts/local-dependencies.json
           jq -e --arg version "$version" '([.packages[].version == $version] | all) and ([.packages[].archive | endswith("-" + $version + ".tgz")] | all)' artifacts/release-manifest.json
           shasum -a 256 -c artifacts/SHA256SUMS
 
