@@ -15,7 +15,7 @@
     "pack:dice-engine": "bun ./scripts/package-dice-engine.ts",
     "changeset": "changeset",
     "version:status": "bun ./scripts/verify-version-state.ts",
-    "version:packages": "changeset version",
+    "version:packages": "changeset version && bun install --lockfile-only --ignore-scripts",
     "version:pre:enter": "changeset pre enter next",
     "version:pre:exit": "changeset pre exit",
     "pack:npm": "bun run build:dice-engine && bun run test:public-api && bun ./scripts/verify-npm-packages.ts",

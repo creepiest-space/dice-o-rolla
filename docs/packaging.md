@@ -80,3 +80,33 @@ registry.
 
 The generated bundle is a local integration artifact, not a registry publication. The packaging
 command never publishes packages or mutates a registry.
+
+## Automated npm releases
+
+Every publishable change should include a Changeset. A push to `main` runs the npm release workflow
+in one of three modes:
+
+1. `version` creates or updates a Conventional Commit release pull request with coordinated package
+   versions, changelogs, and an updated Bun lockfile;
+2. `publish` runs the complete release gate after that pull request is merged, publishes the checked
+   npm tarballs, creates package tags, and pushes them to GitHub;
+3. `none` exits without creating a pull request or touching the registry.
+
+The workflow can also be dispatched manually from `main` to retry the mode selected from the current
+repository state. Publishing is idempotent: versions already present in npm are skipped, which lets a
+partially completed eight-package release continue safely.
+
+The `version` and `publish` jobs have separate GitHub permissions. Only `version` can create release
+pull requests, and only the protected `npm` environment can request an OIDC token and publish. No
+long-lived npm write token is required. Configure npm Trusted Publishing separately for every
+`@dice-o-rolla/*` package with:
+
+- GitHub owner `creepiest-space`;
+- repository `dice-o-rolla`;
+- workflow filename `npm-publish.yml`;
+- environment `npm`;
+- allowed action `npm publish`.
+
+Restrict the GitHub `npm` environment to `main` and add required reviewers when publication should
+remain approval-gated. GitHub Actions must also be allowed to create pull requests for the automatic
+Changesets version PR.
