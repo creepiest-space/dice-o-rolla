@@ -70,6 +70,7 @@ export class FakePhysics implements PhysicsWorld {
   collisionEventsEnabled = false;
   collisionEvents: PhysicsCollisionEvent[] = [];
   impactEvents: PhysicsImpactEvent[] = [];
+  onStep: ((physics: FakePhysics) => void) | undefined;
 
   constructor(settleAfterSteps = 2) {
     this.settleAfterSteps = settleAfterSteps;
@@ -105,6 +106,7 @@ export class FakePhysics implements PhysicsWorld {
   step(): void {
     this.stepCalls += 1;
     if (this.errorOnStep !== undefined) throw this.errorOnStep;
+    this.onStep?.(this);
     for (const die of this.bodies.values()) die.step();
   }
 
