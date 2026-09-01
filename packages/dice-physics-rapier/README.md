@@ -6,6 +6,10 @@ bodies, tray boundaries, convex colliders, and settled orientation snapshots.
 Most browser applications should use the preassembled entry point from
 `@dice-o-rolla/dice-engine/browser`.
 
+`clear()` restores a deterministic configured baseline: it invalidates dynamic handles, recreates
+the Rapier World and EventQueue, and reapplies the current gravity and tray. This lets repeated
+seeded engine simulations reuse one adapter without inheriting solver state from an earlier run.
+
 ```ts
 import { RapierPhysicsWorld } from '@dice-o-rolla/dice-physics-rapier';
 ```

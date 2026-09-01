@@ -103,6 +103,40 @@ describe('DiceEngine with Rapier', () => {
     engine.destroy();
   });
 
+  test('repeats the same seeded simulation on one Rapier engine', async () => {
+    const physics = await RapierPhysics.create();
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const engine = new DiceEngine({ physics, renderer, scheduler, now: () => scheduler.now });
+    await engine.initialize();
+
+    const first = await engine.simulate('2d20kh1', { seed: 2026, captureFrames: true });
+    const second = await engine.simulate('2d20kh1', { seed: 2026, captureFrames: true });
+
+    expect(second.result.dice.map((die) => die.value)).toEqual(
+      first.result.dice.map((die) => die.value),
+    );
+    expect(second.result.total).toBe(first.result.total);
+    expect(second.durationSeconds).toBe(first.durationSeconds);
+    expect(second.dice.map((die) => die.initial)).toEqual(first.dice.map((die) => die.initial));
+    expect(
+      second.frames.map((frame) =>
+        frame.dice.map(({ position, quaternion }) => ({
+          position,
+          quaternion,
+        })),
+      ),
+    ).toEqual(
+      first.frames.map((frame) =>
+        frame.dice.map(({ position, quaternion }) => ({
+          position,
+          quaternion,
+        })),
+      ),
+    );
+    engine.destroy();
+  });
+
   test('keeps a decimated fifty-die trace within the default memory envelope', async () => {
     const physics = await RapierPhysics.create();
     const renderer = new FakeRenderer();

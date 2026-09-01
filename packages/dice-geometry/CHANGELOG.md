@@ -1,5 +1,11 @@
 # @dice-o-rolla/dice-geometry
 
+## 0.3.1
+
+### Patch Changes
+
+- @dice-o-rolla/dice-core@0.3.1
+
 ## 0.3.0
 
 ### Patch Changes

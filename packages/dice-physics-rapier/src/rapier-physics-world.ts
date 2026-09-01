@@ -21,13 +21,26 @@ export interface RapierPhysicsWorldOptions {
 
 const DEFAULT_GRAVITY: Vector3Like = { x: 0, y: -9.81, z: 0 };
 
+function snapshotVector(value: Vector3Like): Vector3Like {
+  return Object.freeze({ ...value });
+}
+
+function snapshotTray(options: TrayOptions): TrayOptions {
+  return Object.freeze({
+    ...options,
+    material: Object.freeze({ ...options.material }),
+  });
+}
+
 export class RapierPhysicsWorld implements PhysicsWorld {
   readonly #rapier: typeof RAPIER;
-  readonly #world: World;
-  readonly #eventQueue: EventQueue;
+  #world: World;
+  #eventQueue: EventQueue;
   readonly #dice = new Map<string, RapierDieBody>();
   readonly #colliderDice = new Map<number, string>();
   readonly #dieColliders = new Map<string, number>();
+  #gravity: Vector3Like;
+  #tray: TrayOptions | undefined;
   #trayBody: RigidBody | undefined;
   #collisionEventsEnabled = false;
   #destroyed = false;
@@ -35,7 +48,8 @@ export class RapierPhysicsWorld implements PhysicsWorld {
   private constructor(rapier: typeof RAPIER, gravity: Vector3Like) {
     assertVector(gravity, 'gravity');
     this.#rapier = rapier;
-    this.#world = new rapier.World(gravity);
+    this.#gravity = snapshotVector(gravity);
+    this.#world = new rapier.World(this.#gravity);
     this.#eventQueue = new rapier.EventQueue(true);
   }
 
@@ -101,6 +115,11 @@ export class RapierPhysicsWorld implements PhysicsWorld {
     assertNonNegative(options.material.friction, 'tray.material.friction');
     assertNonNegative(options.material.restitution, 'tray.material.restitution');
 
+    this.#tray = snapshotTray(options);
+    this.#configureTray(this.#tray);
+  }
+
+  #configureTray(options: TrayOptions): void {
     this.#removeTray();
     const body = this.#world.createRigidBody(this.#rapier.RigidBodyDesc.fixed());
     const halfWidth = options.width / 2;
@@ -168,7 +187,8 @@ export class RapierPhysicsWorld implements PhysicsWorld {
   setGravity(gravity: Vector3Like): void {
     this.#assertAlive();
     assertVector(gravity, 'gravity');
-    this.#world.gravity = { x: gravity.x, y: gravity.y, z: gravity.z };
+    this.#gravity = snapshotVector(gravity);
+    this.#world.gravity = this.#gravity;
   }
 
   setCollisionEventsEnabled(enabled: boolean): void {
@@ -246,23 +266,30 @@ export class RapierPhysicsWorld implements PhysicsWorld {
 
   clear(): void {
     this.#assertAlive();
-    for (const die of this.#dice.values()) {
-      this.#world.removeRigidBody(die.body);
-      die.invalidate();
-    }
-    this.#dice.clear();
-    this.#colliderDice.clear();
-    this.#dieColliders.clear();
-    this.#eventQueue.clear();
+    this.#invalidateDice();
+    this.#eventQueue.free();
+    this.#world.free();
+    this.#world = new this.#rapier.World(this.#gravity);
+    this.#eventQueue = new this.#rapier.EventQueue(true);
+    this.#trayBody = undefined;
+    if (this.#tray !== undefined) this.#configureTray(this.#tray);
   }
 
   destroy(): void {
     if (this.#destroyed) return;
-    this.clear();
-    this.#removeTray();
+    this.#invalidateDice();
     this.#eventQueue.free();
     this.#world.free();
+    this.#trayBody = undefined;
+    this.#tray = undefined;
     this.#destroyed = true;
+  }
+
+  #invalidateDice(): void {
+    for (const die of this.#dice.values()) die.invalidate();
+    this.#dice.clear();
+    this.#colliderDice.clear();
+    this.#dieColliders.clear();
   }
 
   #removeTray(): void {

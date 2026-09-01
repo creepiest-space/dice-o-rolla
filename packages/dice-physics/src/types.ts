@@ -80,6 +80,7 @@ export interface PhysicsWorld {
   drainImpactEvents(): readonly PhysicsImpactEvent[];
   step(dtSeconds: number): void;
   removeDie(id: string): void;
+  /** Remove dynamic bodies and restore the configured world to a clean simulation baseline. */
   clear(): void;
   destroy(): void;
 }

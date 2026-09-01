@@ -1,5 +1,13 @@
 # @dice-o-rolla/dice-physics
 
+## 0.3.1
+
+### Patch Changes
+
+- a840fe3: Restore deterministic repeated seeded simulations by resetting Rapier solver state, and terminate
+  replay cleanly when its frame scheduler throws.
+- @dice-o-rolla/dice-core@0.3.1
+
 ## 0.3.0
 
 ### Patch Changes

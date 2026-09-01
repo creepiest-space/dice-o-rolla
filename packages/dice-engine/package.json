@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-engine",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Framework-neutral physical dice engine with Rapier and Three.js browser adapters.",
   "keywords": [
     "dice",
