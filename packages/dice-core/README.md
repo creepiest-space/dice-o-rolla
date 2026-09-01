@@ -15,5 +15,8 @@ const random = new SeededRandomSource(42);
 
 Standard dice terms support `kh`, `kl`, `dh`, and `dl` selection followed by an optional score map.
 Unlisted faces score zero. Paired percentile and d66 terms intentionally reject these operations.
+Engine-produced die results may include immutable provenance with stable term, logical-die, and
+physical-die coordinates, the settled face, inclusion state, and score contribution. Core result
+aggregation validates and freezes this metadata without depending on a renderer or physics backend.
 
 Licensed under Apache-2.0. See `LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES.md` in the package.

@@ -29,6 +29,39 @@ cancel an individual queued or active call. `clear()` cancels all work and remov
 keeping the engine reusable. `destroy()` also releases renderer and physics resources, removes all
 engine listeners, and is idempotent.
 
+## Physical traces
+
+`simulate(notation, { seed, captureFrames, frameIntervalSteps })` is the deterministic,
+renderer-free counterpart to `roll()`. It uses a call-local seeded random source for initial
+transforms and impulses, advances the configured physics world at the engine fixed timestep, and
+returns a versioned `PhysicalRollTrace`. The trace records its producer, physics profile, die
+definitions and initial conditions, logical result, collision/impact timeline, and either sampled
+transforms or only the terminal transform. Timestamps inside the result and trace are
+simulation-relative, which keeps the payload portable and JSON-serializable. `frameIntervalSteps`
+defaults to `1`; increase it to trade animation fidelity for a smaller payload.
+
+`replay(trace, { theme, signal })` creates the traced dice in the configured renderer and advances
+only captured transforms; Rapier is not stepped. The renderer interpolates adjacent trace frames
+using its existing `previous`/`current` contract. A successful replay leaves its terminal dice on
+screen. Aborting it removes replay-owned dice and rejects with `RollCancelledError`.
+
+Replay validates the trace version, engine producer, physics profile, registered preset geometry,
+definition fingerprints, final orientation-derived faces, and aggregate total before it creates
+renderer state. It rejects incompatible or corrupted input instead of rotating, relabelling, or
+trusting a stored result. Recorded collision and impact events are emitted on the replay timeline,
+so an external Web Audio consumer can use the same force-driven sound path as a live roll.
+
+Trace capture is bounded independently from roll input. The defaults allow 1,200 frames, 60,000
+die transform samples, and 20,000 events. `DiceEngineOptions.traceLimits` may lower or explicitly
+raise those bounds. Capture and replay throw `TraceLimitExceededError` when an envelope exceeds the
+configured policy; callers should still apply their own transport and storage limits to untrusted
+JSON.
+
+Simulation and replay are exclusive operations: they reject while a roll, queued roll, or replay is
+active. Starting either operation replaces settled dice from an earlier roll or replay. This keeps
+the existing single-world, single-renderer ownership model intact and prevents a headless
+simulation from colliding with visible bodies.
+
 Cleanup attempts every owned operation even when an adapter throws. `clear()` or the first
 `destroy()` call can throw an `AggregateError` describing cleanup failures; affected roll promises
 are already terminal, and a failed `destroy()` still leaves the engine permanently destroyed.
@@ -41,6 +74,8 @@ changing the roll's `RollCancelledError` outcome.
 | -------------- | --------------------------- | ------------------------------------------------------------------------- |
 | `initialize()` | constructed or initializing | Configures adapters once; concurrent calls coalesce.                      |
 | `roll()`       | initialized                 | Starts or queues one bounded session.                                     |
+| `simulate()`   | initialized and idle        | Produces a deterministic renderer-neutral physical trace.                 |
+| `replay()`     | initialized and idle        | Renders a trace without stepping the physics world.                       |
 | `cancel()`     | initialized                 | Cancels one active or queued session.                                     |
 | `clear()`      | initialized                 | Cancels every session and removes dice; adapters remain usable.           |
 | `destroy()`    | any non-destroyed state     | Cancels work and releases all owned resources; repeated calls do nothing. |
@@ -57,7 +92,8 @@ owns its bodies, colliders, event queue, tray, and world.
 The facade exposes typed `roll:start`, `die:spawn`, `die:settled`, `die:remove`, `roll:complete`,
 `roll:cancel`, `theme:change`, and `error` events. Payloads carry their session identity; there is no
 singleton pending resolver. Optional `die:collision` reporting is disabled by default and bounded
-per rendered frame when enabled.
+per rendered frame when enabled. Simulation temporarily collects collision and impact events for
+its trace even when live collision events are disabled, then restores the configured live policy.
 
 ## Browser composition
 
@@ -85,7 +121,7 @@ requires WebAssembly, WebGL 2, Web Crypto, `AbortController`, `ResizeObserver`, 
 decoding.
 
 The automated browser lifecycle and roll suite runs against the current Playwright Chromium build.
-Current stable Chrome and Edge are the guaranteed browser family for `0.2`. Current Firefox and
+Current stable Chrome and Edge are the guaranteed browser family for `0.3`. Current Firefox and
 Safari are compatibility targets, but are not release-gated until their Playwright projects are
 enabled. Server-side rendering must not call the `/browser` factory; use the root entry with custom
 headless adapters instead.
