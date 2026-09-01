@@ -78,6 +78,51 @@ describe('createRollResult', () => {
     });
   });
 
+  test('validates and freezes physical result provenance', () => {
+    const die = {
+      id: 'die-1',
+      type: 'd20',
+      value: 18,
+      score: 1,
+      included: true,
+      provenance: {
+        termId: 'term-0',
+        termIndex: 0,
+        dieIndex: 0,
+        physicalIndex: 0,
+        state: 'included',
+        faceValue: 18,
+        contribution: 1,
+      },
+    } as const;
+    const result = createRollResult({
+      id: 'roll-provenance',
+      notation: 'd20s{18=1}',
+      dice: [die],
+      modifier: 0,
+      startedAt: 0,
+      completedAt: 1,
+    });
+    expect(result.dice[0]?.provenance).toEqual(die.provenance);
+    expect(Object.isFrozen(result.dice[0]?.provenance)).toBeTrue();
+
+    expect(() =>
+      createRollResult({
+        id: 'bad-provenance',
+        notation: 'd20',
+        dice: [
+          {
+            ...die,
+            provenance: { ...die.provenance, contribution: 18 },
+          },
+        ],
+        modifier: 0,
+        startedAt: 0,
+        completedAt: 1,
+      }),
+    ).toThrow('contribution');
+  });
+
   test('rejects selection and score metadata on paired components', () => {
     expect(() =>
       createRollResult({

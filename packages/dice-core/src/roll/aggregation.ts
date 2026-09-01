@@ -32,8 +32,54 @@ export function createRollResult(options: CreateRollResultOptions): RollResult {
 }
 
 function freezeDieResult(die: DieResult): DieResult {
-  if (die.component === undefined) return Object.freeze({ ...die });
-  return Object.freeze({ ...die, component: Object.freeze({ ...die.component }) });
+  validateProvenance(die);
+  const provenance =
+    die.provenance === undefined ? undefined : Object.freeze({ ...die.provenance });
+  if (die.component === undefined) {
+    return Object.freeze({
+      ...die,
+      ...(provenance === undefined ? {} : { provenance }),
+    });
+  }
+  return Object.freeze({
+    ...die,
+    component: Object.freeze({ ...die.component }),
+    ...(provenance === undefined ? {} : { provenance }),
+  });
+}
+
+function validateProvenance(die: DieResult): void {
+  const provenance = die.provenance;
+  if (provenance === undefined) return;
+  if (provenance.termId.length === 0) {
+    throw new TypeError(`Dice provenance termId must not be empty`);
+  }
+  for (const [name, value] of [
+    ['termIndex', provenance.termIndex],
+    ['dieIndex', provenance.dieIndex],
+    ['physicalIndex', provenance.physicalIndex],
+  ] as const) {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new RangeError(`Dice provenance ${name} must be a non-negative safe integer`);
+    }
+  }
+  const expectedState = die.included === false ? 'discarded' : 'included';
+  if (provenance.state !== expectedState) {
+    throw new RangeError(`Dice provenance state does not match inclusion metadata for ${die.id}`);
+  }
+  const expectedFaceValue = die.component?.faceValue ?? die.value;
+  if (provenance.faceValue !== expectedFaceValue) {
+    throw new RangeError(`Dice provenance face does not match result value for ${die.id}`);
+  }
+  const expectedContribution =
+    die.component === undefined
+      ? provenance.state === 'discarded'
+        ? 0
+        : (die.score ?? die.value)
+      : undefined;
+  if (provenance.contribution !== expectedContribution) {
+    throw new RangeError(`Dice provenance contribution does not match result value for ${die.id}`);
+  }
 }
 
 interface ComponentGroup {
