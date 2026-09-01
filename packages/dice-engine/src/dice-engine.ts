@@ -516,6 +516,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     const throwGenerator = new ThrowGenerator(random, this.#throwOptions);
     const simulationId = `simulation-${this.#nextSimulationId++}`;
     this.#removeDisplayedDice();
+    this.#physics.clear();
 
     const dice: ActiveDie[] = [];
     let trace: PhysicalRollTrace | undefined;
@@ -704,7 +705,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       if (abortListener !== undefined) {
         options.signal?.addEventListener('abort', abortListener, { once: true });
       }
-      this.#replay = {
+      const replay: ActiveReplay = {
         trace,
         resolve,
         reject,
@@ -713,7 +714,12 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
         ...(options.signal === undefined ? {} : { signal: options.signal }),
         ...(abortListener === undefined ? {} : { abortListener }),
       };
-      this.#scheduleReplayFrame();
+      this.#replay = replay;
+      try {
+        this.#scheduleReplayFrame();
+      } catch (error) {
+        this.#finishReplay(replay, error);
+      }
       return promise;
     } catch (error) {
       return Promise.reject(error);

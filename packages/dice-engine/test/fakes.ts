@@ -204,8 +204,10 @@ interface ScheduledFrame {
 export class FakeScheduler implements FrameScheduler {
   readonly #frames: ScheduledFrame[] = [];
   now = 0;
+  errorOnRequest: unknown;
 
   request(callback: (timestampMs: number) => void): FrameToken {
+    if (this.errorOnRequest !== undefined) throw this.errorOnRequest;
     const frame = { active: true, callback };
     this.#frames.push(frame);
     return { cancel: () => (frame.active = false) };

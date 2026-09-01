@@ -40,10 +40,18 @@ transforms or only the terminal transform. Timestamps inside the result and trac
 simulation-relative, which keeps the payload portable and JSON-serializable. `frameIntervalSteps`
 defaults to `1`; increase it to trade animation fidelity for a smaller payload.
 
+Before each simulation the engine calls `PhysicsWorld.clear()` to restore a clean configured
+baseline. Physics adapters must reset backend solver state as well as remove dynamic bodies. The
+Rapier adapter recreates its World and EventQueue while preserving gravity and tray configuration;
+therefore repeated calls with the same notation, seed, profile, and definitions produce the same
+physical result on one engine instance.
+
 `replay(trace, { theme, signal })` creates the traced dice in the configured renderer and advances
 only captured transforms; Rapier is not stepped. The renderer interpolates adjacent trace frames
 using its existing `previous`/`current` contract. A successful replay leaves its terminal dice on
 screen. Aborting it removes replay-owned dice and rejects with `RollCancelledError`.
+If scheduling the first or a later replay frame fails, the same replay promise rejects, replay-owned
+dice are removed, and the engine immediately returns to its idle state.
 
 Replay validates the trace version, engine producer, physics profile, registered preset geometry,
 definition fingerprints, final orientation-derived faces, and aggregate total before it creates

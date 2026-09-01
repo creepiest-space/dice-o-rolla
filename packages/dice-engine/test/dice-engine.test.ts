@@ -267,6 +267,22 @@ describe('DiceEngine', () => {
     expect(String(await rejectionOf(engine.replay(mismatchedTotal)))).toContain('total');
   });
 
+  test('finishes replay when the scheduler rejects its first frame request', async () => {
+    const { engine, renderer, scheduler } = createHarness();
+    await engine.initialize();
+    const trace = await engine.simulate('1d6', { seed: 42, captureFrames: true });
+    const schedulerError = new Error('scheduler request failed');
+    scheduler.errorOnRequest = schedulerError;
+
+    expect(await rejectionOf(engine.replay(trace))).toBe(schedulerError);
+    expect(renderer.dice.size).toBe(0);
+    expect(engine.cancel()).toBeFalse();
+
+    scheduler.errorOnRequest = undefined;
+    const nextTrace = await engine.simulate('1d6', { seed: 42 });
+    expect(nextTrace.result.total).toBe(trace.result.total);
+  });
+
   test('records and re-emits collision and impact events during replay', async () => {
     const { engine, physics, scheduler } = createHarness();
     engine.registerVisualPreset(
