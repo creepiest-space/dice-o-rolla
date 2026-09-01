@@ -10,6 +10,19 @@ export interface DieDefinition {
 interface BaseDieResult {
   readonly id: string;
   readonly value: number;
+  readonly provenance?: DieResultProvenance;
+}
+
+export type DieResultState = 'included' | 'discarded';
+
+export interface DieResultProvenance {
+  readonly termId: string;
+  readonly termIndex: number;
+  readonly dieIndex: number;
+  readonly physicalIndex: number;
+  readonly state: DieResultState;
+  readonly faceValue: number;
+  readonly contribution?: number;
 }
 
 export type DiceComponentRole = 'tens' | 'units';

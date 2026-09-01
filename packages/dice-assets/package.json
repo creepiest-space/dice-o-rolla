@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-assets",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Optional Web Audio and KTX2/PBR asset system for Dice O Rolla.",
   "keywords": [
     "assets",

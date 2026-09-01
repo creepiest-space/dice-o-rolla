@@ -1,9 +1,12 @@
 import type {
   DieResult,
+  DieType,
+  QuaternionLike,
   RandomSource,
   RollMode,
   RollResult,
   RollSession,
+  Vector3Like,
 } from '@dice-o-rolla/dice-core';
 import type {
   DicePhysicsMaterial,
@@ -34,6 +37,98 @@ export type DiceTheme = RendererTheme;
 export interface RollOptions {
   readonly mode?: RollMode;
   readonly signal?: AbortSignal;
+}
+
+export interface SimulateOptions {
+  readonly seed: number;
+  readonly captureFrames?: boolean;
+  /** Capture one frame every N fixed simulation steps. */
+  readonly frameIntervalSteps?: number;
+}
+
+export interface ReplayOptions {
+  readonly theme?: Partial<DiceTheme>;
+  readonly signal?: AbortSignal;
+}
+
+export interface PhysicalRollFrameDie {
+  readonly id: string;
+  readonly position: Vector3Like;
+  readonly quaternion: QuaternionLike;
+}
+
+export interface PhysicalRollFrame {
+  readonly elapsedSeconds: number;
+  readonly dice: readonly PhysicalRollFrameDie[];
+}
+
+export interface PhysicalRollTraceDie {
+  readonly id: string;
+  readonly type: DieType;
+  readonly presetId: string;
+  readonly geometryId: string;
+  readonly definitionFingerprint: string;
+  readonly scale: number;
+  readonly faceLabels?: Readonly<Record<number, string | number>>;
+  readonly initial: {
+    readonly position: Vector3Like;
+    readonly quaternion: QuaternionLike;
+    readonly impulse: Vector3Like;
+    readonly torqueImpulse: Vector3Like;
+  };
+}
+
+export interface PhysicalRollTraceCollisionEvent {
+  readonly kind: 'collision';
+  readonly elapsedSeconds: number;
+  readonly dieId: string;
+  readonly otherDieId?: string;
+  readonly started: boolean;
+}
+
+export interface PhysicalRollTraceImpactEvent {
+  readonly kind: 'impact';
+  readonly elapsedSeconds: number;
+  readonly dieId: string;
+  readonly otherDieId?: string;
+  readonly force: number;
+}
+
+export type PhysicalRollTraceEvent = PhysicalRollTraceCollisionEvent | PhysicalRollTraceImpactEvent;
+
+export interface PhysicalRollTraceProfile {
+  readonly fixedStepSeconds: number;
+  readonly settling: SettlingOptions;
+  readonly throw: ThrowGeneratorOptions;
+  readonly tray: TrayOptions;
+  readonly diceMaterial: DicePhysicsMaterial;
+}
+
+export interface PhysicalRollTraceProducer {
+  readonly name: '@dice-o-rolla/dice-engine';
+  readonly version: string;
+}
+
+/** JSON-serializable, renderer-neutral output of a deterministic physical simulation. */
+export interface PhysicalRollTrace {
+  readonly version: 1;
+  readonly producer: PhysicalRollTraceProducer;
+  readonly notation: string;
+  readonly seed: number;
+  readonly fixedStepSeconds: number;
+  readonly frameIntervalSteps: number;
+  readonly durationSeconds: number;
+  readonly profile: PhysicalRollTraceProfile;
+  readonly dice: readonly PhysicalRollTraceDie[];
+  readonly frames: readonly PhysicalRollFrame[];
+  readonly events: readonly PhysicalRollTraceEvent[];
+  readonly result: RollResult;
+}
+
+export interface DiceTraceLimits {
+  readonly maxFrames: number;
+  readonly maxSamples: number;
+  readonly maxEvents: number;
 }
 
 export interface RegisterEngineVisualPresetOptions extends RegisterVisualPresetOptions {
@@ -104,6 +199,7 @@ export interface DiceEngineOptions {
   readonly diceMaterial?: DicePhysicsMaterial;
   readonly theme?: Partial<DiceTheme>;
   readonly limits?: Partial<DiceEngineLimits>;
+  readonly traceLimits?: Partial<DiceTraceLimits>;
   readonly visualPresets?: readonly VisualPresetDescriptor[];
   readonly visualPresetIds?: Partial<Readonly<Record<PhysicalDieType, string>>>;
   readonly collisionEvents?: Partial<DiceCollisionEventOptions>;
@@ -112,6 +208,8 @@ export interface DiceEngineOptions {
 export interface DiceEngineFacade {
   initialize(): Promise<void>;
   roll(notation: string, options?: RollOptions): Promise<RollResult>;
+  simulate(notation: string, options: SimulateOptions): Promise<PhysicalRollTrace>;
+  replay(trace: PhysicalRollTrace, options?: ReplayOptions): Promise<void>;
   cancel(sessionId?: string): boolean;
   clear(): void;
   resize(viewport: RendererViewport): void;

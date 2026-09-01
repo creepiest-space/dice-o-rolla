@@ -40,3 +40,19 @@ export class RollLimitExceededError extends RangeError {
     this.actual = actual;
   }
 }
+
+export type TraceLimit = 'events' | 'frames' | 'samples';
+
+export class TraceLimitExceededError extends RangeError {
+  readonly limit: TraceLimit;
+  readonly maximum: number;
+  readonly actual: number;
+
+  constructor(limit: TraceLimit, maximum: number, actual: number) {
+    super(`Physical roll trace exceeds ${limit} limit of ${maximum} (received ${actual})`);
+    this.name = 'TraceLimitExceededError';
+    this.limit = limit;
+    this.maximum = maximum;
+    this.actual = actual;
+  }
+}

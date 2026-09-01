@@ -1,5 +1,12 @@
 # @dice-o-rolla/dice-core
 
+## 0.3.0
+
+### Minor Changes
+
+- Add deterministic physical simulation and renderer-only replay with bounded, versioned traces,
+  definition and result verification, collision/impact timelines, and immutable die provenance.
+
 ## 0.2.0
 
 ### Minor Changes

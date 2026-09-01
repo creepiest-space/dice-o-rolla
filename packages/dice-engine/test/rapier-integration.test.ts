@@ -77,4 +77,52 @@ describe('DiceEngine with Rapier', () => {
     expect(scheduler.now).toBeLessThan(10_000);
     engine.destroy();
   });
+
+  test('captures and replays a serializable twenty-die Rapier trace', async () => {
+    const physics = await RapierPhysics.create();
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const engine = new DiceEngine({ physics, renderer, scheduler, now: () => scheduler.now });
+    await engine.initialize();
+
+    const trace = await engine.simulate('20d6', { seed: 2026, captureFrames: true });
+    const serialized = JSON.stringify(trace);
+    expect(trace.frames.length).toBeGreaterThan(1);
+    expect(JSON.parse(serialized)).toEqual(trace);
+    expect(trace.result.dice).toHaveLength(20);
+    expect(trace.result.dice.every((die) => die.value >= 1 && die.value <= 6)).toBeTrue();
+    expect(trace.result.total).toBe(trace.result.dice.reduce((total, die) => total + die.value, 0));
+    expect(trace.frames.at(-1)?.dice).toHaveLength(20);
+    expect(trace.durationSeconds).toBeLessThan(10);
+
+    const replay = engine.replay(trace);
+    scheduler.flush(1_000 / 60, 1_200);
+    await replay;
+    expect(renderer.renderAlphas.at(-1)).toBe(1);
+    expect(renderer.dice.size).toBe(20);
+    engine.destroy();
+  });
+
+  test('keeps a decimated fifty-die trace within the default memory envelope', async () => {
+    const physics = await RapierPhysics.create();
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const engine = new DiceEngine({ physics, renderer, scheduler, now: () => scheduler.now });
+    await engine.initialize();
+
+    const trace = await engine.simulate('50d6', {
+      seed: 2050,
+      captureFrames: true,
+      frameIntervalSteps: 4,
+    });
+
+    expect(trace.result.dice).toHaveLength(50);
+    expect(trace.frameIntervalSteps).toBe(4);
+    expect(trace.frames.length).toBeLessThanOrEqual(1_200);
+    expect(trace.frames.length * trace.dice.length).toBeLessThanOrEqual(60_000);
+    expect(trace.events.length).toBeLessThanOrEqual(20_000);
+    expect(trace.frames.at(-1)?.elapsedSeconds).toBe(trace.durationSeconds);
+    expect(trace.durationSeconds).toBeLessThan(10);
+    engine.destroy();
+  });
 });

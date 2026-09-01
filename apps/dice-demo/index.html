@@ -59,6 +59,22 @@
           <button type="button" data-notation="3d20s{1=-2,17..19=1,20=2}">d20 score</button>
         </div>
 
+        <section class="simulation-panel" aria-labelledby="simulation-title">
+          <div class="simulation-copy">
+            <span class="simulation-title" id="simulation-title">Deterministic simulation</span>
+            <output id="trace-summary" aria-live="polite">No captured simulation.</output>
+          </div>
+          <label>
+            Seed
+            <input id="simulation-seed" type="number" step="1" value="2026" />
+          </label>
+          <div class="simulation-actions">
+            <button class="primary" id="simulate" type="button" disabled>Simulate</button>
+            <button id="replay" type="button" disabled>Replay</button>
+            <button class="secondary" id="cancel-replay" type="button" disabled>Cancel</button>
+          </div>
+        </section>
+
         <div class="settings">
           <label>
             Surface

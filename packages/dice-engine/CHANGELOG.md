@@ -1,5 +1,22 @@
 # @dice-o-rolla/dice-engine
 
+## 0.3.0
+
+### Minor Changes
+
+- Add deterministic physical simulation and renderer-only replay with bounded, versioned traces,
+  definition and result verification, collision/impact timelines, and immutable die provenance.
+
+### Patch Changes
+
+- Updated dependencies
+  - @dice-o-rolla/dice-core@0.3.0
+  - @dice-o-rolla/dice-geometry@0.3.0
+  - @dice-o-rolla/dice-physics@0.3.0
+  - @dice-o-rolla/dice-physics-rapier@0.3.0
+  - @dice-o-rolla/dice-renderer@0.3.0
+  - @dice-o-rolla/dice-renderer-three@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @dice-o-rolla/dice-assets
 
+## 0.3.0
+
+### Patch Changes
+
+- @dice-o-rolla/dice-renderer-three@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

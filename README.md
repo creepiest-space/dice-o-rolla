@@ -59,6 +59,19 @@ engine.setTheme({ material: 'matte', roughness: 0.85 });
 engine.destroy();
 ```
 
+For deterministic playback, simulate with a required seed and replay the versioned trace without
+stepping Rapier again:
+
+```ts
+const trace = await engine.simulate('4d6kh3', {
+  seed: 2026,
+  captureFrames: true,
+  frameIntervalSteps: 2,
+});
+
+await engine.replay(trace, { theme: { material: 'matte' } });
+```
+
 Applications with custom backends can import `DiceEngine` from `@dice-o-rolla/dice-engine` and
 inject implementations of `PhysicsWorld` and `DiceRenderer`.
 
@@ -113,8 +126,8 @@ See the [user documentation](docs/README.md), [visual presets and assets](docs/v
 [engine lifecycle](docs/engine.md),
 [Three.js renderers](docs/three-renderer.md), [physics](docs/physics.md),
 [Rapier backend](docs/rapier-backend.md), [dice definitions](docs/dice-definitions.md), and
-[security guidance](docs/security.md). Consumers upgrading from `0.1` should read the
-[0.2 migration notes](docs/migration-0.2.md).
+[security guidance](docs/security.md). Release migrations are documented for
+[0.2](docs/migration-0.2.md) and [0.3](docs/migration-0.3.md).
 
 Build the library package graph with `bun run build:dice-engine`, or create the verified local
 integration bundle in `artifacts/` with `bun run pack:dice-engine`. See

@@ -104,6 +104,27 @@ test('presents keep/drop and score results without hiding physical dice', async 
   expect(score).toBeLessThanOrEqual(6);
 });
 
+test('captures and replays a deterministic simulation trace', async ({ page }) => {
+  await page.goto('/');
+  const status = page.locator('#status');
+  await expect(status).toHaveText('Classic throw ready');
+
+  await page.locator('#notation').fill('6d6');
+  await page.locator('#simulation-seed').fill('2026');
+  await page.locator('#simulate').click();
+
+  await expect(status).toHaveText('Simulation captured — ready to replay');
+  await expect(page.locator('#trace-summary')).toHaveText(
+    /^Seed 2026 · 6 dice · \d+ frames · \d+ events · \d+\.\d{2} s · \d+(?:\.\d)? (?:KiB|MiB)$/,
+  );
+  await expect(page.locator('#result span').last()).toHaveText(/^(?:d6: [1-6] · ){5}d6: [1-6]$/);
+  await expect(page.locator('#replay')).toBeEnabled();
+
+  await page.locator('#replay').click();
+  await expect(status).toHaveText('Replay complete', { timeout: 12_000 });
+  await expect(page.locator('#cancel-replay')).toBeDisabled();
+});
+
 test('loads KTX2 skin variants and Web Audio sprite banks from dice-assets', async ({
   page,
 }, testInfo) => {
@@ -174,7 +195,14 @@ async function verifyResponsiveLayout(
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
-  const selectors = ['#tray', '#roll-form', '.shortcuts', '.settings', '.asset-cases'] as const;
+  const selectors = [
+    '#tray',
+    '#roll-form',
+    '.shortcuts',
+    '.simulation-panel',
+    '.settings',
+    '.asset-cases',
+  ] as const;
   const boundsBySelector = await Promise.all(
     selectors.map(async (selector) => ({
       bounds: await page.locator(selector).boundingBox(),

@@ -3,10 +3,12 @@ import { describe, expect, test } from 'bun:test';
 import { SeededRandomSource } from '@dice-o-rolla/dice-core';
 
 import {
+  DICE_ENGINE_VERSION,
   DiceEngine,
   RollCancelledError,
   RollLimitExceededError,
   RollTimeoutError,
+  TraceLimitExceededError,
 } from '../src/index.js';
 import type { DiceEngineLimits } from '../src/index.js';
 import { FakePhysics, FakeRenderer, FakeScheduler } from './fakes.js';
@@ -117,6 +119,195 @@ describe('DiceEngine', () => {
     expect(await outcome).toBeInstanceOf(RollCancelledError);
   });
 
+  test('simulates deterministic physical traces without rendering', async () => {
+    const { engine, physics, renderer } = createHarness();
+    await engine.initialize();
+
+    const first = await engine.simulate('2d6kh1 + 2', { seed: 2026, captureFrames: true });
+    const second = await engine.simulate('2d6kh1 + 2', { seed: 2026, captureFrames: true });
+
+    expect(first.version).toBe(1);
+    expect(first.producer).toEqual({
+      name: '@dice-o-rolla/dice-engine',
+      version: DICE_ENGINE_VERSION,
+    });
+    expect(first.seed).toBe(2026);
+    expect(first.notation).toBe('2d6kh1 + 2');
+    expect(first.frames.length).toBeGreaterThan(1);
+    expect(first.frames[0]?.elapsedSeconds).toBe(0);
+    expect(first.frames.at(-1)?.elapsedSeconds).toBe(first.durationSeconds);
+    expect(first.profile.fixedStepSeconds).toBe(first.fixedStepSeconds);
+    expect(first.frameIntervalSteps).toBe(1);
+    expect(first.dice.every((die) => die.definitionFingerprint.startsWith('fnv1a32:'))).toBeTrue();
+    expect(first.dice.every((die) => Number.isFinite(die.initial.impulse.x))).toBeTrue();
+    expect(first.result.dice.map(({ value, included }) => ({ value, included }))).toEqual(
+      second.result.dice.map(({ value, included }) => ({ value, included })),
+    );
+    expect(
+      first.frames[0]?.dice.map(({ position, quaternion }) => ({ position, quaternion })),
+    ).toEqual(second.frames[0]?.dice.map(({ position, quaternion }) => ({ position, quaternion })));
+    expect(first.result.total).toBe(
+      first.result.dice.reduce((total, die) => total + (die.included === false ? 0 : die.value), 2),
+    );
+    expect(renderer.createdIds).toHaveLength(0);
+    expect(renderer.renderAlphas).toHaveLength(0);
+    expect(physics.bodies.size).toBe(0);
+
+    const terminalOnly = await engine.simulate('1d6', { seed: 7 });
+    expect(terminalOnly.frames).toHaveLength(1);
+    expect(terminalOnly.frames[0]?.elapsedSeconds).toBe(terminalOnly.durationSeconds);
+  });
+
+  test('bounds trace capture and supports fixed-step frame decimation', async () => {
+    const physics = new FakePhysics();
+    const renderer = new FakeRenderer();
+    const scheduler = new FakeScheduler();
+    const limitedEngine = new DiceEngine({
+      physics,
+      renderer,
+      scheduler,
+      now: () => scheduler.now,
+      fixedStepSeconds: 0.01,
+      settling: {
+        linearVelocityThreshold: 0.1,
+        angularVelocityThreshold: 0.1,
+        stableTimeMs: 10,
+        maxRollTimeMs: 100,
+      },
+      traceLimits: { maxFrames: 1, maxSamples: 50, maxEvents: 50 },
+    });
+    await limitedEngine.initialize();
+    expect(
+      await rejectionOf(limitedEngine.simulate('1d6', { seed: 1, captureFrames: true })),
+    ).toBeInstanceOf(TraceLimitExceededError);
+    expect(physics.bodies.size).toBe(0);
+    expect(physics.collisionEventsEnabled).toBeFalse();
+
+    const { engine } = createHarness(4);
+    await engine.initialize();
+    const dense = await engine.simulate('1d6', { seed: 1, captureFrames: true });
+    const decimated = await engine.simulate('1d6', {
+      seed: 1,
+      captureFrames: true,
+      frameIntervalSteps: 2,
+    });
+    expect(decimated.frames.length).toBeLessThan(dense.frames.length);
+    expect(decimated.frames.at(-1)?.elapsedSeconds).toBe(decimated.durationSeconds);
+  });
+
+  test('replays captured transforms without stepping physics and applies the selected theme', async () => {
+    const { engine, physics, renderer, scheduler } = createHarness();
+    await engine.initialize();
+    const trace = await engine.simulate('1d6', { seed: 42, captureFrames: true });
+    const simulationStepCalls = physics.stepCalls;
+
+    const replay = engine.replay(trace, {
+      theme: { material: 'matte', roughness: 0.9 },
+    });
+    expect(renderer.dice.has(trace.dice[0]!.id)).toBeTrue();
+    scheduler.flush();
+    await replay;
+
+    expect(physics.stepCalls).toBe(simulationStepCalls);
+    expect(renderer.theme?.material).toBe('matte');
+    expect(renderer.theme?.roughness).toBe(0.9);
+    expect(renderer.renderAlphas.at(-1)).toBe(1);
+    expect(renderer.dice.has(trace.dice[0]!.id)).toBeTrue();
+
+    const nextRoll = engine.roll('1d6');
+    expect(renderer.dice.has(trace.dice[0]!.id)).toBeFalse();
+    scheduler.flush();
+    await nextRoll;
+  });
+
+  test('cancels replay through AbortSignal and rejects malformed traces', async () => {
+    const { engine, renderer } = createHarness();
+    await engine.initialize();
+    const trace = await engine.simulate('1d6', { seed: 42, captureFrames: true });
+    const controller = new AbortController();
+    const replay = engine.replay(trace, { signal: controller.signal });
+
+    controller.abort();
+    expect(await rejectionOf(replay)).toBeInstanceOf(RollCancelledError);
+    expect(renderer.dice.size).toBe(0);
+
+    const malformed = { ...trace, version: 2 } as unknown as typeof trace;
+    expect(String(await rejectionOf(engine.replay(malformed)))).toContain('version');
+
+    const incompatibleProducer = {
+      ...trace,
+      producer: { ...trace.producer, version: '0.2.0' },
+    };
+    expect(String(await rejectionOf(engine.replay(incompatibleProducer)))).toContain(
+      'incompatible',
+    );
+
+    const mismatchedDefinition = {
+      ...trace,
+      dice: [{ ...trace.dice[0]!, definitionFingerprint: 'fnv1a32:00000000' }],
+    };
+    expect(String(await rejectionOf(engine.replay(mismatchedDefinition)))).toContain('fingerprint');
+
+    const relabelledDefinition = {
+      ...trace,
+      dice: [{ ...trace.dice[0]!, faceLabels: { 1: '20' } }],
+    };
+    expect(String(await rejectionOf(engine.replay(relabelledDefinition)))).toContain('fingerprint');
+
+    const unknownEvent = {
+      ...trace,
+      events: [{ kind: 'unknown', elapsedSeconds: 0, dieId: trace.dice[0]!.id }],
+    } as unknown as typeof trace;
+    expect(String(await rejectionOf(engine.replay(unknownEvent)))).toContain('kind');
+
+    const mismatchedTotal = {
+      ...trace,
+      result: { ...trace.result, total: trace.result.total + 1 },
+    };
+    expect(String(await rejectionOf(engine.replay(mismatchedTotal)))).toContain('total');
+  });
+
+  test('records and re-emits collision and impact events during replay', async () => {
+    const { engine, physics, scheduler } = createHarness();
+    engine.registerVisualPreset(
+      {
+        id: 'custom:trace-audio-d6',
+        dieType: 'd6',
+        geometryId: 'd6',
+        soundPackId: 'resin',
+      },
+      { makeDefault: true },
+    );
+    physics.onStep = (activePhysics) => {
+      if (activePhysics.stepCalls !== 1) return;
+      activePhysics.collisionEvents.push({ dieId: 'simulation-1:die-0', started: true });
+      activePhysics.impactEvents.push({ dieId: 'simulation-1:die-0', force: 24 });
+    };
+    await engine.initialize();
+    const trace = await engine.simulate('1d6', { seed: 42, captureFrames: true });
+    expect(trace.events.map((event) => event.kind)).toEqual(['collision', 'impact']);
+    const stepCalls = physics.stepCalls;
+    const collisions: unknown[] = [];
+    const impacts: unknown[] = [];
+    engine.on('die:collision', (event) => collisions.push(event));
+    engine.on('die:impact', (event) => impacts.push(event));
+
+    const replay = engine.replay(trace);
+    scheduler.flush();
+    await replay;
+    expect(physics.stepCalls).toBe(stepCalls);
+    expect(collisions).toEqual([
+      expect.objectContaining({
+        dieId: 'simulation-1:die-0',
+        started: true,
+        soundPackId: 'resin',
+      }),
+    ]);
+    expect(impacts).toEqual([
+      expect.objectContaining({ dieId: 'simulation-1:die-0', force: 24, soundPackId: 'resin' }),
+    ]);
+  });
+
   test('derives d100 and d66 groups from both settled physical dice', async () => {
     const { engine, physics, renderer, scheduler } = createHarness();
     await engine.initialize();
@@ -162,6 +353,14 @@ describe('DiceEngine', () => {
     for (const die of result.dice) {
       expect(die.included).toBe(expectedIncluded.has(die.id));
       expect(die.score).toBe(die.value === 1 ? -2 : die.value === 20 ? 2 : die.value >= 17 ? 1 : 0);
+      expect(die.provenance).toEqual(
+        expect.objectContaining({
+          termId: 'term-0',
+          termIndex: 0,
+          state: die.included === false ? 'discarded' : 'included',
+          contribution: die.included === false ? 0 : die.score,
+        }),
+      );
     }
     expect(result.total).toBe(
       result.dice.reduce(

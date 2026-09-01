@@ -4,6 +4,8 @@ export type {
   ComponentDieResult,
   DieDefinition,
   DieResult,
+  DieResultProvenance,
+  DieResultState,
   DieType,
   StandardDieResult,
 } from './dice/types.js';
