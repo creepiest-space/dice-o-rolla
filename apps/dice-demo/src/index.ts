@@ -5,7 +5,7 @@ import {
   ThreeAssetMaterialProvider,
   WebAudioSpritePlayer,
 } from '@dice-o-rolla/dice-assets';
-import { getStandardVisualPresetId } from '@dice-o-rolla/dice-engine';
+import { getStandardVisualPresetId, type PhysicalRollTrace } from '@dice-o-rolla/dice-engine';
 import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 import type { DefaultDiceEngineOptions } from '@dice-o-rolla/dice-engine/browser';
 
@@ -21,6 +21,11 @@ const form = element('roll-form', HTMLFormElement);
 const notation = element('notation', HTMLInputElement);
 const rollButton = element('roll', HTMLButtonElement);
 const clearButton = element('clear', HTMLButtonElement);
+const simulateButton = element('simulate', HTMLButtonElement);
+const replayButton = element('replay', HTMLButtonElement);
+const cancelReplayButton = element('cancel-replay', HTMLButtonElement);
+const simulationSeed = element('simulation-seed', HTMLInputElement);
+const traceSummary = element('trace-summary', HTMLOutputElement);
 const result = element('result', HTMLOutputElement);
 const status = element('status', HTMLParagraphElement);
 const theme = element('theme', HTMLSelectElement);
@@ -91,6 +96,8 @@ const PRESETS = {
 let engine: Engine | undefined;
 let engineGeneration = 0;
 let rolling = false;
+let lastTrace: PhysicalRollTrace | undefined;
+let replayController: AbortController | undefined;
 let audioContext: AudioContext | undefined;
 let audioPlayer: WebAudioSpritePlayer | undefined;
 
@@ -100,10 +107,16 @@ form.addEventListener('submit', (event) => {
 });
 
 clearButton.addEventListener('click', () => {
+  replayController?.abort();
   engine?.clear();
+  clearTrace();
   showEmptyResult();
   setStatus('Tray cleared');
 });
+
+simulateButton.addEventListener('click', () => void simulate(notation.value));
+replayButton.addEventListener('click', () => void replay());
+cancelReplayButton.addEventListener('click', () => replayController?.abort());
 
 for (const shortcut of shortcuts) {
   shortcut.addEventListener('click', () => {
@@ -115,10 +128,7 @@ for (const shortcut of shortcuts) {
 }
 
 theme.addEventListener('change', () => {
-  engine?.setTheme({
-    material: theme.value === 'matte' ? 'matte' : 'plastic',
-    roughness: theme.value === 'matte' ? 0.86 : 0.28,
-  });
+  engine?.setTheme(selectedTheme());
 });
 
 preset.addEventListener('change', () => void initializeEngine(toPreset(preset.value)));
@@ -147,6 +157,9 @@ void initializeEngine('classic');
 
 async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
   const generation = ++engineGeneration;
+  replayController?.abort();
+  replayController = undefined;
+  clearTrace();
   rolling = false;
   setEnabled(false);
   setStatus('Starting engine…');
@@ -180,7 +193,12 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
     registerAssetPresets(nextEngine);
     applyAssetSkin(nextEngine, toAssetSkin(assets.value));
     const impactSoundGate = new ImpactSoundGate();
-    nextEngine.on('roll:start', () => impactSoundGate.clear());
+    let soundSessionId: string | undefined;
+    nextEngine.on('die:spawn', (event) => {
+      if (event.sessionId === soundSessionId) return;
+      soundSessionId = event.sessionId;
+      impactSoundGate.clear();
+    });
     nextEngine.on('die:collision', (event) => impactSoundGate.observeCollision(event));
     nextEngine.on('die:impact', (event) => {
       if (!impactSoundGate.consumeImpact(event)) return;
@@ -198,10 +216,7 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
       return;
     }
     engine = nextEngine;
-    engine.setTheme({
-      material: theme.value === 'matte' ? 'matte' : 'plastic',
-      roughness: theme.value === 'matte' ? 0.86 : 0.28,
-    });
+    engine.setTheme(selectedTheme());
     setEnabled(true);
     setStatus(`${capitalize(selectedPreset)} throw ready`);
   } catch (error) {
@@ -218,12 +233,7 @@ async function roll(source: string): Promise<void> {
   setStatus(`Rolling ${source}…`);
   try {
     const rollResult = await activeEngine.roll(source);
-    const presentation = presentRollResult(rollResult);
-    result.replaceChildren(
-      text('span', 'result-label', presentation.notation),
-      text('strong', '', presentation.total),
-      text('span', '', presentation.dice),
-    );
+    showRollResult(rollResult);
     setStatus('Roll settled');
   } catch (error) {
     if (error instanceof Error && error.name === 'RollCancelledError') return;
@@ -236,12 +246,92 @@ async function roll(source: string): Promise<void> {
   }
 }
 
+async function simulate(source: string): Promise<void> {
+  const activeEngine = engine;
+  if (activeEngine === undefined || rolling) return;
+  const seed = Number(simulationSeed.value);
+  if (!Number.isSafeInteger(seed)) {
+    setStatus('Simulation seed must be a safe integer', true);
+    return;
+  }
+  rolling = true;
+  lastTrace = undefined;
+  setRolling(true);
+  setTraceSummary('Capturing fixed-step frames…');
+  setStatus(`Simulating ${source} with seed ${seed}…`);
+  try {
+    const trace = await activeEngine.simulate(source, { seed, captureFrames: true });
+    if (engine !== activeEngine) return;
+    lastTrace = trace;
+    showRollResult(trace.result);
+    const bytes = new TextEncoder().encode(JSON.stringify(trace)).byteLength;
+    setTraceSummary(
+      `Seed ${trace.seed} · ${trace.dice.length} dice · ${trace.frames.length} frames · ${trace.events.length} events · ${trace.durationSeconds.toFixed(2)} s · ${formatBytes(bytes)}`,
+    );
+    setStatus('Simulation captured — ready to replay');
+  } catch (error) {
+    clearTrace();
+    showError(error);
+  } finally {
+    if (engine === activeEngine) {
+      rolling = false;
+      setRolling(false);
+    }
+  }
+}
+
+async function replay(): Promise<void> {
+  const activeEngine = engine;
+  const trace = lastTrace;
+  if (activeEngine === undefined || trace === undefined || rolling) return;
+  const controller = new AbortController();
+  replayController = controller;
+  rolling = true;
+  setRolling(true);
+  setStatus(`Replaying ${trace.dice.length} captured dice…`);
+  try {
+    await activeEngine.replay(trace, { theme: selectedTheme(), signal: controller.signal });
+    setStatus('Replay complete');
+  } catch (error) {
+    if (error instanceof Error && error.name === 'RollCancelledError') {
+      if (engine === activeEngine && lastTrace === trace) setStatus('Replay cancelled');
+      return;
+    }
+    showError(error);
+  } finally {
+    if (engine === activeEngine) {
+      replayController = undefined;
+      rolling = false;
+      setRolling(false);
+    }
+  }
+}
+
+function showRollResult(rollResult: Parameters<typeof presentRollResult>[0]): void {
+  const presentation = presentRollResult(rollResult);
+  result.replaceChildren(
+    text('span', 'result-label', presentation.notation),
+    text('strong', '', presentation.total),
+    text('span', '', presentation.dice),
+  );
+}
+
 function showEmptyResult(): void {
   result.replaceChildren(
     text('span', 'result-label', 'Last roll'),
     text('strong', '', '—'),
     text('span', '', 'Choose a die or enter notation.'),
   );
+}
+
+function clearTrace(): void {
+  lastTrace = undefined;
+  replayButton.disabled = true;
+  setTraceSummary('No captured simulation.');
+}
+
+function setTraceSummary(value: string): void {
+  traceSummary.textContent = value;
 }
 
 function showError(error: unknown): void {
@@ -257,6 +347,10 @@ function setStatus(message: string, failed = false): void {
 function setEnabled(enabled: boolean): void {
   rollButton.disabled = !enabled;
   clearButton.disabled = !enabled;
+  simulateButton.disabled = !enabled;
+  replayButton.disabled = !enabled || lastTrace === undefined;
+  cancelReplayButton.disabled = true;
+  simulationSeed.disabled = !enabled;
   theme.disabled = !enabled;
   preset.disabled = !enabled;
   assets.disabled = !enabled;
@@ -267,10 +361,28 @@ function setEnabled(enabled: boolean): void {
 
 function setRolling(active: boolean): void {
   rollButton.disabled = active;
+  simulateButton.disabled = active;
+  replayButton.disabled = active || lastTrace === undefined;
+  cancelReplayButton.disabled = !active || replayController === undefined;
+  simulationSeed.disabled = active;
+  theme.disabled = active;
   preset.disabled = active;
   assets.disabled = active;
   for (const shortcut of shortcuts) shortcut.disabled = active;
   for (const assetCase of assetCases) assetCase.disabled = active;
+}
+
+function selectedTheme(): Parameters<Engine['setTheme']>[0] {
+  return {
+    material: theme.value === 'matte' ? 'matte' : 'plastic',
+    roughness: theme.value === 'matte' ? 0.86 : 0.28,
+  };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1_024) return `${bytes} B`;
+  if (bytes < 1_048_576) return `${(bytes / 1_024).toFixed(1)} KiB`;
+  return `${(bytes / 1_048_576).toFixed(1)} MiB`;
 }
 
 function text(tag: 'span' | 'strong', className: string, value: string): HTMLElement {

@@ -168,6 +168,49 @@ h1 {
   border-top: 1px solid #c9c2b4;
 }
 
+.simulation-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(8rem, 0.28fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid #c2baab;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 34%);
+}
+
+.simulation-copy,
+.simulation-panel label {
+  display: grid;
+  gap: 8px;
+}
+
+.simulation-title {
+  color: #635f55;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.simulation-copy output {
+  min-height: 1.25rem;
+  color: #413e37;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.simulation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.simulation-actions button {
+  min-width: 6.5rem;
+}
+
 .asset-cases > span {
   margin-right: 4px;
   color: #635f55;
@@ -290,6 +333,14 @@ select {
     grid-column: auto;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .simulation-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.35fr);
+  }
+
+  .simulation-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 580px) {
@@ -358,6 +409,20 @@ select {
   .settings {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px 8px;
+  }
+
+  .simulation-panel {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .simulation-actions {
+    grid-column: auto;
+    flex-wrap: wrap;
+  }
+
+  .simulation-actions button {
+    flex: 1 1 6.5rem;
   }
 
   .asset-cases > span {
