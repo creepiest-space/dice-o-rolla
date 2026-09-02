@@ -1,4 +1,3 @@
-import { getDieGeometry, getRegisteredDieTypes } from '@dice-o-rolla/dice-geometry';
 import type {
   DiceRenderer,
   RenderDieState,
@@ -23,36 +22,30 @@ import {
   type ThreeDiceMesh,
   type ThreeFaceMaterialProvider,
 } from './mesh-factory.js';
+import {
+  copyRenderState,
+  createDiceMeshResource,
+  haveEqualFaceLabels,
+  type ThreeRenderEntry,
+} from './renderer-common.js';
+import type { ThreeRendererOptions } from './renderer-options.js';
 import { TopDownCamera, type TopDownCameraOptions } from './top-down-camera.js';
 import { applyInterpolatedTransform } from './transform.js';
 import {
   fitViewportToLimits,
   resolveViewportLimits,
   validateViewport,
-  type ViewportLimitOptions,
   type ViewportLimits,
 } from './viewport-limits.js';
 
-export interface TopDownDiceRendererOptions
-  extends Partial<RendererTheme>, ViewportLimitOptions, TopDownCameraOptions {
-  readonly antialias?: boolean;
-  readonly observeResize?: boolean;
-  readonly materialProvider?:
-    | ThreeFaceMaterialProvider
-    | ((renderer: WebGLRenderer) => ThreeFaceMaterialProvider);
-}
-
-interface RenderEntry {
-  resource: ThreeDiceMesh;
-  state: RenderDieState;
-}
+export interface TopDownDiceRendererOptions extends ThreeRendererOptions, TopDownCameraOptions {}
 
 export class TopDownDiceRenderer implements DiceRenderer {
   readonly #container: HTMLElement;
   readonly #options: TopDownDiceRendererOptions;
   #meshFactory: ThreeDiceMeshFactory;
   #materialProvider: ThreeFaceMaterialProvider | undefined;
-  readonly #entries = new Map<string, RenderEntry>();
+  readonly #entries = new Map<string, ThreeRenderEntry>();
   readonly #presets = new Map<string, VisualPresetDescriptor>();
   readonly #pendingPresetRemovals = new Set<string>();
   readonly #viewportLimits: ViewportLimits;
@@ -160,7 +153,7 @@ export class TopDownDiceRenderer implements DiceRenderer {
       throw new Error(`A render die with id "${state.id}" already exists`);
     }
     const resource = this.#createResource(state);
-    const ownedState = copyState(state);
+    const ownedState = copyRenderState(state);
     applyInterpolatedTransform(resource.mesh, ownedState, 1);
     this.#scene?.add(resource.mesh);
     this.#entries.set(state.id, { resource, state: ownedState });
@@ -179,7 +172,7 @@ export class TopDownDiceRenderer implements DiceRenderer {
     if (!haveEqualFaceLabels(entry.state.faceLabels, state.faceLabels)) {
       throw new Error('Die face labels cannot be changed after creation');
     }
-    entry.state = copyState(state);
+    entry.state = copyRenderState(state);
   }
 
   removeDie(id: string): void {
@@ -269,20 +262,7 @@ export class TopDownDiceRenderer implements DiceRenderer {
   }
 
   #createResource(state: RenderDieState): ThreeDiceMesh {
-    const preset = this.#presets.get(state.presetId);
-    if (preset === undefined) throw new Error(`Unknown visual preset: ${state.presetId}`);
-    if (preset.geometryId !== state.geometryId || (preset.scale ?? 1) !== state.scale) {
-      throw new Error(`Render state does not match visual preset "${state.presetId}"`);
-    }
-    const type = getRegisteredDieTypes().find((registered) => registered === state.geometryId);
-    if (type === undefined) throw new Error(`Unsupported geometry: ${state.geometryId}`);
-    return this.#meshFactory.create(
-      getDieGeometry(type),
-      this.#theme,
-      state.scale,
-      state.faceLabels,
-      preset,
-    );
+    return createDiceMeshResource(state, this.#presets, this.#meshFactory, this.#theme);
   }
 
   #releasePendingPreset(presetId: string): void {
@@ -302,35 +282,4 @@ export class TopDownDiceRenderer implements DiceRenderer {
       throw new Error('Renderer has not been initialized');
     }
   }
-}
-
-function copyState(state: RenderDieState): RenderDieState {
-  return {
-    id: state.id,
-    presetId: state.presetId,
-    geometryId: state.geometryId,
-    scale: state.scale,
-    ...(state.faceLabels === undefined ? {} : { faceLabels: { ...state.faceLabels } }),
-    previous: {
-      position: { ...state.previous.position },
-      quaternion: { ...state.previous.quaternion },
-    },
-    current: {
-      position: { ...state.current.position },
-      quaternion: { ...state.current.quaternion },
-    },
-  };
-}
-
-function haveEqualFaceLabels(
-  left: RenderDieState['faceLabels'],
-  right: RenderDieState['faceLabels'],
-): boolean {
-  if (left === right) return true;
-  if (left === undefined || right === undefined) return false;
-  const leftEntries = Object.entries(left);
-  return (
-    leftEntries.length === Object.keys(right).length &&
-    leftEntries.every(([face, label]) => right[Number(face)] === label)
-  );
 }

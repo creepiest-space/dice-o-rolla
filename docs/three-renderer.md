@@ -6,6 +6,10 @@ from directly above for application-wide dice surfaces and overlays. Both own th
 camera, WebGL renderer, resize observer, meshes, geometries, materials, label textures, lights, and
 canvas. `destroy()` releases or disconnects each owned resource and is safe to repeat.
 
+Both option types extend the exported `ThreeRendererOptions` contract. Theme fields, antialiasing,
+resize observation, framebuffer limits, and `materialProvider` therefore have identical names and
+behavior. `TopDownDiceRendererOptions` adds only tray and top-down camera framing fields.
+
 ```ts
 import { TopDownDiceRenderer } from '@dice-o-rolla/dice-renderer-three';
 

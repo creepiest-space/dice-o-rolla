@@ -4,4 +4,5 @@
 ---
 
 Allow rolls and deterministic simulations to select a registered visual preset for each physical
-die, and support custom face material providers in the top-down Three.js renderer.
+die, and unify the Three.js renderer options and resource validation while adding custom face
+material providers to the top-down renderer.

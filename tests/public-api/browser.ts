@@ -4,8 +4,11 @@ import {
   type DefaultDiceEngineOptions,
 } from '@dice-o-rolla/dice-engine/browser';
 import {
+  ThreeDiceRenderer,
   TopDownDiceRenderer,
   type ThreeFaceMaterialProvider,
+  type ThreeDiceRendererOptions,
+  type ThreeRendererOptions,
   type TopDownDiceRendererOptions,
 } from '@dice-o-rolla/dice-renderer-three';
 
@@ -23,9 +26,19 @@ const options = {
 } satisfies DefaultDiceEngineOptions;
 
 const engine: Promise<DiceEngine> = createDefaultDiceEngine(options);
-const topDownOptions = {
+const sharedRendererOptions = {
+  antialias: true,
+  observeResize: true,
+  maxPixelRatio: 2,
   materialProvider: () => materialProvider,
-} satisfies TopDownDiceRendererOptions;
-const topDownRenderer = new TopDownDiceRenderer(container, topDownOptions);
+} satisfies ThreeRendererOptions;
+const threeOptions: ThreeDiceRendererOptions = sharedRendererOptions;
+const topDownOptions: TopDownDiceRendererOptions = sharedRendererOptions;
+const threeRenderer = new ThreeDiceRenderer(container, threeOptions);
+const topDownRenderer = new TopDownDiceRenderer(container, {
+  ...topDownOptions,
+  cameraPadding: 1.5,
+});
 void engine;
+void threeRenderer;
 void topDownRenderer;
