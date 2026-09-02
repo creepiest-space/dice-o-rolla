@@ -15,8 +15,14 @@ const renderer = new TopDownDiceRenderer(container, {
   cameraPadding: 1.5,
   maxPixelRatio: 2,
   maxFramebufferPixels: 4_000_000,
+  materialProvider: (webglRenderer) => createMaterialProvider(webglRenderer),
 });
 ```
+
+Both renderer options expose the same `materialProvider` contract. Pass a provider directly when it
+does not need the WebGL renderer, or use the factory form shown above for KTX2 capability detection
+and other GPU-dependent setup. The renderer passes the complete selected visual preset to every face
+material request and disposes the provider during `destroy()`.
 
 Set `trayWidth` and `trayDepth` to the matching physics tray dimensions. The top-down camera adapts
 to portrait, landscape, and rectangular viewports without cropping the tray. Both adapters use the

@@ -7,6 +7,10 @@ renderer and `TopDownDiceRenderer` for overhead application surfaces.
 import { ThreeDiceRenderer, TopDownDiceRenderer } from '@dice-o-rolla/dice-renderer-three';
 ```
 
+Both renderers accept the same `materialProvider` option, either as an existing
+`ThreeFaceMaterialProvider` or as a factory receiving the initialized `WebGLRenderer`. This keeps
+KTX2 capability detection and GPU-backed asset setup available in perspective and top-down layouts.
+
 Most browser applications should use the preassembled entry point from
 `@dice-o-rolla/dice-engine/browser`.
 

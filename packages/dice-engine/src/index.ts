@@ -36,6 +36,8 @@ export type {
   ReplayOptions,
   RollOptions,
   SimulateOptions,
+  VisualPresetSelectionContext,
+  VisualPresetSelector,
 } from './types.js';
 export {
   getStandardVisualPresetId,

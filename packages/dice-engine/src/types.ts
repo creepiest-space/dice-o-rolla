@@ -1,6 +1,8 @@
 import type {
+  DiceComponentRole,
   DieResult,
   DieType,
+  PairedDiceType,
   QuaternionLike,
   RandomSource,
   RollMode,
@@ -34,9 +36,29 @@ export interface FrameScheduler {
 export type DiceMaterialType = RendererTheme['material'];
 export type DiceTheme = RendererTheme;
 
+export interface VisualPresetSelectionContext {
+  /** Physical polyhedron being allocated. Paired dice use d10 or d6 here. */
+  readonly physicalDieType: PhysicalDieType;
+  /** Notation-level die type. Paired components retain d100 or d66 here. */
+  readonly logicalDieType: PhysicalDieType | PairedDiceType;
+  readonly termId: string;
+  readonly expressionIndex: number;
+  readonly dieIndex: number;
+  readonly physicalIndex: number;
+  readonly defaultPresetId: string;
+  readonly component?: {
+    readonly groupType: PairedDiceType;
+    readonly role: DiceComponentRole;
+  };
+}
+
+/** Returns a registered preset ID, or undefined to retain the selected default. */
+export type VisualPresetSelector = (context: VisualPresetSelectionContext) => string | undefined;
+
 export interface RollOptions {
   readonly mode?: RollMode;
   readonly signal?: AbortSignal;
+  readonly visualPresetSelector?: VisualPresetSelector;
 }
 
 export interface SimulateOptions {
@@ -44,6 +66,7 @@ export interface SimulateOptions {
   readonly captureFrames?: boolean;
   /** Capture one frame every N fixed simulation steps. */
   readonly frameIntervalSteps?: number;
+  readonly visualPresetSelector?: VisualPresetSelector;
 }
 
 export interface ReplayOptions {

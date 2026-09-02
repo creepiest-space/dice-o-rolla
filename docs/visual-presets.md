@@ -21,6 +21,27 @@ engine.setVisualPreset('d6', preset.id);
 engine.unregisterVisualPreset(preset.id);
 ```
 
+The default selection remains per physical die type. A particular `roll()` or `simulate()` can
+override it independently for every allocated polyhedron with `visualPresetSelector`:
+
+```ts
+const trace = await engine.simulate('2d6 + d100', {
+  seed: 2026,
+  visualPresetSelector: ({ physicalIndex, component, defaultPresetId }) => {
+    if (component?.role === 'tens') return 'custom:percentile-tens';
+    if (component?.role === 'units') return 'custom:percentile-units';
+    return physicalIndex % 2 === 0 ? 'custom:amethyst-d6' : defaultPresetId;
+  },
+});
+```
+
+The selector runs once for each physical die before any bodies are allocated. Its immutable context
+contains notation-term coordinates, the notation-level and physical die types, the current default
+preset ID, and the component role for `d100`/`d66`. Returning `undefined` retains the default.
+Returned IDs must already be registered and match `physicalDieType`; otherwise the complete
+operation is rejected without a partial roll. The selected IDs are captured in simulation traces,
+so replay uses the same visuals without invoking the selector again.
+
 Registration validates the geometry, labels, value map, and logical result range before a roll can
 allocate physics bodies. `scale` applies to both the collider and rendered mesh. A `valueMap` must
 map every physical face exactly once; the settled physical orientation is resolved first, then the
@@ -58,7 +79,9 @@ assets.skins.register({ id: 'runic-stone', materialId: 'stone', patternId: 'rune
 
 Runtime textures are UASTC KTX2 with offline mipmaps. PBR patterns split base color, normal, and
 packed ORM; reusable face atlases come from SVG/font sources. `ThreeAssetMaterialProvider` and
-`WebAudioSpritePlayer` are opt-in application adapters.
+`WebAudioSpritePlayer` are opt-in application adapters. Both `ThreeDiceRenderer` and
+`TopDownDiceRenderer` accept a `materialProvider` instance or a factory that receives the initialized
+`WebGLRenderer`.
 
 ## Lifecycle and collision events
 

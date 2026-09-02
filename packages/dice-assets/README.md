@@ -37,10 +37,11 @@ Rapier reports contact force on every simulation step while two colliders remain
 `ImpactSoundGate` combines that stream with collision start/end events so each physical contact
 produces one sound instead of an overlapping retrigger on every fixed step.
 
-For Three.js, pass a `materialProvider` factory to `ThreeDiceRenderer`; the factory receives its
-active `WebGLRenderer` and can construct `ThreeAssetMaterialProvider`. Call `prepareSkin()` before
-dice using that skin can spawn. It loads KTX2 through Three's `KTX2Loader`, shares texture instances, uses the
-packed ORM map for AO/roughness/metalness, and composites the face atlas in the material shader.
+For Three.js, pass a `materialProvider` factory to `ThreeDiceRenderer` or `TopDownDiceRenderer`; the
+factory receives its active `WebGLRenderer` and can construct `ThreeAssetMaterialProvider`. Call
+`prepareSkin()` before dice using that skin can spawn. It loads KTX2 through Three's `KTX2Loader`,
+shares texture instances, uses the packed ORM map for AO/roughness/metalness, and composites the face
+atlas in the material shader.
 
 ## Asset pipeline
 

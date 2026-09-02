@@ -17,7 +17,12 @@ import {
   WebGLRenderer,
 } from 'three';
 
-import { DEFAULT_THREE_THEME, ThreeDiceMeshFactory, type ThreeDiceMesh } from './mesh-factory.js';
+import {
+  DEFAULT_THREE_THEME,
+  ThreeDiceMeshFactory,
+  type ThreeDiceMesh,
+  type ThreeFaceMaterialProvider,
+} from './mesh-factory.js';
 import { TopDownCamera, type TopDownCameraOptions } from './top-down-camera.js';
 import { applyInterpolatedTransform } from './transform.js';
 import {
@@ -32,6 +37,9 @@ export interface TopDownDiceRendererOptions
   extends Partial<RendererTheme>, ViewportLimitOptions, TopDownCameraOptions {
   readonly antialias?: boolean;
   readonly observeResize?: boolean;
+  readonly materialProvider?:
+    | ThreeFaceMaterialProvider
+    | ((renderer: WebGLRenderer) => ThreeFaceMaterialProvider);
 }
 
 interface RenderEntry {
@@ -42,7 +50,8 @@ interface RenderEntry {
 export class TopDownDiceRenderer implements DiceRenderer {
   readonly #container: HTMLElement;
   readonly #options: TopDownDiceRendererOptions;
-  readonly #meshFactory = new ThreeDiceMeshFactory();
+  #meshFactory: ThreeDiceMeshFactory;
+  #materialProvider: ThreeFaceMaterialProvider | undefined;
   readonly #entries = new Map<string, RenderEntry>();
   readonly #presets = new Map<string, VisualPresetDescriptor>();
   readonly #pendingPresetRemovals = new Set<string>();
@@ -62,6 +71,9 @@ export class TopDownDiceRenderer implements DiceRenderer {
   constructor(container: HTMLElement, options: TopDownDiceRendererOptions = {}) {
     this.#container = container;
     this.#options = options;
+    this.#materialProvider =
+      typeof options.materialProvider === 'function' ? undefined : options.materialProvider;
+    this.#meshFactory = new ThreeDiceMeshFactory(this.#materialProvider);
     this.#viewportLimits = resolveViewportLimits(options);
     this.#trayWidth = options.trayWidth ?? 10;
     this.#trayDepth = options.trayDepth ?? 10;
@@ -104,6 +116,10 @@ export class TopDownDiceRenderer implements DiceRenderer {
       alpha: true,
       powerPreference: 'high-performance',
     });
+    if (typeof this.#options.materialProvider === 'function') {
+      this.#materialProvider = this.#options.materialProvider(renderer);
+      this.#meshFactory = new ThreeDiceMeshFactory(this.#materialProvider);
+    }
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFShadowMap;
@@ -232,6 +248,8 @@ export class TopDownDiceRenderer implements DiceRenderer {
     this.#resizeObserver = undefined;
     this.#presets.clear();
     this.#pendingPresetRemovals.clear();
+    this.#materialProvider?.dispose?.();
+    this.#materialProvider = undefined;
     this.#destroyed = true;
   }
 
@@ -263,6 +281,7 @@ export class TopDownDiceRenderer implements DiceRenderer {
       this.#theme,
       state.scale,
       state.faceLabels,
+      preset,
     );
   }
 
