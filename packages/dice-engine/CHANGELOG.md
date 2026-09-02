@@ -1,5 +1,23 @@
 # @dice-o-rolla/dice-engine
 
+## 0.4.0
+
+### Minor Changes
+
+- 508cce5: Allow rolls and deterministic simulations to select a registered visual preset for each physical
+  die, and unify the Three.js renderer options and resource validation while adding custom face
+  material providers to the top-down renderer.
+
+### Patch Changes
+
+- Updated dependencies [508cce5]
+  - @dice-o-rolla/dice-renderer-three@0.4.0
+  - @dice-o-rolla/dice-core@0.4.0
+  - @dice-o-rolla/dice-geometry@0.4.0
+  - @dice-o-rolla/dice-physics@0.4.0
+  - @dice-o-rolla/dice-physics-rapier@0.4.0
+  - @dice-o-rolla/dice-renderer@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

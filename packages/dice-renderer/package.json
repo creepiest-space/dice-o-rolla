@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-renderer",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Renderer-neutral dice snapshots, themes, and rendering lifecycle contracts.",
   "keywords": [
     "dice",
