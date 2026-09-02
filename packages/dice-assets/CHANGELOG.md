@@ -1,5 +1,12 @@
 # @dice-o-rolla/dice-assets
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [508cce5]
+  - @dice-o-rolla/dice-renderer-three@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

@@ -61,6 +61,8 @@ import type {
   ReplayOptions,
   RollOptions,
   SimulateOptions,
+  VisualPresetSelectionContext,
+  VisualPresetSelector,
 } from './types.js';
 import { DICE_ENGINE_VERSION } from './version.js';
 import {
@@ -88,6 +90,7 @@ interface RollTask {
   readonly reject: (error: unknown) => void;
   readonly signal?: AbortSignal;
   readonly abortListener?: () => void;
+  readonly visualPresetSelector?: VisualPresetSelector;
 }
 
 interface ActiveDie {
@@ -485,7 +488,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
           this.#queue.length + 1,
         );
       }
-      const task = this.#createTask(notation, parsed, options.signal);
+      const task = this.#createTask(notation, parsed, options);
       if (options.signal?.aborted === true) {
         this.#rejectCancelled(task);
         return task.promise;
@@ -525,7 +528,14 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       this.#physics.setCollisionEventsEnabled(true);
       this.#physics.drainCollisionEvents();
       this.#physics.drainImpactEvents();
-      dice.push(...this.#createSimulationDice(parsed, simulationId, throwGenerator));
+      dice.push(
+        ...this.#createSimulationDice(
+          parsed,
+          simulationId,
+          throwGenerator,
+          options.visualPresetSelector,
+        ),
+      );
       const captureFrames = options.captureFrames === true;
       const frames: PhysicalRollFrame[] = [];
       const events: PhysicalRollTraceEvent[] = [];
@@ -887,7 +897,8 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     this.#initialized = true;
   }
 
-  #createTask(notation: string, parsed: RollNotation, signal?: AbortSignal): RollTask {
+  #createTask(notation: string, parsed: RollNotation, options: RollOptions): RollTask {
+    const { signal, visualPresetSelector } = options;
     const session: MutableSession = {
       id: `roll-${this.#nextSessionId++}`,
       notation,
@@ -912,6 +923,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       reject,
       ...(signal === undefined ? {} : { signal }),
       ...(abortListener === undefined ? {} : { abortListener }),
+      ...(visualPresetSelector === undefined ? {} : { visualPresetSelector }),
     };
   }
 
@@ -940,7 +952,11 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
   #createDice(task: RollTask): ActiveDie[] {
     const dice: ActiveDie[] = [];
     let index = 0;
-    const specs = this.#createPhysicalSpecs(task.parsed, task.session.id);
+    const specs = this.#createPhysicalSpecs(
+      task.parsed,
+      task.session.id,
+      task.visualPresetSelector,
+    );
     const totalDice = specs.length;
     try {
       for (const spec of specs) {
@@ -1012,9 +1028,10 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     parsed: RollNotation,
     simulationId: string,
     throwGenerator: ThrowGenerator,
+    visualPresetSelector?: VisualPresetSelector,
   ): ActiveDie[] {
     const dice: ActiveDie[] = [];
-    const specs = this.#createPhysicalSpecs(parsed, simulationId);
+    const specs = this.#createPhysicalSpecs(parsed, simulationId, visualPresetSelector);
     const totalDice = specs.length;
     try {
       for (const [index, spec] of specs.entries()) {
@@ -1105,7 +1122,11 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
     events.push(Object.freeze(event));
   }
 
-  #createPhysicalSpecs(parsed: RollNotation, sessionId: string): PhysicalDieSpec[] {
+  #createPhysicalSpecs(
+    parsed: RollNotation,
+    sessionId: string,
+    visualPresetSelector?: VisualPresetSelector,
+  ): PhysicalDieSpec[] {
     const specs: PhysicalDieSpec[] = [];
     let groupIndex = 0;
     for (const [expressionIndex, expression] of parsed.expressions.entries()) {
@@ -1115,8 +1136,19 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
         const type = `d${expression.sides}`;
         if (!isDieType(type)) throw new RangeError(`${type} is not a standard die type`);
         if (!isPhysicalDieType(type)) throw new RangeError(`${type} is not a physical die type`);
-        const preset = this.getVisualPreset(type);
         for (let count = 0; count < expression.count; count += 1) {
+          const physicalIndex = specs.length;
+          const preset = this.#resolveVisualPreset(
+            {
+              physicalDieType: type,
+              logicalDieType: type,
+              termId,
+              expressionIndex,
+              dieIndex: count,
+              physicalIndex,
+            },
+            visualPresetSelector,
+          );
           specs.push({
             type,
             geometryType: this.#getPresetGeometryType(preset),
@@ -1124,7 +1156,7 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
             termId,
             expressionIndex,
             dieIndex: count,
-            physicalIndex: specs.length,
+            physicalIndex,
             ...(expression.selection === undefined ? {} : { selection: expression.selection }),
             ...(expression.score === undefined ? {} : { scoreRules: expression.score }),
           });
@@ -1135,55 +1167,133 @@ export class DiceEngine extends TypedEventEmitter<DiceEngineEvents> implements D
       for (let count = 0; count < expression.count; count += 1) {
         const groupId = `${sessionId}:group-${groupIndex++}`;
         if (expression.type === 'd100') {
-          const preset = this.getVisualPreset('d10');
+          const tensPhysicalIndex = specs.length;
+          const tensPreset = this.#resolveVisualPreset(
+            {
+              physicalDieType: 'd10',
+              logicalDieType: 'd100',
+              termId,
+              expressionIndex,
+              dieIndex: count,
+              physicalIndex: tensPhysicalIndex,
+              component: { groupType: 'd100', role: 'tens' },
+            },
+            visualPresetSelector,
+          );
           specs.push({
             type: 'd100',
-            geometryType: this.#getPresetGeometryType(preset),
-            preset,
+            geometryType: this.#getPresetGeometryType(tensPreset),
+            preset: tensPreset,
             termId,
             expressionIndex,
             dieIndex: count,
-            physicalIndex: specs.length,
+            physicalIndex: tensPhysicalIndex,
             component: { groupId, groupType: 'd100', role: 'tens' },
             faceLabels: D100_TENS_LABELS,
           });
+          const unitsPhysicalIndex = specs.length;
+          const unitsPreset = this.#resolveVisualPreset(
+            {
+              physicalDieType: 'd10',
+              logicalDieType: 'd100',
+              termId,
+              expressionIndex,
+              dieIndex: count,
+              physicalIndex: unitsPhysicalIndex,
+              component: { groupType: 'd100', role: 'units' },
+            },
+            visualPresetSelector,
+          );
           specs.push({
             type: 'd10',
-            geometryType: this.#getPresetGeometryType(preset),
-            preset,
+            geometryType: this.#getPresetGeometryType(unitsPreset),
+            preset: unitsPreset,
             termId,
             expressionIndex,
             dieIndex: count,
-            physicalIndex: specs.length,
+            physicalIndex: unitsPhysicalIndex,
             component: { groupId, groupType: 'd100', role: 'units' },
           });
           continue;
         }
-        const preset = this.getVisualPreset('d6');
+        const tensPhysicalIndex = specs.length;
+        const tensPreset = this.#resolveVisualPreset(
+          {
+            physicalDieType: 'd6',
+            logicalDieType: 'd66',
+            termId,
+            expressionIndex,
+            dieIndex: count,
+            physicalIndex: tensPhysicalIndex,
+            component: { groupType: 'd66', role: 'tens' },
+          },
+          visualPresetSelector,
+        );
         specs.push({
           type: 'd6',
-          geometryType: this.#getPresetGeometryType(preset),
-          preset,
+          geometryType: this.#getPresetGeometryType(tensPreset),
+          preset: tensPreset,
           termId,
           expressionIndex,
           dieIndex: count,
-          physicalIndex: specs.length,
+          physicalIndex: tensPhysicalIndex,
           component: { groupId, groupType: 'd66', role: 'tens' },
           faceLabels: D66_TENS_LABELS,
         });
+        const unitsPhysicalIndex = specs.length;
+        const unitsPreset = this.#resolveVisualPreset(
+          {
+            physicalDieType: 'd6',
+            logicalDieType: 'd66',
+            termId,
+            expressionIndex,
+            dieIndex: count,
+            physicalIndex: unitsPhysicalIndex,
+            component: { groupType: 'd66', role: 'units' },
+          },
+          visualPresetSelector,
+        );
         specs.push({
           type: 'd6',
-          geometryType: this.#getPresetGeometryType(preset),
-          preset,
+          geometryType: this.#getPresetGeometryType(unitsPreset),
+          preset: unitsPreset,
           termId,
           expressionIndex,
           dieIndex: count,
-          physicalIndex: specs.length,
+          physicalIndex: unitsPhysicalIndex,
           component: { groupId, groupType: 'd66', role: 'units' },
         });
       }
     }
     return specs;
+  }
+
+  #resolveVisualPreset(
+    coordinates: Omit<VisualPresetSelectionContext, 'defaultPresetId'>,
+    selector?: VisualPresetSelector,
+  ): VisualPresetDescriptor {
+    const defaultPreset = this.getVisualPreset(coordinates.physicalDieType);
+    if (selector === undefined) return defaultPreset;
+    const context: VisualPresetSelectionContext = Object.freeze({
+      ...coordinates,
+      ...(coordinates.component === undefined
+        ? {}
+        : { component: Object.freeze({ ...coordinates.component }) }),
+      defaultPresetId: defaultPreset.id,
+    });
+    const selectedId = selector(context);
+    if (selectedId === undefined) return defaultPreset;
+    if (typeof selectedId !== 'string') {
+      throw new TypeError('visualPresetSelector must return a preset ID or undefined');
+    }
+    const preset = this.#visualPresets.get(selectedId);
+    if (preset === undefined) throw new RangeError(`Unknown visual preset: ${selectedId}`);
+    if (preset.dieType !== coordinates.physicalDieType) {
+      throw new RangeError(
+        `Visual preset "${selectedId}" is for ${preset.dieType}, not ${coordinates.physicalDieType}`,
+      );
+    }
+    return preset;
   }
 
   #placeDie(

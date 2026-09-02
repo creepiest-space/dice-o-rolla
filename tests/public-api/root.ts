@@ -16,6 +16,8 @@ import {
   type ReplayOptions,
   type RollOptions,
   type SimulateOptions,
+  type VisualPresetSelectionContext,
+  type VisualPresetSelector,
 } from '@dice-o-rolla/dice-engine';
 
 declare const options: DiceEngineOptions;
@@ -28,6 +30,10 @@ declare const theme: DiceTheme;
 declare const events: DiceEngineEvents;
 declare const result: RollResult;
 declare const provenance: DieResultProvenance;
+declare const visualContext: VisualPresetSelectionContext;
+
+const visualPresetSelector: VisualPresetSelector = (context) =>
+  context.physicalIndex === 0 ? context.defaultPresetId : undefined;
 
 const engine = new DiceEngine(options);
 const roll: Promise<RollResult> = engine.roll('4d6kh3', rollOptions);
@@ -55,6 +61,8 @@ void standardD20;
 void constructors;
 void engineVersion;
 void provenance;
+void visualContext;
+void visualPresetSelector;
 
 // @ts-expect-error Published results are immutable snapshots.
 result.total = 0;

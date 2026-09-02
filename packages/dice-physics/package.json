@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-physics",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Renderer-neutral dice physics contracts, throw generation, and settling policy.",
   "keywords": [
     "dice",

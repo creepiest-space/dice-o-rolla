@@ -15,6 +15,7 @@ export {
   type FaceMaterialResource,
   type ThreeFaceMaterialProvider,
 } from './mesh-factory.js';
+export type { ThreeRendererOptions } from './renderer-options.js';
 export { ThreeCamera, ThreeLighting, ThreeScene } from './scene.js';
 export { TopDownCamera, type TopDownCameraOptions } from './top-down-camera.js';
 export { TopDownDiceRenderer, type TopDownDiceRendererOptions } from './top-down-dice-renderer.js';

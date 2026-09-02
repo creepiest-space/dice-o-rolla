@@ -73,6 +73,11 @@ labels, and optional value map. `skinId` and `soundPackId` are opaque applicatio
 the engine does not load assets. Skins and sound definitions belong in the optional
 `@dice-o-rolla/dice-assets` package, which is not a dependency of the engine.
 
+Use `visualPresetSelector` in `roll()` or `simulate()` options to select a registered preset for
+each physical die. The callback receives stable term/die/physical indices, physical and logical die
+types, the current default, and paired-component metadata. Returning `undefined` keeps the default;
+the engine rejects unknown IDs and presets for another physical die type before creating bodies.
+
 The engine emits `die:spawn` and `die:remove` lifecycle events. Collision events are opt-in through
 `DiceEngineOptions.collisionEvents`, bounded by `maxEventsPerFrame`, and suitable for an external
 sound or effects adapter.

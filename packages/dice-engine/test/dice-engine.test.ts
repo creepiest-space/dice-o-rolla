@@ -457,6 +457,150 @@ describe('DiceEngine', () => {
     expect(engine.registerVisualPreset(preset).id).toBe(preset.id);
   });
 
+  test('selects a registered visual preset for each physical die in roll()', async () => {
+    const { engine, physics, renderer, scheduler } = createHarness();
+    engine.registerVisualPreset({
+      id: 'custom:small-d6',
+      dieType: 'd6',
+      geometryId: 'd6',
+      scale: 0.8,
+      skinId: 'amethyst',
+    });
+    engine.registerVisualPreset({
+      id: 'custom:large-d6',
+      dieType: 'd6',
+      geometryId: 'd6',
+      scale: 1.2,
+      skinId: 'emerald',
+    });
+    await engine.initialize();
+
+    const contexts: unknown[] = [];
+    const roll = engine.roll('3d6', {
+      visualPresetSelector: (context) => {
+        contexts.push(context);
+        if (context.physicalIndex === 0) return 'custom:small-d6';
+        if (context.physicalIndex === 1) return 'custom:large-d6';
+        return undefined;
+      },
+    });
+    scheduler.flush();
+    await roll;
+
+    expect(contexts).toEqual([
+      {
+        physicalDieType: 'd6',
+        logicalDieType: 'd6',
+        termId: 'term-0',
+        expressionIndex: 0,
+        dieIndex: 0,
+        physicalIndex: 0,
+        defaultPresetId: 'standard:d6',
+      },
+      {
+        physicalDieType: 'd6',
+        logicalDieType: 'd6',
+        termId: 'term-0',
+        expressionIndex: 0,
+        dieIndex: 1,
+        physicalIndex: 1,
+        defaultPresetId: 'standard:d6',
+      },
+      {
+        physicalDieType: 'd6',
+        logicalDieType: 'd6',
+        termId: 'term-0',
+        expressionIndex: 0,
+        dieIndex: 2,
+        physicalIndex: 2,
+        defaultPresetId: 'standard:d6',
+      },
+    ]);
+    expect(contexts.every(Object.isFrozen)).toBeTrue();
+    expect([...renderer.dice.values()].map(({ presetId }) => presetId)).toEqual([
+      'custom:small-d6',
+      'custom:large-d6',
+      'standard:d6',
+    ]);
+    expect(physics.createdOptions.map(({ scale }) => scale)).toEqual([0.8, 1.2, 1]);
+  });
+
+  test('selects visual presets independently for paired-die components in simulate()', async () => {
+    const { engine, renderer } = createHarness();
+    engine.registerVisualPreset({
+      id: 'custom:tens-d10',
+      dieType: 'd10',
+      geometryId: 'd10',
+      skinId: 'tens',
+    });
+    engine.registerVisualPreset({
+      id: 'custom:units-d10',
+      dieType: 'd10',
+      geometryId: 'd10',
+      skinId: 'units',
+    });
+    await engine.initialize();
+
+    const contexts: unknown[] = [];
+    const trace = await engine.simulate('d100', {
+      seed: 2026,
+      visualPresetSelector: (context) => {
+        contexts.push(context);
+        return context.component?.role === 'tens' ? 'custom:tens-d10' : 'custom:units-d10';
+      },
+    });
+
+    expect(contexts).toEqual([
+      {
+        physicalDieType: 'd10',
+        logicalDieType: 'd100',
+        termId: 'term-0',
+        expressionIndex: 0,
+        dieIndex: 0,
+        physicalIndex: 0,
+        defaultPresetId: 'standard:d10',
+        component: { groupType: 'd100', role: 'tens' },
+      },
+      {
+        physicalDieType: 'd10',
+        logicalDieType: 'd100',
+        termId: 'term-0',
+        expressionIndex: 0,
+        dieIndex: 0,
+        physicalIndex: 1,
+        defaultPresetId: 'standard:d10',
+        component: { groupType: 'd100', role: 'units' },
+      },
+    ]);
+    expect(trace.dice.map(({ presetId }) => presetId)).toEqual([
+      'custom:tens-d10',
+      'custom:units-d10',
+    ]);
+    expect(renderer.dice.size).toBe(0);
+  });
+
+  test('rejects unknown or incompatible per-die visual preset selections', async () => {
+    const { engine, physics } = createHarness();
+    engine.registerVisualPreset({ id: 'custom:d20', dieType: 'd20', geometryId: 'd20' });
+    await engine.initialize();
+
+    expect(
+      String(await rejectionOf(engine.roll('1d6', { visualPresetSelector: () => 'custom:d20' }))),
+    ).toContain('for d20, not d6');
+    expect(physics.createdOptions).toHaveLength(0);
+    expect(
+      String(
+        await rejectionOf(
+          engine.simulate('1d6', {
+            seed: 1,
+            visualPresetSelector: () => 'custom:missing',
+          }),
+        ),
+      ),
+    ).toContain('Unknown visual preset: custom:missing');
+    expect(physics.createdOptions).toHaveLength(0);
+  });
+
   test('maps resolved physical faces through a complete visual preset value map', async () => {
     const standardHarness = createHarness();
     await standardHarness.engine.initialize();
