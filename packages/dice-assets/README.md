@@ -43,6 +43,21 @@ factory receives its active `WebGLRenderer` and can construct `ThreeAssetMateria
 shares texture instances, uses the packed ORM map for AO/roughness/metalness, and composites the face
 atlas in the material shader.
 
+## Prepared skin sets
+
+Use `prepareTexturedSkinSet({ registry, provider, skinSetId })` to validate and preload a textured
+set. Register the returned handle with `skinSet.register(engine)` and pass
+`{ visualPresetSelector: skinSet.visualPresetSelector }` to `engine.roll()` or `engine.simulate()`.
+The helper handles paired tens variants, leaves absent types to engine defaults and does not
+change defaults during registration. Repeated registrations through the helper are idempotent;
+conflicting content is rejected and failed registration rolls back entries added by that call.
+
+The provider must use the same registry and owns the texture lifetime. Use separate registries and
+providers when reloading changed assets. For a complete preparation and browser example, see
+[Preparing and connecting textured dice nets](https://github.com/creepiest-space/dice-o-rolla/blob/main/docs/textured-unwraps.md).
+The optional `@dice-o-rolla/dice-assets-tools` package exports editable SVG templates and builds
+KTX2 catalogs under Node.js or Bun; it is not needed by browser consumers.
+
 ## Connected surface unwraps
 
 A `DicePatternDefinition` can include `unwrap: DiceSurfaceUnwrap`: a `geometryId`, a `faces`

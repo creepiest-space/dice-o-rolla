@@ -13,9 +13,10 @@
       "@dice-o-rolla/dice-physics": ["../../packages/dice-physics/dist/index.d.ts"],
       "@dice-o-rolla/dice-physics-rapier": ["../../packages/dice-physics-rapier/dist/index.d.ts"],
       "@dice-o-rolla/dice-renderer": ["../../packages/dice-renderer/dist/index.d.ts"],
-      "@dice-o-rolla/dice-renderer-three": ["../../packages/dice-renderer-three/dist/index.d.ts"]
+      "@dice-o-rolla/dice-renderer-three": ["../../packages/dice-renderer-three/dist/index.d.ts"],
+      "@dice-o-rolla/dice-assets-tools": ["../../packages/dice-assets-tools/dist/index.d.ts"]
     },
     "types": []
   },
-  "include": ["./root.ts", "./browser.ts", "./runtime.ts"]
+  "include": ["./root.ts", "./browser.ts", "./runtime.ts", "./textured-unwraps.ts"]
 }

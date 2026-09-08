@@ -111,6 +111,9 @@ jobs:
       - name: Package dice-engine library
         run: bun run pack:dice-engine
 
+      - name: Build texture authoring tools
+        run: bun run --filter @dice-o-rolla/dice-assets-tools build
+
       - name: Verify public TypeScript declarations
         run: bun run test:public-api
 

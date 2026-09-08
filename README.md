@@ -30,6 +30,8 @@ Open **Inspect diagnostic textures** to compare a connected surface net with a r
 Choose a face for a fixed view, drag to rotate, or reset the view. **Diagnostic d6** rolls the cube
 cross; **Diagnostic set** rolls the standard dice and percentile pair with matching diagnostic
 skins. Grid detail, direction arrows and paired edge marks expose flipped faces and seam errors.
+See [Preparing and connecting textured dice nets](docs/textured-unwraps.md) for the authoring CLI
+and the public skin-set API.
 
 Create a production bundle with:
 
