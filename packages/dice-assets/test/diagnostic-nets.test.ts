@@ -59,7 +59,8 @@ for (const type of DIAGNOSTIC_TYPES) {
     expect(seen.size).toBe(geometry.faces.length);
     if (type === 'd6') expect(connected.get(1)?.size).toBe(4);
     const svg = diagnosticSvg(geometry, unwrap, type === 'd100' || type === 'd66');
-    expect(await readFile(join(runtime, 'previews', `diagnostic-${type}.svg`), 'utf8')).toBe(svg);
+    const preview = await readFile(join(runtime, 'previews', `diagnostic-${type}.svg`), 'utf8');
+    expect(normalizeSvgPrecision(preview)).toBe(normalizeSvgPrecision(svg));
     const ktx = await readFile(join(runtime, 'textures', `diagnostic-${type}.ktx2`));
     expect([...ktx.subarray(0, 12)]).toEqual([171, 75, 84, 88, 32, 50, 48, 187, 13, 10, 26, 10]);
     expect(ktx.readUInt32LE(40)).toBeGreaterThan(1);
@@ -117,4 +118,12 @@ function polygonsOverlap(a: readonly Point[], b: readonly Point[]): boolean {
     }
   }
   return true;
+}
+
+/** Math.hypot/trigonometry differ in their last bits across CPU architectures. */
+function normalizeSvgPrecision(svg: string): string {
+  // A millionth of a pixel is well below raster precision; retain all markup and labels.
+  return svg.replace(/-?\d+\.\d+(?:e[+-]?\d+)?/gi, (value) =>
+    String(Number(Number(value).toFixed(6))),
+  );
 }
