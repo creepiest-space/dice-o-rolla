@@ -2,16 +2,11 @@ import { expect, test } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { getDieGeometry } from '@dice-o-rolla/dice-geometry';
+import { getDieGeometry, createStandardDiceNet } from '@dice-o-rolla/dice-geometry';
 import { validateSurfaceUvs } from '@dice-o-rolla/dice-renderer-three';
 import { Resvg } from '@resvg/resvg-js';
 
-import {
-  createDiagnosticUnwrap,
-  diagnosticSvg,
-  DIAGNOSTIC_TYPES,
-  polygonsOverlap,
-} from '../scripts/diagnostic-nets.js';
+import { diagnosticSvg, DIAGNOSTIC_TYPES } from '../scripts/diagnostic-nets.js';
 import { DiceAssetRegistry } from '../src/index.js';
 import type { DiceAssetCatalogManifest } from '../src/types.js';
 
@@ -19,7 +14,7 @@ const runtime = join(import.meta.dir, '../assets/runtime');
 for (const type of DIAGNOSTIC_TYPES) {
   test(`${type}: connected, non-overlapping, isometric net with reproducible preview`, async () => {
     const geometry = getDieGeometry(type === 'd100' ? 'd10' : type === 'd66' ? 'd6' : type);
-    const unwrap = createDiagnosticUnwrap(geometry);
+    const unwrap = createStandardDiceNet(type === 'd100' ? 'd10' : type === 'd66' ? 'd6' : type);
     validateSurfaceUvs(geometry, unwrap.faces);
     let ratio: number | undefined;
     const connected = new Map(geometry.faces.map((face) => [face.value, new Set<number>()]));
@@ -101,3 +96,25 @@ test('generated skin set covers standard dice and percentile tens', async () => 
   expect(Object.keys(registry.skinSets.get('diagnostic')!.skins)).toEqual([...DIAGNOSTIC_TYPES]);
   expect(registry.patterns.get('diagnostic-d100')?.unwrap?.geometryId).toBe('d10');
 });
+
+type Point = readonly [number, number];
+/** Positive-area intersection only: shared edges and vertices are allowed. */
+function polygonsOverlap(a: readonly Point[], b: readonly Point[]): boolean {
+  for (const polygon of [a, b]) {
+    for (let i = 0; i < polygon.length; i++) {
+      const p = polygon[i]!,
+        q = polygon[(i + 1) % polygon.length]!;
+      const axis: Point = [p[1] - q[1], q[0] - p[0]];
+      const project = (points: readonly Point[]) =>
+        points.map((v) => v[0] * axis[0] + v[1] * axis[1]);
+      const x = project(a),
+        y = project(b);
+      if (
+        Math.min(Math.max(...x), Math.max(...y)) - Math.max(Math.min(...x), Math.min(...y)) <
+        1e-9
+      )
+        return false;
+    }
+  }
+  return true;
+}
