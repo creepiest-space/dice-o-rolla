@@ -5,7 +5,7 @@ import { BufferGeometry, Float32BufferAttribute, Mesh, type MeshStandardMaterial
 
 import { ThreeMaterialFactory } from './material-factory.js';
 
-type Vector2Tuple = readonly [u: number, v: number];
+export type Vector2Tuple = readonly [u: number, v: number];
 type Vector3Tuple = readonly [x: number, y: number, z: number];
 
 const D10_LABEL_SCALE = 0.7;
@@ -37,7 +37,13 @@ export interface FaceMaterialResource {
   dispose(): void;
 }
 
+export type SurfaceUvMap = Readonly<Record<number, readonly Vector2Tuple[]>>;
+
 export interface ThreeFaceMaterialProvider {
+  getSurfaceUvs?(
+    definition: PolyhedronDefinition,
+    preset?: VisualPresetDescriptor,
+  ): SurfaceUvMap | undefined;
   createFace(context: FaceMaterialContext): FaceMaterialResource;
   dispose?(): void;
 }
@@ -45,11 +51,14 @@ export interface ThreeFaceMaterialProvider {
 export function createPolyhedronGeometry(
   definition: PolyhedronDefinition,
   scale = 1,
+  surfaceUvs?: SurfaceUvMap,
 ): BufferGeometry {
   if (!Number.isFinite(scale) || scale <= 0) {
     throw new RangeError('scale must be a positive finite number');
   }
 
+  if (surfaceUvs !== undefined) validateSurfaceUvs(definition, surfaceUvs);
+  const surface: number[] = [];
   const positions: number[] = [];
   const uvs: number[] = [];
   const geometry = new BufferGeometry();
@@ -68,6 +77,8 @@ export function createPolyhedronGeometry(
         }
         positions.push(vertex[0] * scale, vertex[1] * scale, vertex[2] * scale);
         uvs.push(uv[0], uv[1]);
+        const mapped = surfaceUvs?.[face.value]?.[faceIndex] ?? uv;
+        surface.push(mapped[0], mapped[1]);
       }
     }
     geometry.addGroup(start, positions.length / 3 - start, materialIndex);
@@ -75,6 +86,7 @@ export function createPolyhedronGeometry(
 
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute('uv1', new Float32BufferAttribute(surface, 2));
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   return geometry;
@@ -94,16 +106,28 @@ export class ThreeDiceMeshFactory {
     faceLabels?: Readonly<Record<number, string | number>>,
     preset?: VisualPresetDescriptor,
   ): ThreeDiceMesh {
-    const geometry = createPolyhedronGeometry(definition, scale);
-    const resources = definition.faces.map((face) =>
-      this.#materials.createFace({
-        label: getFaceLabel(definition, face, faceLabels),
-        faceValue: face.value,
-        theme,
-        ...(preset === undefined ? {} : { preset }),
-        ...(definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : {}),
-      }),
+    const geometry = createPolyhedronGeometry(
+      definition,
+      scale,
+      this.#materials.getSurfaceUvs?.(definition, preset),
     );
+    const resources: FaceMaterialResource[] = [];
+    try {
+      for (const face of definition.faces)
+        resources.push(
+          this.#materials.createFace({
+            label: getFaceLabel(definition, face, faceLabels),
+            faceValue: face.value,
+            theme,
+            ...(preset === undefined ? {} : { preset }),
+            ...(definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : {}),
+          }),
+        );
+    } catch (error) {
+      geometry.dispose();
+      for (const resource of resources) resource.dispose();
+      throw error;
+    }
     const materials = resources.map(({ material }) => material);
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;
@@ -246,4 +270,26 @@ export function getFaceLabel(
   }
   if (definition.id === 'd10' && face.value === 10) return 0;
   return face.value;
+}
+
+/** Validate complete per-corner UVs before allocating geometry or materials. */
+export function validateSurfaceUvs(definition: PolyhedronDefinition, uvs: SurfaceUvMap): void {
+  const fail = (face: number): never => {
+    throw new RangeError(`Geometry "${definition.id}" face ${face}: invalid surface UVs`);
+  };
+  for (const key of Object.keys(uvs)) {
+    if (!definition.faces.some((face) => String(face.value) === key)) fail(Number(key));
+  }
+  for (const face of definition.faces) {
+    const coordinates = uvs[face.value];
+    if (!Array.isArray(coordinates) || coordinates.length !== face.indices.length) fail(face.value);
+    for (const uv of coordinates!) {
+      if (
+        !Array.isArray(uv) ||
+        uv.length !== 2 ||
+        !uv.every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
+      )
+        fail(face.value);
+    }
+  }
 }

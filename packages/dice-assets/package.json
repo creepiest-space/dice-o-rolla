@@ -1,7 +1,7 @@
 {
   "name": "@dice-o-rolla/dice-assets",
-  "version": "0.4.0",
-  "description": "Optional Web Audio and KTX2/PBR asset system for Dice O Rolla.",
+  "version": "0.5.0",
+  "description": "Web Audio and KTX2/PBR assets with texture authoring API and CLI for Dice O Rolla.",
   "keywords": [
     "assets",
     "dice",
@@ -18,6 +18,9 @@
     "type": "git",
     "url": "https://github.com/creepiest-space/dice-o-rolla.git",
     "directory": "packages/dice-assets"
+  },
+  "bin": {
+    "dice-assets": "./dist/tools/cli.js"
   },
   "files": [
     "dist",
@@ -36,7 +39,12 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./catalog.json": "./assets/runtime/catalog.json"
+    "./catalog.json": "./assets/runtime/catalog.json",
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "import": "./dist/tools/index.js",
+      "default": "./dist/tools/index.js"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -46,16 +54,18 @@
     "assets:generate": "bun ./scripts/generate-procedural-assets.ts",
     "assets:build": "bun run assets:generate && bun ./scripts/build-assets.ts && oxfmt ./assets/runtime/catalog.json",
     "build": "tsc -p tsconfig.build.json",
-    "test": "bun test --pass-with-no-tests",
-    "typecheck": "tsc -p tsconfig.json"
+    "test": "bun test ./test/*.test.ts ./test/unit",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:integration": "bun test ./test/integration"
   },
   "dependencies": {
+    "@dice-o-rolla/dice-geometry": "workspace:*",
+    "@dice-o-rolla/dice-renderer": "workspace:*",
     "@dice-o-rolla/dice-renderer-three": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/three": "^0.185.0",
+    "@xmldom/xmldom": "^0.9.12",
     "three": "^0.185.0"
-  },
-  "devDependencies": {
-    "@resvg/resvg-js": "^2.6.2"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './apps/dice-demo/e2e',
   outputDir: './artifacts/playwright-results',
+  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
   timeout: 120_000,
   expect: {
     timeout: 20_000,

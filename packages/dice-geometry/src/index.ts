@@ -14,3 +14,9 @@ export type {
   Vector3Tuple,
 } from './types.js';
 export { assertValidPolyhedronDefinition, getPolyhedronDefinitionIssues } from './validation.js';
+
+export {
+  createStandardDiceNet,
+  type StandardDiceNet,
+  type StandardDiceNetType,
+} from './standard-dice-net.js';

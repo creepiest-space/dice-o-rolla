@@ -1,3 +1,16 @@
+export interface DiceSurfaceUnwrap {
+  readonly geometryId: string;
+  /** Normalized UVs (origin bottom-left), in each geometry face's vertex order. */
+  readonly faces: Readonly<Record<number, readonly (readonly [u: number, v: number])[]>>;
+  readonly preview?: DiceAssetReference;
+}
+
+export interface DiceSkinSetDefinition {
+  readonly id: string;
+  readonly name?: string;
+  readonly skins: Readonly<Record<string, string>>;
+}
+
 export type DiceAssetMetadataValue = string | number | boolean;
 
 export interface DiceAssetReference {
@@ -52,6 +65,7 @@ export interface DiceMaterialDefinition {
 }
 
 export interface DicePatternDefinition {
+  readonly unwrap?: DiceSurfaceUnwrap;
   readonly id: string;
   readonly baseColor: RuntimeTextureReference;
   readonly normal?: RuntimeTextureReference;
@@ -96,6 +110,7 @@ export interface DiceSkinDefinition {
 
 export interface DiceAssetCatalogManifest {
   readonly schemaVersion: 1;
+  readonly skinSets?: readonly DiceSkinSetDefinition[];
   readonly audioSprites?: readonly AudioSpriteManifest[];
   readonly audioBanks?: readonly AudioBankDefinition[];
   readonly materials?: readonly DiceMaterialDefinition[];

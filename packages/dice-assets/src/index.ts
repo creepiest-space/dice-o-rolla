@@ -42,5 +42,16 @@ export type {
   DicePatternDefinition,
   DiceSkinCompositeMode,
   DiceSkinDefinition,
+  DiceSkinSetDefinition,
+  DiceSurfaceUnwrap,
   RuntimeTextureReference,
 } from './types.js';
+
+export {
+  prepareTexturedSkinSet,
+  type PreparedTexturedSkinSet,
+  type PrepareTexturedSkinSetOptions,
+  type TexturedSkinSetTarget,
+  type TexturedSkinSetProvider,
+  type TexturedSkinSetSelectionContext,
+} from './textured-skin-set.js';

@@ -173,6 +173,16 @@ function validatePackResult(
         throw new Error(`${sourceManifest.name} tarball is missing ${requiredFile}`);
       }
     }
+    if (!files.has('dist/tools/cli.js') || !files.has('dist/tools/index.d.ts'))
+      throw new Error('Asset package must include its CLI and public declarations');
+    const bin = packedManifest.bin;
+    if (
+      typeof bin !== 'object' ||
+      bin === null ||
+      !('dice-assets' in bin) ||
+      bin['dice-assets'] !== './dist/tools/cli.js'
+    )
+      throw new Error('Asset package must expose the dice-assets command');
   }
   for (const path of files) {
     if (

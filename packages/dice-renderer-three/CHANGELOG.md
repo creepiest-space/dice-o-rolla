@@ -1,5 +1,19 @@
 # @dice-o-rolla/dice-renderer-three
 
+## 0.5.0
+
+### Minor Changes
+
+- e65399d: Support complete surface unwraps on a separate UV channel and catalog skin sets. Include connected
+  diagnostic nets, KTX2 textures and SVG previews for standard dice and paired tens variants, while
+  preserving local label UVs and existing catalog compatibility.
+
+### Patch Changes
+
+- Updated dependencies [44ff815]
+  - @dice-o-rolla/dice-geometry@0.5.0
+  - @dice-o-rolla/dice-renderer@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

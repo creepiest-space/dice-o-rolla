@@ -6,6 +6,7 @@ This directory contains documentation for consumers of the Dice O Rolla packages
 - [Dice notation, keep/drop, and score maps](notation.md)
 - [Migrating from 0.1 to 0.2](migration-0.2.md)
 - [Migrating from 0.2 to 0.3](migration-0.3.md)
+- [Preparing and connecting textured dice nets](textured-unwraps.md)
 - [Visual presets, skins, sounds, and collision events](visual-presets.md)
 - [Three.js renderers](three-renderer.md)
 - [Dice definitions and percentile semantics](dice-definitions.md)

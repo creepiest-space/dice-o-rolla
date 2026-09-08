@@ -465,3 +465,63 @@ select {
     animation-iteration-count: 1 !important;
   }
 }
+
+.texture-inspector {
+  padding: 1rem;
+  border: 1px solid #a9b9c9;
+  border-radius: 1rem;
+  margin-top: 1rem;
+}
+.texture-inspector summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.texture-inspector p {
+  font-size: 0.875rem;
+}
+.inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+.inspector-actions label {
+  display: grid;
+  gap: 0.25rem;
+}
+.inspector-views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+#inspect-canvas {
+  min-width: 0;
+  height: 340px;
+  touch-action: none;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.inspector-views figure {
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+}
+#inspect-net {
+  display: block;
+  width: 100%;
+  height: 320px;
+  object-fit: contain;
+  background: #e9eef4;
+  border-radius: 0.75rem;
+}
+#inspect-net:not([src]) {
+  visibility: hidden;
+}
+.inspector-views figcaption {
+  font-size: 0.8rem;
+}
+@media (max-width: 600px) {
+  .inspector-views {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
