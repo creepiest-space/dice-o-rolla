@@ -2,7 +2,7 @@ import type {
   DiceAssetCatalogManifest,
   DiceMaterialDefinition,
   DiceSurfaceUnwrap,
-} from '@dice-o-rolla/dice-assets';
+} from '../index.js';
 
 export const TEXTURE_TEMPLATE_TYPES = [
   'd4',

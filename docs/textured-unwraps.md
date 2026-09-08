@@ -10,15 +10,14 @@ In a consumer project:
 
 ```sh
 npm install @dice-o-rolla/dice-engine @dice-o-rolla/dice-assets three
-npm install --save-dev @dice-o-rolla/dice-assets-tools
 ```
 
 The authoring CLI runs on Node.js 20+ or Bun. Install KTX-Software so `ktx --version` works; encoding
 uses its `create` and `validate` commands. Template export does not require KTX-Software.
 
 Inside this repository, run `bun install` and `bun run build`, then substitute
-`node packages/dice-assets-tools/dist/cli.js` for `npx dice-assets` in the commands below.
-`bun packages/dice-assets-tools/dist/cli.js` works as well.
+`node packages/dice-assets/dist/tools/cli.js` for `npx dice-assets` in the commands below.
+`bun packages/dice-assets/dist/tools/cli.js` works as well.
 
 ## 1. Export a template
 
@@ -115,9 +114,10 @@ Also copy `basis_transcoder.js` and `basis_transcoder.wasm` from
 WASM with `application/wasm`; when files are on a different origin, configure CORS for them.
 See [browser deployment](security.md) for workers and Content Security Policy.
 
-The tooling package is a development dependency. Browser code imports `dice-assets`, not
-`dice-assets-tools`; Resvg, filesystem operations and the KTX process runner stay out of the browser
-bundle.
+The single `dice-assets` package includes both runtime assets and authoring tools. Browser code
+imports `@dice-o-rolla/dice-assets`; Node.js/Bun authoring code imports
+`@dice-o-rolla/dice-assets/tools`. The tools entry is separate so Resvg, filesystem operations and
+the KTX process runner stay out of the browser bundle.
 
 ## 4. Prepare and connect the set
 
@@ -204,7 +204,7 @@ import {
   createTextureTemplate,
   writeTextureTemplates,
   buildTexturedSkinSet,
-} from '@dice-o-rolla/dice-assets-tools';
+} from '@dice-o-rolla/dice-assets/tools';
 
 const uv = createStandardDiceNet('d6');
 const template = createTextureTemplate('d6', { size: 2048 });
@@ -243,6 +243,6 @@ implementation or Rapier dependency is introduced by the helper.
 | Texture/transcoder loading fails            | Check catalog-relative paths, the trailing slash on `transcoderPath`, HTTP responses and CORS. |
 
 In the repository, run `bun run check:full` for types, unit tests and public API checks. Run
-`bun run --cwd packages/dice-assets-tools test:integration` with KTX-Software installed to exercise
+`bun run --cwd packages/dice-assets test:integration` with KTX-Software installed to exercise
 real encoding and transactional output. Run `bun run test:e2e` to compare the diagnostic demo with
 its fixed visual baselines. CLI preparation is not a browser editor or a model importer.

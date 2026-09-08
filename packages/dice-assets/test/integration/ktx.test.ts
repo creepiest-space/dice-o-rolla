@@ -3,10 +3,10 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { DiceAssetRegistry } from '@dice-o-rolla/dice-assets';
 import { Resvg } from '@resvg/resvg-js';
 
-import { writeTextureTemplates, buildTexturedSkinSet } from '../../src/index.js';
+import { DiceAssetRegistry } from '../../src/index.js';
+import { writeTextureTemplates, buildTexturedSkinSet } from '../../src/tools/index.js';
 
 test('builds a loadable PBR catalog with real KTX and no guides in the raster', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dice-ktx-'));

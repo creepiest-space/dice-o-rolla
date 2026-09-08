@@ -1,7 +1,6 @@
 ---
 '@dice-o-rolla/dice-geometry': minor
 '@dice-o-rolla/dice-assets': minor
-'@dice-o-rolla/dice-assets-tools': minor
 ---
 
 Expose standard connected dice nets and prepared textured skin-set registration. Add a Node.js/Bun

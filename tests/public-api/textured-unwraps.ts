@@ -55,7 +55,7 @@ import {
   createTextureTemplate,
   writeTextureTemplates,
   buildTexturedSkinSet,
-} from '@dice-o-rolla/dice-assets-tools';
+} from '@dice-o-rolla/dice-assets/tools';
 import { createStandardDiceNet } from '@dice-o-rolla/dice-geometry';
 
 const uv = createStandardDiceNet('d6');

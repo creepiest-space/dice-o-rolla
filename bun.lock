@@ -39,29 +39,17 @@
     "packages/dice-assets": {
       "name": "@dice-o-rolla/dice-assets",
       "version": "0.4.0",
+      "bin": {
+        "dice-assets": "./dist/tools/cli.js",
+      },
       "dependencies": {
         "@dice-o-rolla/dice-geometry": "workspace:*",
         "@dice-o-rolla/dice-renderer": "workspace:*",
         "@dice-o-rolla/dice-renderer-three": "workspace:*",
+        "@resvg/resvg-js": "^2.6.2",
         "@types/three": "^0.185.0",
-        "three": "^0.185.0",
-      },
-      "devDependencies": {
-        "@resvg/resvg-js": "^2.6.2",
-      },
-    },
-    "packages/dice-assets-tools": {
-      "name": "@dice-o-rolla/dice-assets-tools",
-      "version": "0.4.0",
-      "bin": {
-        "dice-assets": "./dist/cli.js",
-      },
-      "dependencies": {
-        "@dice-o-rolla/dice-assets": "workspace:*",
-        "@dice-o-rolla/dice-geometry": "workspace:*",
-        "@dice-o-rolla/dice-renderer-three": "workspace:*",
-        "@resvg/resvg-js": "^2.6.2",
         "@xmldom/xmldom": "^0.9.12",
+        "three": "^0.185.0",
       },
     },
     "packages/dice-core": {
@@ -202,8 +190,6 @@
     "@conventional-changelog/template": ["@conventional-changelog/template@1.4.0", "", {}, "sha512-aalGyl7dbB5PArRebDIX43ZvBlXrYm9uWzGJ26t+4SzJVPsOuvfILGGbw5X4yX7i50YEmJ8zvbiWnqH/AAnZqg=="],
 
     "@dice-o-rolla/dice-assets": ["@dice-o-rolla/dice-assets@workspace:packages/dice-assets"],
-
-    "@dice-o-rolla/dice-assets-tools": ["@dice-o-rolla/dice-assets-tools@workspace:packages/dice-assets-tools"],
 
     "@dice-o-rolla/dice-core": ["@dice-o-rolla/dice-core@workspace:packages/dice-core"],
 

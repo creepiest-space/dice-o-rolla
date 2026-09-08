@@ -55,8 +55,41 @@ conflicting content is rejected and failed registration rolls back entries added
 The provider must use the same registry and owns the texture lifetime. Use separate registries and
 providers when reloading changed assets. For a complete preparation and browser example, see
 [Preparing and connecting textured dice nets](https://github.com/creepiest-space/dice-o-rolla/blob/main/docs/textured-unwraps.md).
-The optional `@dice-o-rolla/dice-assets-tools` package exports editable SVG templates and builds
+The `@dice-o-rolla/dice-assets/tools` entry point exports editable SVG templates and builds
 KTX2 catalogs under Node.js or Bun; it is not needed by browser consumers.
+
+## Texture authoring API and CLI
+
+The same package provides Node.js 20+/Bun tools through `@dice-o-rolla/dice-assets/tools`.
+Keep this entry out of browser imports. Install KTX-Software (`ktx` on PATH) for encoding;
+template export does not require it.
+
+```sh
+npx dice-assets template --types d6 --id painted --out ./art/painted
+# Paint art/painted/d6.svg, then build the runtime catalog.
+npx dice-assets build --input ./art/painted/skin-set.source.json --out ./public/dice/painted
+```
+
+```ts
+import {
+  createTextureTemplate,
+  writeTextureTemplates,
+  buildTexturedSkinSet,
+} from '@dice-o-rolla/dice-assets/tools';
+
+const template = createTextureTemplate('d6', { size: 2048 });
+await writeTextureTemplates({ outputDirectory: './art/custom', types: ['d6'], id: 'custom' });
+const built = await buildTexturedSkinSet({
+  input: './art/custom/skin-set.source.json',
+  outputDirectory: './public/dice/custom',
+});
+console.log(template.unwrap, built.catalog);
+```
+
+Use `--types standard` for all shapes and tens variants. The `artwork` and `labels` layers are
+rasterized; `guides` is removed. `--overwrite` replaces the entire generated destination only after
+a successful build, so keep source files elsewhere. See the guide above for PBR maps and hosting.
+Run `bun run test:integration` in this workspace to verify real KTX encoding.
 
 ## Connected surface unwraps
 

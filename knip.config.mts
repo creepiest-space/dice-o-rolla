@@ -10,6 +10,9 @@ export default {
     },
     'apps/*': {},
     'packages/*': {},
+    'packages/dice-assets': {
+      entry: ['src/index.ts', 'src/tools/index.ts', 'src/tools/cli.ts'],
+    },
     'packages/dice-engine': {
       entry: ['src/index.ts', 'src/browser.ts'],
     },

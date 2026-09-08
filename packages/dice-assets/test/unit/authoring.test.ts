@@ -10,8 +10,8 @@ import {
   writeTextureTemplates,
   buildTexturedSkinSet,
   TEXTURE_TEMPLATE_TYPES,
-} from '../../src/index.js';
-import { writeDirectory } from '../../src/write-directory.js';
+} from '../../src/tools/index.js';
+import { writeDirectory } from '../../src/tools/write-directory.js';
 
 const temporary: string[] = [];
 async function directory() {
@@ -111,7 +111,7 @@ test('CLI reports usage errors with a nonzero status', async () => {
   const child = Bun.spawn(
     [
       process.execPath,
-      join(import.meta.dir, '../../src/cli.ts'),
+      join(import.meta.dir, '../../src/tools/cli.ts'),
       'template',
       '--types',
       'd7',

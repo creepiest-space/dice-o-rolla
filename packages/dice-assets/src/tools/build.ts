@@ -3,17 +3,17 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-import {
-  DiceAssetRegistry,
-  type DiceAssetCatalogManifest,
-  type DiceSurfaceUnwrap,
-  type RuntimeTextureReference,
-} from '@dice-o-rolla/dice-assets';
 import { getDieGeometry } from '@dice-o-rolla/dice-geometry';
 import { validateSurfaceUvs } from '@dice-o-rolla/dice-renderer-three';
 import { Resvg } from '@resvg/resvg-js';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 
+import {
+  DiceAssetRegistry,
+  type DiceAssetCatalogManifest,
+  type DiceSurfaceUnwrap,
+  type RuntimeTextureReference,
+} from '../index.js';
 import { assertImageSize, assertPortableId, assertTemplateType, geometryType } from './template.js';
 import type {
   BuildTexturedSkinSetOptions,
