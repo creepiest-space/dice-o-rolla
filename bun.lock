@@ -40,12 +40,13 @@
       "name": "@dice-o-rolla/dice-assets",
       "version": "0.4.0",
       "dependencies": {
+        "@dice-o-rolla/dice-geometry": "workspace:*",
+        "@dice-o-rolla/dice-renderer": "workspace:*",
         "@dice-o-rolla/dice-renderer-three": "workspace:*",
         "@types/three": "^0.185.0",
         "three": "^0.185.0",
       },
       "devDependencies": {
-        "@dice-o-rolla/dice-geometry": "workspace:*",
         "@resvg/resvg-js": "^2.6.2",
       },
     },

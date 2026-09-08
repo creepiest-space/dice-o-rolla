@@ -1,4 +1,6 @@
 import {
+  prepareTexturedSkinSet,
+  type PreparedTexturedSkinSet,
   DiceAssetCatalogLoader,
   DiceAssetRegistry,
   ImpactSoundGate,
@@ -8,7 +10,6 @@ import {
 import {
   getStandardVisualPresetId,
   PHYSICAL_DIE_TYPES,
-  type VisualPresetSelector,
   type PhysicalRollTrace,
 } from '@dice-o-rolla/dice-engine';
 import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
@@ -100,6 +101,7 @@ const PRESETS = {
 } as const satisfies Record<PhysicsPreset, DefaultDiceEngineOptions['engine']>;
 
 let engine: Engine | undefined;
+let diagnosticSet: PreparedTexturedSkinSet | undefined;
 let engineGeneration = 0;
 let rolling = false;
 let lastTrace: PhysicalRollTrace | undefined;
@@ -171,6 +173,7 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
   setStatus('Starting engine…');
   engine?.destroy();
   engine = undefined;
+  diagnosticSet = undefined;
 
   try {
     await assetsReady;
@@ -195,10 +198,15 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
     await Promise.all([
       materialProvider.prepareSkin('procedural-amethyst'),
       materialProvider.prepareSkin('procedural-emerald'),
-      ...Object.values(assetRegistry.skinSets.get('diagnostic')!.skins).map((id) =>
-        materialProvider!.prepareSkin(id),
-      ),
     ]);
+    const nextDiagnosticSet = await prepareTexturedSkinSet({
+      registry: assetRegistry,
+      provider: materialProvider,
+      skinSetId: 'diagnostic',
+      presetPrefix: 'assets:diagnostic',
+      soundPackId: 'classic-dice',
+    });
+    nextDiagnosticSet.register(nextEngine);
     registerAssetPresets(nextEngine);
     applyAssetSkin(nextEngine, toAssetSkin(assets.value));
     const impactSoundGate = new ImpactSoundGate();
@@ -225,6 +233,7 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
       return;
     }
     engine = nextEngine;
+    diagnosticSet = nextDiagnosticSet;
     engine.setTheme(selectedTheme());
     setEnabled(true);
     setStatus(`${capitalize(selectedPreset)} throw ready`);
@@ -241,9 +250,12 @@ async function roll(source: string): Promise<void> {
   setRolling(true);
   setStatus(`Rolling ${source}…`);
   try {
-    const rollResult = await activeEngine.roll(source, {
-      visualPresetSelector: selectDiagnosticPreset,
-    });
+    const rollResult = await activeEngine.roll(
+      source,
+      assets.value !== 'diagnostic' || diagnosticSet === undefined
+        ? {}
+        : { visualPresetSelector: diagnosticSet.visualPresetSelector },
+    );
     showRollResult(rollResult);
     setStatus('Roll settled');
   } catch (error) {
@@ -274,7 +286,9 @@ async function simulate(source: string): Promise<void> {
     const trace = await activeEngine.simulate(source, {
       seed,
       captureFrames: true,
-      visualPresetSelector: selectDiagnosticPreset,
+      ...(assets.value !== 'diagnostic' || diagnosticSet === undefined
+        ? {}
+        : { visualPresetSelector: diagnosticSet.visualPresetSelector }),
     });
     if (engine !== activeEngine) return;
     lastTrace = trace;
@@ -438,17 +452,6 @@ async function loadAssets(): Promise<void> {
 }
 
 function registerAssetPresets(activeEngine: Engine): void {
-  for (const [type, skinId] of Object.entries(assetRegistry.skinSets.get('diagnostic')!.skins)) {
-    const geometryId = assetRegistry.patterns.get(assetRegistry.skins.get(skinId)!.patternId)!
-      .unwrap!.geometryId;
-    activeEngine.registerVisualPreset({
-      id: `assets:diagnostic:${type}`,
-      dieType: geometryId,
-      geometryId,
-      skinId,
-      soundPackId: 'classic-dice',
-    });
-  }
   for (const dieType of ['d6', 'd20'] as const) {
     for (const skin of ['amethyst', 'emerald'] as const) {
       activeEngine.registerVisualPreset({
@@ -465,18 +468,13 @@ function registerAssetPresets(activeEngine: Engine): void {
 function applyAssetSkin(activeEngine: Engine, skin: AssetSkin): void {
   for (const dieType of PHYSICAL_DIE_TYPES) {
     const custom =
-      skin === 'diagnostic' || (skin !== 'classic' && (dieType === 'd6' || dieType === 'd20'));
+      (skin === 'amethyst' || skin === 'emerald') && (dieType === 'd6' || dieType === 'd20');
     activeEngine.setVisualPreset(
       dieType,
       custom ? `assets:${skin}:${dieType}` : getStandardVisualPresetId(dieType),
     );
   }
 }
-
-const selectDiagnosticPreset: VisualPresetSelector = (context) => {
-  if (assets.value !== 'diagnostic' || context.component?.role !== 'tens') return undefined;
-  return `assets:diagnostic:${context.component.groupType}`;
-};
 
 async function enableAudio(): Promise<void> {
   try {

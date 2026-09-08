@@ -50,12 +50,13 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dice-o-rolla/dice-geometry": "workspace:*",
+    "@dice-o-rolla/dice-renderer": "workspace:*",
     "@dice-o-rolla/dice-renderer-three": "workspace:*",
     "@types/three": "^0.185.0",
     "three": "^0.185.0"
   },
   "devDependencies": {
-    "@dice-o-rolla/dice-geometry": "workspace:*",
     "@resvg/resvg-js": "^2.6.2"
   },
   "engines": {
