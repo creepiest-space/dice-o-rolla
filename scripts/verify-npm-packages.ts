@@ -40,6 +40,7 @@ const packageDirectories = [
   'dice-physics-rapier',
   'dice-renderer-three',
   'dice-engine',
+  'dice-assets-tools',
 ] as const;
 const requiredPackFiles = [
   'LICENSE',
@@ -173,6 +174,18 @@ function validatePackResult(
         throw new Error(`${sourceManifest.name} tarball is missing ${requiredFile}`);
       }
     }
+  }
+  if (sourceManifest.name === '@dice-o-rolla/dice-assets-tools') {
+    if (!files.has('dist/cli.js') || !files.has('dist/index.d.ts'))
+      throw new Error('Tooling package must include its CLI and public declarations');
+    const bin = packedManifest.bin;
+    if (
+      typeof bin !== 'object' ||
+      bin === null ||
+      !('dice-assets' in bin) ||
+      bin['dice-assets'] !== './dist/cli.js'
+    )
+      throw new Error('Tooling package must expose the dice-assets command');
   }
   for (const path of files) {
     if (

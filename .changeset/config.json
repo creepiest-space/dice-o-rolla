@@ -11,7 +11,8 @@
       "@dice-o-rolla/dice-physics-rapier",
       "@dice-o-rolla/dice-renderer",
       "@dice-o-rolla/dice-renderer-three",
-      "@dice-o-rolla/dice-engine"
+      "@dice-o-rolla/dice-engine",
+      "@dice-o-rolla/dice-assets-tools"
     ]
   ],
   "linked": [],

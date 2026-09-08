@@ -8,6 +8,7 @@ interface PackageManifest {
 
 const packageDirectories = [
   'dice-assets',
+  'dice-assets-tools',
   'dice-core',
   'dice-engine',
   'dice-geometry',
