@@ -42,5 +42,7 @@ export type {
   DicePatternDefinition,
   DiceSkinCompositeMode,
   DiceSkinDefinition,
+  DiceSkinSetDefinition,
+  DiceSurfaceUnwrap,
   RuntimeTextureReference,
 } from './types.js';

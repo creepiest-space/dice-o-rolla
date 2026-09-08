@@ -6,6 +6,7 @@ import type {
   DiceMaterialDefinition,
   DicePatternDefinition,
   DiceSkinDefinition,
+  DiceSkinSetDefinition,
 } from './types.js';
 
 export interface RegisterDiceAssetOptions {
@@ -84,6 +85,7 @@ export class DiceAssetRegistry {
   readonly materials = new AssetRegistry<DiceMaterialDefinition>(validateMaterial);
   readonly patterns = new AssetRegistry<DicePatternDefinition>(validatePattern);
   readonly skins = new AssetRegistry<DiceSkinDefinition>(validateSkin);
+  readonly skinSets = new AssetRegistry<DiceSkinSetDefinition>(validateSkinSet);
   readonly faces = new AssetRegistry<DiceFaceAtlasDefinition>(validateFaceAtlas);
 
   get revision(): number {
@@ -93,6 +95,7 @@ export class DiceAssetRegistry {
       this.materials.revision +
       this.patterns.revision +
       this.skins.revision +
+      this.skinSets.revision +
       this.faces.revision
     );
   }
@@ -105,10 +108,17 @@ export class DiceAssetRegistry {
     for (const asset of catalog.patterns ?? []) this.patterns.register(asset);
     for (const asset of catalog.faces ?? []) this.faces.register(asset);
     for (const asset of catalog.skins ?? []) this.skins.register(asset);
+    for (const asset of catalog.skinSets ?? []) this.skinSets.register(asset);
     this.validateReferences();
   }
 
   validateReferences(): void {
+    for (const set of this.skinSets.list()) {
+      for (const [dieType, skinId] of Object.entries(set.skins)) {
+        if (!this.skins.has(skinId))
+          throw new Error(`Skin set "${set.id}" ${dieType} references missing skin "${skinId}"`);
+      }
+    }
     for (const bank of this.audioBanks.list()) {
       const sprite = this.audio.get(bank.spriteId);
       if (sprite === undefined)
@@ -209,6 +219,29 @@ function validateMaterial(material: DiceMaterialDefinition): void {
 }
 
 function validatePattern(pattern: DicePatternDefinition): void {
+  if (pattern.unwrap !== undefined) {
+    assertId(pattern.unwrap.geometryId);
+    if (pattern.repeat !== undefined) throw new RangeError('unwrapped patterns cannot repeat');
+    if (Object.keys(pattern.unwrap.faces).length === 0)
+      throw new RangeError('unwrap must contain faces');
+    for (const [face, uvs] of Object.entries(pattern.unwrap.faces)) {
+      if (
+        !/^[1-9]\d*$/.test(face) ||
+        !Array.isArray(uvs) ||
+        uvs.length < 3 ||
+        !uvs.every(
+          (uv) =>
+            Array.isArray(uv) &&
+            uv.length === 2 &&
+            uv.every((value) => Number.isFinite(value) && value >= 0 && value <= 1),
+        )
+      ) {
+        throw new RangeError(`Pattern "${pattern.id}" face ${face}: invalid surface UVs`);
+      }
+    }
+    if (pattern.unwrap.preview !== undefined)
+      validateReference(pattern.unwrap.preview, 'unwrap preview');
+  }
   validateTexture(pattern.baseColor, 'baseColor');
   if (pattern.normal !== undefined) validateTexture(pattern.normal, 'normal');
   if (pattern.orm !== undefined) validateTexture(pattern.orm, 'orm');
@@ -232,5 +265,13 @@ function validateFaceAtlas(atlas: DiceFaceAtlasDefinition): void {
     atlas.height <= 0
   ) {
     throw new RangeError('face atlas dimensions must be positive integers');
+  }
+}
+
+function validateSkinSet(set: DiceSkinSetDefinition): void {
+  if (Object.keys(set.skins).length === 0) throw new RangeError('skin set must contain skins');
+  for (const [dieType, skinId] of Object.entries(set.skins)) {
+    assertId(dieType);
+    assertId(skinId);
   }
 }

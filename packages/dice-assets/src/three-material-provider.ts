@@ -1,11 +1,14 @@
 import {
   type FaceMaterialContext,
+  type ThreeFaceMaterialProvider as MaterialProvider,
+  validateSurfaceUvs,
   type FaceMaterialResource,
   ThreeMaterialFactory,
   type ThreeFaceMaterialProvider,
 } from '@dice-o-rolla/dice-renderer-three';
 import {
   Color,
+  ClampToEdgeWrapping,
   MeshPhysicalMaterial,
   RepeatWrapping,
   SRGBColorSpace,
@@ -46,6 +49,27 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
       .detectSupport(options.renderer);
   }
 
+  getSurfaceUvs(
+    ...[definition, preset]: Parameters<NonNullable<MaterialProvider['getSurfaceUvs']>>
+  ) {
+    const skin = preset?.skinId === undefined ? undefined : this.registry.skins.get(preset.skinId);
+    if (skin === undefined) return undefined;
+    const unwrap = this.registry.patterns.get(skin.patternId)?.unwrap;
+    if (unwrap === undefined) return undefined;
+    if (unwrap.geometryId !== definition.id)
+      throw new RangeError(
+        `Skin "${skin.id}" requires geometry "${unwrap.geometryId}", received "${definition.id}"`,
+      );
+    try {
+      validateSurfaceUvs(definition, unwrap.faces);
+    } catch (error) {
+      throw new RangeError(
+        `Skin "${skin.id}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return unwrap.faces;
+  }
+
   async prepareSkin(skinId: string): Promise<void> {
     if (this.#skins.has(skinId)) return;
     this.registry.validateReferences();
@@ -55,14 +79,14 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
     const atlas =
       skin.faceAtlasId === undefined ? undefined : this.registry.faces.get(skin.faceAtlasId);
     const [baseColor, normal, orm, faces] = await Promise.all([
-      this.#load(pattern.baseColor),
-      pattern.normal === undefined ? undefined : this.#load(pattern.normal),
-      pattern.orm === undefined ? undefined : this.#load(pattern.orm),
+      this.#load(pattern.baseColor, pattern.unwrap !== undefined),
+      pattern.normal === undefined
+        ? undefined
+        : this.#load(pattern.normal, pattern.unwrap !== undefined),
+      pattern.orm === undefined ? undefined : this.#load(pattern.orm, pattern.unwrap !== undefined),
       atlas === undefined ? undefined : this.#load(atlas.texture),
     ]);
-    baseColor.wrapS = baseColor.wrapT = RepeatWrapping;
-    if (normal !== undefined) normal.wrapS = normal.wrapT = RepeatWrapping;
-    if (orm !== undefined) orm.wrapS = orm.wrapT = RepeatWrapping;
+
     this.#skins.set(skinId, {
       skin,
       baseColor,
@@ -125,16 +149,19 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
     this.#loader.dispose();
   }
 
-  #load(reference: RuntimeTextureReference): Promise<Texture> {
-    const existing = this.#textures.get(reference.uri);
+  #load(reference: RuntimeTextureReference, surface = false): Promise<Texture> {
+    const key = `${reference.uri}:${reference.colorSpace}:${surface}`;
+    const existing = this.#textures.get(key);
     if (existing !== undefined) return existing;
     const pending = this.#loader.loadAsync(reference.uri).then((texture) => {
       texture.colorSpace = reference.colorSpace === 'srgb' ? SRGBColorSpace : '';
+      texture.channel = surface ? 1 : 0;
+      texture.wrapS = texture.wrapT = surface ? ClampToEdgeWrapping : RepeatWrapping;
       texture.generateMipmaps = false;
       texture.needsUpdate = true;
       return texture;
     });
-    this.#textures.set(reference.uri, pending);
+    this.#textures.set(key, pending);
     return pending;
   }
 
@@ -175,14 +202,18 @@ function configureCompositingShader(
     shader.uniforms.compositeMode = {
       value: skin.composite === 'overlay' ? 2 : skin.composite === 'multiply' ? 1 : 0,
     };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 diceLabelUv;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\ndiceLabelUv = uv;');
     shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 diceLabelUv;')
       .replace(
         '#include <map_pars_fragment>',
         `#include <map_pars_fragment>\nuniform sampler2D faceAtlas;\nuniform vec4 faceRect;\nuniform vec3 labelColor;\nuniform float skinHue;\nuniform float skinSaturation;\nuniform vec2 patternScale;\nuniform int compositeMode;`,
       )
       .replace(
         '#include <map_fragment>',
-        `#ifdef USE_MAP\nvec4 skinPattern = texture2D(map, fract(vMapUv * patternScale));\nvec3 skinTint = diffuseColor.rgb;\nif (compositeMode == 0) diffuseColor.rgb = mix(skinTint, skinPattern.rgb, skinPattern.a);\nelse if (compositeMode == 1) diffuseColor.rgb = skinTint * skinPattern.rgb;\nelse { vec3 low = 2.0 * skinTint * skinPattern.rgb; vec3 high = 1.0 - 2.0 * (1.0 - skinTint) * (1.0 - skinPattern.rgb); diffuseColor.rgb = mix(low, high, step(vec3(0.5), skinTint)); }\ndiffuseColor.a *= skinPattern.a;\n#endif\nvec3 skinGray = vec3(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)));\ndiffuseColor.rgb = mix(skinGray, diffuseColor.rgb, skinSaturation);\nfloat skinAngle = skinHue * 6.28318530718;\nvec3 skinAxis = normalize(vec3(1.0));\ndiffuseColor.rgb = diffuseColor.rgb * cos(skinAngle) + cross(skinAxis, diffuseColor.rgb) * sin(skinAngle) + skinAxis * dot(skinAxis, diffuseColor.rgb) * (1.0 - cos(skinAngle));\nvec2 faceUv = faceRect.xy + vMapUv * faceRect.zw;\nfloat faceMask = texture2D(faceAtlas, faceUv).a;\ndiffuseColor.rgb = mix(diffuseColor.rgb, labelColor, faceMask);`,
+        `#ifdef USE_MAP\nvec4 skinPattern = texture2D(map, fract(vMapUv * patternScale));\nvec3 skinTint = diffuseColor.rgb;\nif (compositeMode == 0) diffuseColor.rgb = mix(skinTint, skinPattern.rgb, skinPattern.a);\nelse if (compositeMode == 1) diffuseColor.rgb = skinTint * skinPattern.rgb;\nelse { vec3 low = 2.0 * skinTint * skinPattern.rgb; vec3 high = 1.0 - 2.0 * (1.0 - skinTint) * (1.0 - skinPattern.rgb); diffuseColor.rgb = mix(low, high, step(vec3(0.5), skinTint)); }\ndiffuseColor.a *= skinPattern.a;\n#endif\nvec3 skinGray = vec3(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)));\ndiffuseColor.rgb = mix(skinGray, diffuseColor.rgb, skinSaturation);\nfloat skinAngle = skinHue * 6.28318530718;\nvec3 skinAxis = normalize(vec3(1.0));\ndiffuseColor.rgb = diffuseColor.rgb * cos(skinAngle) + cross(skinAxis, diffuseColor.rgb) * sin(skinAngle) + skinAxis * dot(skinAxis, diffuseColor.rgb) * (1.0 - cos(skinAngle));\nvec2 faceUv = faceRect.xy + diceLabelUv * faceRect.zw;\nfloat faceMask = texture2D(faceAtlas, faceUv).a;\ndiffuseColor.rgb = mix(diffuseColor.rgb, labelColor, faceMask);`,
       );
   };
   material.customProgramCacheKey = () => `dice-skin:${skin.id}`;

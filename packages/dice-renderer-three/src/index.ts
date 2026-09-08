@@ -6,6 +6,9 @@ export {
 } from './material-factory.js';
 export {
   createPolyhedronGeometry,
+  validateSurfaceUvs,
+  type SurfaceUvMap,
+  type Vector2Tuple,
   createFaceUvs,
   DEFAULT_THREE_THEME,
   getFaceLabel,

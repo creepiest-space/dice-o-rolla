@@ -48,6 +48,16 @@ export function resolveCatalogReferences(
           patterns: catalog.patterns.map((pattern) => ({
             ...pattern,
             baseColor: resolveReference(pattern.baseColor),
+            ...(pattern.unwrap === undefined
+              ? {}
+              : {
+                  unwrap: {
+                    ...pattern.unwrap,
+                    ...(pattern.unwrap.preview === undefined
+                      ? {}
+                      : { preview: resolveReference(pattern.unwrap.preview) }),
+                  },
+                }),
             ...(pattern.normal === undefined ? {} : { normal: resolveReference(pattern.normal) }),
             ...(pattern.orm === undefined ? {} : { orm: resolveReference(pattern.orm) }),
           })),
@@ -82,7 +92,15 @@ export function parseCatalog(source: unknown): DiceAssetCatalogManifest {
 function isCatalogManifest(source: unknown): source is DiceAssetCatalogManifest {
   if (!isRecord(source)) return false;
   if (source.schemaVersion !== 1) return false;
-  for (const key of ['audioSprites', 'audioBanks', 'materials', 'patterns', 'skins', 'faces']) {
+  for (const key of [
+    'audioSprites',
+    'audioBanks',
+    'materials',
+    'patterns',
+    'skins',
+    'faces',
+    'skinSets',
+  ]) {
     if (source[key] !== undefined && !Array.isArray(source[key])) return false;
   }
   return true;
