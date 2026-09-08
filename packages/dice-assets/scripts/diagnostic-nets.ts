@@ -1,7 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { getDieGeometry, type PolyhedronDefinition } from '@dice-o-rolla/dice-geometry';
+import {
+  getDieGeometry,
+  calculateFaceNormal,
+  type PolyhedronDefinition,
+} from '@dice-o-rolla/dice-geometry';
 import { getFaceLabel } from '@dice-o-rolla/dice-renderer-three';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -53,9 +57,7 @@ function projectFace(
   const origin = definition.vertices[face.indices[edge]!]!;
   const next = definition.vertices[face.indices[(edge + 1) % face.indices.length]!]!;
   const horizontal = unit(sub(next, origin));
-  const normal = definition.faceDefinitions.find(
-    (candidate) => candidate.value === face.value,
-  )!.normal;
+  const normal = calculateFaceNormal(definition, face);
   const vertical = unit(cross(normal, horizontal));
   const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
   const x = (end[0] - start[0]) / length,
@@ -173,7 +175,7 @@ export function diagnosticSvg(
       );
     }
     const label = getFaceLabel(definition, face);
-    if (Array.isArray(label)) {
+    if (typeof label !== 'string' && typeof label !== 'number') {
       label.forEach((value, index) => {
         const p = points[index]!;
         details.push(
@@ -218,6 +220,8 @@ export async function buildDiagnosticAssets(source: string, runtime: string) {
         'R8G8B8A8_SRGB',
         '--assign-tf',
         'srgb',
+        '--convert-texcoord-origin',
+        'bottom-left',
         '--encode',
         'uastc-ldr-4x4',
         '--generate-mipmap',

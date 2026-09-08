@@ -1,8 +1,14 @@
 import { expect, test } from 'bun:test';
 
 import { D6_DEFINITION } from '@dice-o-rolla/dice-geometry';
+import { MeshStandardMaterial } from 'three';
 
-import { createPolyhedronGeometry, validateSurfaceUvs, type SurfaceUvMap } from '../src/index.js';
+import {
+  ThreeDiceMeshFactory,
+  createPolyhedronGeometry,
+  validateSurfaceUvs,
+  type SurfaceUvMap,
+} from '../src/index.js';
 
 const uvs: SurfaceUvMap = Object.fromEntries(
   D6_DEFINITION.faces.map((face) => [
@@ -35,4 +41,23 @@ test('rejects missing, extra and malformed faces before geometry allocation', ()
   expect(() => validateSurfaceUvs(D6_DEFINITION, missing)).toThrow('face 1');
   expect(() => validateSurfaceUvs(D6_DEFINITION, { ...uvs, 7: uvs[1]! })).toThrow('face 7');
   expect(() => validateSurfaceUvs(D6_DEFINITION, { ...uvs, 1: [[0, 0]] })).toThrow('face 1');
+});
+
+test('releases previously created face materials when a later face fails', () => {
+  let released = 0;
+  const factory = new ThreeDiceMeshFactory({
+    createFace(context) {
+      if (context.faceValue === 2) throw new Error('material unavailable');
+      const material = new MeshStandardMaterial();
+      return {
+        material,
+        dispose() {
+          released++;
+          material.dispose();
+        },
+      };
+    },
+  });
+  expect(() => factory.createD6()).toThrow('material unavailable');
+  expect(released).toBe(1);
 });

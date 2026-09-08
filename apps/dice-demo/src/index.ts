@@ -5,15 +5,21 @@ import {
   ThreeAssetMaterialProvider,
   WebAudioSpritePlayer,
 } from '@dice-o-rolla/dice-assets';
-import { getStandardVisualPresetId, type PhysicalRollTrace } from '@dice-o-rolla/dice-engine';
+import {
+  getStandardVisualPresetId,
+  PHYSICAL_DIE_TYPES,
+  type VisualPresetSelector,
+  type PhysicalRollTrace,
+} from '@dice-o-rolla/dice-engine';
 import { createDefaultDiceEngine } from '@dice-o-rolla/dice-engine/browser';
 import type { DefaultDiceEngineOptions } from '@dice-o-rolla/dice-engine/browser';
 
 import { presentRollResult } from './presentation.js';
+import { createTextureInspector } from './texture-inspector.js';
 
 type Engine = Awaited<ReturnType<typeof createDefaultDiceEngine>>;
 type PhysicsPreset = 'calm' | 'classic' | 'lively';
-type AssetSkin = 'amethyst' | 'classic' | 'emerald';
+type AssetSkin = 'amethyst' | 'classic' | 'emerald' | 'diagnostic';
 type AudioSurface = 'felt' | 'metal' | 'wood-table' | 'wood-tray';
 
 const tray = element('tray', HTMLDivElement);
@@ -189,6 +195,9 @@ async function initializeEngine(selectedPreset: PhysicsPreset): Promise<void> {
     await Promise.all([
       materialProvider.prepareSkin('procedural-amethyst'),
       materialProvider.prepareSkin('procedural-emerald'),
+      ...Object.values(assetRegistry.skinSets.get('diagnostic')!.skins).map((id) =>
+        materialProvider!.prepareSkin(id),
+      ),
     ]);
     registerAssetPresets(nextEngine);
     applyAssetSkin(nextEngine, toAssetSkin(assets.value));
@@ -232,7 +241,9 @@ async function roll(source: string): Promise<void> {
   setRolling(true);
   setStatus(`Rolling ${source}…`);
   try {
-    const rollResult = await activeEngine.roll(source);
+    const rollResult = await activeEngine.roll(source, {
+      visualPresetSelector: selectDiagnosticPreset,
+    });
     showRollResult(rollResult);
     setStatus('Roll settled');
   } catch (error) {
@@ -260,7 +271,11 @@ async function simulate(source: string): Promise<void> {
   setTraceSummary('Capturing fixed-step frames…');
   setStatus(`Simulating ${source} with seed ${seed}…`);
   try {
-    const trace = await activeEngine.simulate(source, { seed, captureFrames: true });
+    const trace = await activeEngine.simulate(source, {
+      seed,
+      captureFrames: true,
+      visualPresetSelector: selectDiagnosticPreset,
+    });
     if (engine !== activeEngine) return;
     lastTrace = trace;
     showRollResult(trace.result);
@@ -403,7 +418,7 @@ function toPreset(value: string): PhysicsPreset {
 }
 
 function toAssetSkin(value: string): AssetSkin {
-  return value === 'amethyst' || value === 'emerald' ? value : 'classic';
+  return value === 'amethyst' || value === 'emerald' || value === 'diagnostic' ? value : 'classic';
 }
 
 async function loadAssets(): Promise<void> {
@@ -423,6 +438,17 @@ async function loadAssets(): Promise<void> {
 }
 
 function registerAssetPresets(activeEngine: Engine): void {
+  for (const [type, skinId] of Object.entries(assetRegistry.skinSets.get('diagnostic')!.skins)) {
+    const geometryId = assetRegistry.patterns.get(assetRegistry.skins.get(skinId)!.patternId)!
+      .unwrap!.geometryId;
+    activeEngine.registerVisualPreset({
+      id: `assets:diagnostic:${type}`,
+      dieType: geometryId,
+      geometryId,
+      skinId,
+      soundPackId: 'classic-dice',
+    });
+  }
   for (const dieType of ['d6', 'd20'] as const) {
     for (const skin of ['amethyst', 'emerald'] as const) {
       activeEngine.registerVisualPreset({
@@ -437,13 +463,20 @@ function registerAssetPresets(activeEngine: Engine): void {
 }
 
 function applyAssetSkin(activeEngine: Engine, skin: AssetSkin): void {
-  for (const dieType of ['d6', 'd20'] as const) {
+  for (const dieType of PHYSICAL_DIE_TYPES) {
+    const custom =
+      skin === 'diagnostic' || (skin !== 'classic' && (dieType === 'd6' || dieType === 'd20'));
     activeEngine.setVisualPreset(
       dieType,
-      skin === 'classic' ? getStandardVisualPresetId(dieType) : `assets:${skin}:${dieType}`,
+      custom ? `assets:${skin}:${dieType}` : getStandardVisualPresetId(dieType),
     );
   }
 }
+
+const selectDiagnosticPreset: VisualPresetSelector = (context) => {
+  if (assets.value !== 'diagnostic' || context.component?.role !== 'tens') return undefined;
+  return `assets:diagnostic:${context.component.groupType}`;
+};
 
 async function enableAudio(): Promise<void> {
   try {
@@ -493,3 +526,54 @@ function toAudioSurfaceBank(value: string): string {
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+const inspection = element('texture-inspector', HTMLDetailsElement);
+const inspectType = element('inspect-type', HTMLSelectElement);
+const inspectFace = element('inspect-face', HTMLSelectElement);
+let inspector: ReturnType<typeof createTextureInspector> | undefined;
+let inspectionGeneration = 0;
+inspection.addEventListener('toggle', () => {
+  void toggleInspection();
+});
+async function toggleInspection(): Promise<void> {
+  const generation = ++inspectionGeneration;
+  inspector?.dispose();
+  inspector = undefined;
+  if (!inspection.open) return;
+  const inspectionStatus = element('inspect-status', HTMLParagraphElement);
+  inspectionStatus.textContent = 'Loading texture…';
+  try {
+    await assetsReady;
+    if (generation !== inspectionGeneration || !inspection.open) return;
+    inspector = createTextureInspector(
+      assetRegistry,
+      element('inspect-canvas', HTMLDivElement),
+      element('inspect-net', HTMLImageElement),
+      inspectionStatus,
+      inspectFace,
+    );
+    await inspector.select(inspectType.value);
+  } catch (error) {
+    inspectionStatus.textContent = error instanceof Error ? error.message : String(error);
+  }
+}
+inspectType.addEventListener('change', () => {
+  void inspector?.select(inspectType.value);
+});
+inspectFace.addEventListener('change', () => {
+  if (inspectFace.value === '') inspector?.reset();
+  else inspector?.showFace(Number(inspectFace.value));
+});
+element('inspect-reset', HTMLButtonElement).addEventListener('click', () => inspector?.reset());
+for (const [id, step] of [
+  ['inspect-previous', -1],
+  ['inspect-next', 1],
+] as const) {
+  element(id, HTMLButtonElement).addEventListener('click', () => {
+    if (inspectFace.disabled) return;
+    const count = inspectFace.options.length - 1;
+    const next = ((Math.max(0, inspectFace.selectedIndex - 1) + step + count) % count) + 1;
+    inspector?.showFace(Number(inspectFace.options[next]!.value));
+  });
+}
+window.addEventListener('beforeunload', () => inspector?.dispose(), { once: true });

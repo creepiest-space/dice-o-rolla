@@ -1,6 +1,5 @@
 import {
   type FaceMaterialContext,
-  type ThreeFaceMaterialProvider as MaterialProvider,
   validateSurfaceUvs,
   type FaceMaterialResource,
   ThreeMaterialFactory,
@@ -39,6 +38,7 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
   readonly #textures = new Map<string, Promise<Texture>>();
   readonly #skins = new Map<string, LoadedSkin>();
   readonly #fallback = new ThreeMaterialFactory();
+  #disposed = false;
 
   constructor(
     readonly registry: DiceAssetRegistry,
@@ -50,7 +50,7 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
   }
 
   getSurfaceUvs(
-    ...[definition, preset]: Parameters<NonNullable<MaterialProvider['getSurfaceUvs']>>
+    ...[definition, preset]: Parameters<NonNullable<ThreeFaceMaterialProvider['getSurfaceUvs']>>
   ) {
     const skin = preset?.skinId === undefined ? undefined : this.registry.skins.get(preset.skinId);
     if (skin === undefined) return undefined;
@@ -71,6 +71,7 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
   }
 
   async prepareSkin(skinId: string): Promise<void> {
+    if (this.#disposed) throw new Error('Asset material provider is disposed');
     if (this.#skins.has(skinId)) return;
     this.registry.validateReferences();
     const skin = this.registry.skins.get(skinId);
@@ -87,6 +88,7 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
       atlas === undefined ? undefined : this.#load(atlas.texture),
     ]);
 
+    if (this.#disposed) throw new Error('Asset material provider is disposed');
     this.#skins.set(skinId, {
       skin,
       baseColor,
@@ -131,6 +133,7 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
         atlas.width,
         atlas.height,
         loaded.skin,
+        loaded.baseColor.channel === 1,
       );
     }
     return {
@@ -142,25 +145,45 @@ export class ThreeAssetMaterialProvider implements ThreeFaceMaterialProvider {
   }
 
   dispose(): void {
-    for (const pending of this.#textures.values())
-      void pending.then((texture) => texture.dispose());
+    if (this.#disposed) return;
+    this.#disposed = true;
+    const pending = [...this.#textures.values()];
+    for (const texture of pending)
+      void texture.then(
+        (value) => value.dispose(),
+        () => undefined,
+      );
     this.#textures.clear();
     this.#skins.clear();
-    this.#loader.dispose();
+    // Let active transcodes settle before terminating their workers.
+    void Promise.allSettled(pending).then(() => this.#loader.dispose());
   }
 
   #load(reference: RuntimeTextureReference, surface = false): Promise<Texture> {
     const key = `${reference.uri}:${reference.colorSpace}:${surface}`;
     const existing = this.#textures.get(key);
     if (existing !== undefined) return existing;
-    const pending = this.#loader.loadAsync(reference.uri).then((texture) => {
-      texture.colorSpace = reference.colorSpace === 'srgb' ? SRGBColorSpace : '';
-      texture.channel = surface ? 1 : 0;
-      texture.wrapS = texture.wrapT = surface ? ClampToEdgeWrapping : RepeatWrapping;
-      texture.generateMipmaps = false;
-      texture.needsUpdate = true;
-      return texture;
-    });
+    const pending = this.#loader
+      .loadAsync(reference.uri)
+      .then((texture) => {
+        if (this.#disposed) {
+          texture.dispose();
+          throw new Error('Asset material provider is disposed');
+        }
+        texture.colorSpace = reference.colorSpace === 'srgb' ? SRGBColorSpace : '';
+        texture.channel = surface ? 1 : 0;
+        texture.wrapS = texture.wrapT = surface ? ClampToEdgeWrapping : RepeatWrapping;
+        texture.generateMipmaps = false;
+        texture.needsUpdate = true;
+        return texture;
+      })
+      .catch((error: unknown) => {
+        this.#textures.delete(key);
+        throw new Error(
+          `Texture "${reference.uri}": ${error instanceof Error ? error.message : 'load failed'}`,
+          { cause: error },
+        );
+      });
     this.#textures.set(key, pending);
     return pending;
   }
@@ -188,6 +211,7 @@ function configureCompositingShader(
   width: number,
   height: number,
   skin: DiceSkinDefinition,
+  surface: boolean,
 ): void {
   const labelColor = new Color(skin.labelColor ?? '#111111');
   material.onBeforeCompile = (shader) => {
@@ -213,7 +237,7 @@ function configureCompositingShader(
       )
       .replace(
         '#include <map_fragment>',
-        `#ifdef USE_MAP\nvec4 skinPattern = texture2D(map, fract(vMapUv * patternScale));\nvec3 skinTint = diffuseColor.rgb;\nif (compositeMode == 0) diffuseColor.rgb = mix(skinTint, skinPattern.rgb, skinPattern.a);\nelse if (compositeMode == 1) diffuseColor.rgb = skinTint * skinPattern.rgb;\nelse { vec3 low = 2.0 * skinTint * skinPattern.rgb; vec3 high = 1.0 - 2.0 * (1.0 - skinTint) * (1.0 - skinPattern.rgb); diffuseColor.rgb = mix(low, high, step(vec3(0.5), skinTint)); }\ndiffuseColor.a *= skinPattern.a;\n#endif\nvec3 skinGray = vec3(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)));\ndiffuseColor.rgb = mix(skinGray, diffuseColor.rgb, skinSaturation);\nfloat skinAngle = skinHue * 6.28318530718;\nvec3 skinAxis = normalize(vec3(1.0));\ndiffuseColor.rgb = diffuseColor.rgb * cos(skinAngle) + cross(skinAxis, diffuseColor.rgb) * sin(skinAngle) + skinAxis * dot(skinAxis, diffuseColor.rgb) * (1.0 - cos(skinAngle));\nvec2 faceUv = faceRect.xy + diceLabelUv * faceRect.zw;\nfloat faceMask = texture2D(faceAtlas, faceUv).a;\ndiffuseColor.rgb = mix(diffuseColor.rgb, labelColor, faceMask);`,
+        `#ifdef USE_MAP\nvec4 skinPattern = texture2D(map, ${surface ? 'vMapUv' : 'fract(vMapUv * patternScale)'});\nvec3 skinTint = diffuseColor.rgb;\nif (compositeMode == 0) diffuseColor.rgb = mix(skinTint, skinPattern.rgb, skinPattern.a);\nelse if (compositeMode == 1) diffuseColor.rgb = skinTint * skinPattern.rgb;\nelse { vec3 low = 2.0 * skinTint * skinPattern.rgb; vec3 high = 1.0 - 2.0 * (1.0 - skinTint) * (1.0 - skinPattern.rgb); diffuseColor.rgb = mix(low, high, step(vec3(0.5), skinTint)); }\ndiffuseColor.a *= skinPattern.a;\n#endif\nvec3 skinGray = vec3(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)));\ndiffuseColor.rgb = mix(skinGray, diffuseColor.rgb, skinSaturation);\nfloat skinAngle = skinHue * 6.28318530718;\nvec3 skinAxis = normalize(vec3(1.0));\ndiffuseColor.rgb = diffuseColor.rgb * cos(skinAngle) + cross(skinAxis, diffuseColor.rgb) * sin(skinAngle) + skinAxis * dot(skinAxis, diffuseColor.rgb) * (1.0 - cos(skinAngle));\nvec2 faceUv = faceRect.xy + diceLabelUv * faceRect.zw;\nfloat faceMask = texture2D(faceAtlas, faceUv).a;\ndiffuseColor.rgb = mix(diffuseColor.rgb, labelColor, faceMask);`,
       );
   };
   material.customProgramCacheKey = () => `dice-skin:${skin.id}`;

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { getDieGeometry } from '@dice-o-rolla/dice-geometry';
 import { validateSurfaceUvs } from '@dice-o-rolla/dice-renderer-three';
+import { Resvg } from '@resvg/resvg-js';
 
 import {
   createDiagnosticUnwrap,
@@ -24,6 +25,11 @@ for (const type of DIAGNOSTIC_TYPES) {
     const connected = new Map(geometry.faces.map((face) => [face.value, new Set<number>()]));
     for (const face of geometry.faces) {
       const points = unwrap.faces[face.value]!;
+      const area = points.reduce((sum, a, index) => {
+        const b = points[(index + 1) % points.length]!;
+        return sum + a[0] * b[1] - a[1] * b[0];
+      }, 0);
+      expect(area).toBeGreaterThan(0);
       // All corner-to-corner distances, including diagonals, preserve one scale.
       for (let i = 0; i < points.length; i++)
         for (let j = i + 1; j < points.length; j++) {
@@ -62,6 +68,20 @@ for (const type of DIAGNOSTIC_TYPES) {
     const ktx = await readFile(join(runtime, 'textures', `diagnostic-${type}.ktx2`));
     expect([...ktx.subarray(0, 12)]).toEqual([171, 75, 84, 88, 32, 50, 48, 187, 13, 10, 26, 10]);
     expect(ktx.readUInt32LE(40)).toBeGreaterThan(1);
+    expect(ktx.includes(Buffer.from('KTXorientation\0ru\0'))).toBe(true);
+    const raster = new Resvg(svg, { fitTo: { mode: 'width', value: 256 } }).render();
+    const pixels = raster.pixels;
+    let colored = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (
+        pixels[index + 3]! > 240 &&
+        Math.max(pixels[index]!, pixels[index + 1]!, pixels[index + 2]!) -
+          Math.min(pixels[index]!, pixels[index + 1]!, pixels[index + 2]!) >
+          30
+      )
+        colored++;
+    }
+    expect(colored).toBeGreaterThan(1000);
     // Every physical edge is identified twice, once on each side of the cut/fold.
     for (const face of geometry.faces)
       for (let i = 0; i < face.indices.length; i++) {

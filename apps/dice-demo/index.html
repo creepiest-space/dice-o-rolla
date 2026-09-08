@@ -97,6 +97,7 @@
               <option value="classic">Classic</option>
               <option value="amethyst">Amethyst PBR</option>
               <option value="emerald">Emerald recolor</option>
+              <option value="diagnostic">Diagnostic nets</option>
             </select>
           </label>
           <label class="audio-toggle">
@@ -116,6 +117,16 @@
 
         <div class="asset-cases" aria-label="Asset examples">
           <span>Asset cases</span>
+          <button type="button" data-asset-skin="diagnostic" data-notation="d6">
+            Diagnostic d6
+          </button>
+          <button
+            type="button"
+            data-asset-skin="diagnostic"
+            data-notation="d4+d6+d8+d10+d12+d20+d%"
+          >
+            Diagnostic set
+          </button>
           <button type="button" data-asset-skin="amethyst" data-notation="d20">Amethyst d20</button>
           <button type="button" data-asset-skin="emerald" data-notation="2d6">Recolored 2d6</button>
           <button
@@ -129,6 +140,45 @@
           </button>
         </div>
       </section>
+      <details id="texture-inspector" class="texture-inspector">
+        <summary>Inspect diagnostic textures</summary>
+        <p>
+          Drag to rotate, scroll to zoom, or choose a face. Matching edge marks meet when the net
+          folds.
+        </p>
+        <div class="inspector-actions">
+          <label
+            >Die
+            <select id="inspect-type">
+              <option>d6</option>
+              <option>d4</option>
+              <option>d8</option>
+              <option>d10</option>
+              <option>d12</option>
+              <option>d20</option>
+              <option value="d100">d100 tens</option>
+              <option value="d66">d66 tens</option>
+            </select></label
+          >
+          <label
+            >View
+            <select id="inspect-face" disabled>
+              <option value="">Overview</option>
+            </select></label
+          >
+          <button type="button" id="inspect-previous">Previous face</button>
+          <button type="button" id="inspect-next">Next face</button>
+          <button type="button" id="inspect-reset">Reset view</button>
+        </div>
+        <p id="inspect-status" role="status">Open to load the texture.</p>
+        <div class="inspector-views">
+          <div id="inspect-canvas"></div>
+          <figure>
+            <img id="inspect-net" alt="Connected surface net" />
+            <figcaption>Connected surface net</figcaption>
+          </figure>
+        </div>
+      </details>
     </main>
     <script type="module" src="./src/index.ts"></script>
   </body>

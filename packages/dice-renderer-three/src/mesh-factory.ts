@@ -111,15 +111,23 @@ export class ThreeDiceMeshFactory {
       scale,
       this.#materials.getSurfaceUvs?.(definition, preset),
     );
-    const resources = definition.faces.map((face) =>
-      this.#materials.createFace({
-        label: getFaceLabel(definition, face, faceLabels),
-        faceValue: face.value,
-        theme,
-        ...(preset === undefined ? {} : { preset }),
-        ...(definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : {}),
-      }),
-    );
+    const resources: FaceMaterialResource[] = [];
+    try {
+      for (const face of definition.faces)
+        resources.push(
+          this.#materials.createFace({
+            label: getFaceLabel(definition, face, faceLabels),
+            faceValue: face.value,
+            theme,
+            ...(preset === undefined ? {} : { preset }),
+            ...(definition.id === 'd10' ? { labelScale: D10_LABEL_SCALE } : {}),
+          }),
+        );
+    } catch (error) {
+      geometry.dispose();
+      for (const resource of resources) resource.dispose();
+      throw error;
+    }
     const materials = resources.map(({ material }) => material);
     const mesh = new Mesh(geometry, materials);
     mesh.castShadow = true;
