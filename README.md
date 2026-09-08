@@ -26,6 +26,11 @@ quick-roll buttons, clearing, plastic/matte themes, throw presets, and responsiv
 asset cases demonstrate shared KTX2 PBR skins with shader recoloring and force-driven Web Audio
 sprite banks from the optional `dice-assets` package.
 
+Open **Inspect diagnostic textures** to compare a connected surface net with a rotatable die.
+Choose a face for a fixed view, drag to rotate, or reset the view. **Diagnostic d6** rolls the cube
+cross; **Diagnostic set** rolls the standard dice and percentile pair with matching diagnostic
+skins. Grid detail, direction arrows and paired edge marks expose flipped faces and seam errors.
+
 Create a production bundle with:
 
 ```sh

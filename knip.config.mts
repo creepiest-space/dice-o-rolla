@@ -1,6 +1,9 @@
 import type { KnipConfig } from 'knip';
 
 export default {
+  // Public declaration fixtures intentionally use TS paths to built packages;
+  // they are not dependencies of root tooling.
+  ignoreIssues: { 'tests/public-api/*.ts': ['unlisted'] },
   workspaces: {
     '.': {
       entry: ['tests/public-api/*.ts'],

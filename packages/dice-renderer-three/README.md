@@ -13,6 +13,13 @@ KTX2 capability detection and GPU-backed asset setup available in perspective an
 Their common theme, resizing, framebuffer-limit, antialiasing, and material options are exported as
 `ThreeRendererOptions`; top-down options only extend that contract with camera and tray framing.
 
+A material provider may implement `getSurfaceUvs(definition, preset)` to return a complete
+`SurfaceUvMap` keyed by physical face value. Coordinates follow each face's vertex order. The
+mesh factory validates them before allocation and writes them to `uv1`, preserving the original
+`uv` channel for labels. Assign `texture.channel = 1` for maps that use the surface unwrap.
+`createPolyhedronGeometry(definition, scale, surfaceUvs)` also accepts the map directly;
+`validateSurfaceUvs` is available for early validation. Omitting the map preserves existing UVs.
+
 Most browser applications should use the preassembled entry point from
 `@dice-o-rolla/dice-engine/browser`.
 
