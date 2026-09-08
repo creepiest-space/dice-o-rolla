@@ -33,23 +33,24 @@
     },
     "packages/dice-assets": {
       "name": "@dice-o-rolla/dice-assets",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-renderer-three": "workspace:*",
         "@types/three": "^0.185.0",
         "three": "^0.185.0",
       },
       "devDependencies": {
+        "@dice-o-rolla/dice-geometry": "workspace:*",
         "@resvg/resvg-js": "^2.6.2",
       },
     },
     "packages/dice-core": {
       "name": "@dice-o-rolla/dice-core",
-      "version": "0.2.0",
+      "version": "0.4.0",
     },
     "packages/dice-engine": {
       "name": "@dice-o-rolla/dice-engine",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-geometry": "workspace:*",
@@ -61,21 +62,21 @@
     },
     "packages/dice-geometry": {
       "name": "@dice-o-rolla/dice-geometry",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics": {
       "name": "@dice-o-rolla/dice-physics",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-physics-rapier": {
       "name": "@dice-o-rolla/dice-physics-rapier",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
         "@dice-o-rolla/dice-physics": "workspace:*",
@@ -87,14 +88,14 @@
     },
     "packages/dice-renderer": {
       "name": "@dice-o-rolla/dice-renderer",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-core": "workspace:*",
       },
     },
     "packages/dice-renderer-three": {
       "name": "@dice-o-rolla/dice-renderer-three",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "dependencies": {
         "@dice-o-rolla/dice-geometry": "workspace:*",
         "@dice-o-rolla/dice-renderer": "workspace:*",

@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { Resvg } from '@resvg/resvg-js';
 
+import { buildDiagnosticAssets } from './diagnostic-nets.js';
+
 const root = join(import.meta.dir, '..', 'assets');
 const source = join(root, 'source');
 const runtime = join(root, 'runtime');
@@ -86,7 +88,9 @@ const faces = Object.fromEntries(
     },
   ]),
 );
+const diagnostic = await buildDiagnosticAssets(source, runtime);
 const catalog = {
+  skinSets: diagnostic.skinSets,
   schemaVersion: 1,
   audioSprites: pipeline.sprites.map((definition) => ({
     id: definition.id,
@@ -106,6 +110,7 @@ const catalog = {
   })),
   audioBanks: pipeline.banks,
   materials: [
+    { id: 'diagnostic-matte', roughness: 0.8, metalness: 0 },
     {
       id: 'procedural-resin',
       roughness: 0.34,
@@ -116,6 +121,7 @@ const catalog = {
     },
   ],
   patterns: [
+    ...diagnostic.patterns,
     {
       id: 'procedural-speckle',
       baseColor: ktxRef('./textures/speckle-base.ktx2', 'srgb'),
@@ -133,6 +139,7 @@ const catalog = {
     },
   ],
   skins: [
+    ...diagnostic.skins,
     {
       id: 'procedural-amethyst',
       materialId: 'procedural-resin',

@@ -55,6 +55,7 @@
     "three": "^0.185.0"
   },
   "devDependencies": {
+    "@dice-o-rolla/dice-geometry": "workspace:*",
     "@resvg/resvg-js": "^2.6.2"
   },
   "engines": {
