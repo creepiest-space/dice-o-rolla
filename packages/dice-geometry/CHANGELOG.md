@@ -1,5 +1,17 @@
 # @dice-o-rolla/dice-geometry
 
+## 0.5.0
+
+### Minor Changes
+
+- 44ff815: Expose standard connected dice nets and prepared textured skin-set registration. Add a Node.js/Bun
+  authoring API and CLI for layered SVG templates, validated KTX2 catalogs and transactional builds,
+  with a complete authoring and browser integration guide.
+
+### Patch Changes
+
+- @dice-o-rolla/dice-core@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes

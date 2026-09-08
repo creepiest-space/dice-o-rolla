@@ -1,5 +1,18 @@
 # @dice-o-rolla/dice-engine
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [e65399d]
+- Updated dependencies [44ff815]
+  - @dice-o-rolla/dice-renderer-three@0.5.0
+  - @dice-o-rolla/dice-geometry@0.5.0
+  - @dice-o-rolla/dice-physics-rapier@0.5.0
+  - @dice-o-rolla/dice-core@0.5.0
+  - @dice-o-rolla/dice-physics@0.5.0
+  - @dice-o-rolla/dice-renderer@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
