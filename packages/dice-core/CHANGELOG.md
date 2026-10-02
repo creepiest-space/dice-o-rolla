@@ -1,5 +1,11 @@
 # @dice-o-rolla/dice-core
 
+## 0.5.1
+
+### Patch Changes
+
+- Apply PandaGM Standard Numbers to the D&D dice definitions and regenerate diagnostic net assets.
+
 ## 0.5.0
 
 ## 0.4.0
