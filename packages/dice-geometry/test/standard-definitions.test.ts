@@ -82,6 +82,49 @@ describe('standard polyhedron definitions', () => {
     }
   });
 
+  test.each([
+    ['d6', 7],
+    ['d8', 9],
+    ['d10', 9],
+    ['d12', 13],
+    ['d20', 21],
+  ] as const)('%s opposite faces follow the conventional sum %i', (type, expectedSum) => {
+    const definition = getDieGeometry(type);
+    const oppositePairs: [number, number][] = [];
+
+    for (let left = 0; left < definition.faces.length; left++) {
+      const leftNormal = calculateFaceNormal(definition, definition.faces[left]!);
+      for (let right = left + 1; right < definition.faces.length; right++) {
+        const rightNormal = calculateFaceNormal(definition, definition.faces[right]!);
+        if (dot(leftNormal, rightNormal) < -1 + 1e-9) {
+          oppositePairs.push([definition.faces[left]!.value, definition.faces[right]!.value]);
+        }
+      }
+    }
+
+    expect(oppositePairs).toHaveLength(definition.faces.length / 2);
+    for (const [left, right] of oppositePairs) {
+      const displayedLeft = type === 'd10' && left === 10 ? 0 : left;
+      const displayedRight = type === 'd10' && right === 10 ? 0 : right;
+      expect(displayedLeft + displayedRight).toBe(expectedSum);
+    }
+  });
+
+  test('d20 face 1 has PandaGM Standard Numbers neighbors 7, 13, and 19', () => {
+    const definition = getDieGeometry('d20');
+    const faceOne = definition.faces.find((face) => face.value === 1)!;
+    const neighbors = definition.faces
+      .filter(
+        (face) =>
+          face.value !== faceOne.value &&
+          face.indices.filter((index) => faceOne.indices.includes(index)).length === 2,
+      )
+      .map((face) => face.value)
+      .toSorted((left, right) => left - right);
+
+    expect(neighbors).toEqual([7, 13, 19]);
+  });
+
   test('d4 result directions point opposite their resting polygon normals', () => {
     const definition = getDieGeometry('d4');
     definition.faces.forEach((face, index) => {

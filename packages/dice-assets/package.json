@@ -1,6 +1,6 @@
 {
   "name": "@dice-o-rolla/dice-assets",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Web Audio and KTX2/PBR assets with texture authoring API and CLI for Dice O Rolla.",
   "keywords": [
     "assets",

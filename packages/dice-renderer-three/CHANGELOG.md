@@ -1,5 +1,14 @@
 # @dice-o-rolla/dice-renderer-three
 
+## 0.5.1
+
+### Patch Changes
+
+- Apply PandaGM Standard Numbers to the D&D dice definitions and regenerate diagnostic net assets.
+- Updated dependencies
+  - @dice-o-rolla/dice-geometry@0.5.1
+  - @dice-o-rolla/dice-renderer@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
